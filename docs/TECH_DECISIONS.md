@@ -1,0 +1,238 @@
+# Sentinel Pay — Technology Decisions
+
+| | |
+|---|---|
+| **Purpose** | Why each technology was chosen: one comparison table per decision, the chosen option, the ADR that records it and when to look again |
+| **Last updated** | 11 Nov 2026 |
+| **Update when** | Any new dependency, service, cloud resource or replacement — in the same PR as the change |
+
+**Status values.** *Accepted* — agreed and in force. *Accepted (tech lead)* — decided by the tech lead, the area owner's review is pending.
+*Proposed* — a recommendation that the named owner still has to confirm.
+
+**Criteria.** Every table scores the options on the same five points: **Fit** for this project, **Learning curve** for this team,
+**Cost**, **Ecosystem / hiring signal** (how much the choice helps in Irish and EU job interviews), and **Operational burden**.
+Costs are indicative for eu-west-1 and must be re-checked with the AWS Pricing Calculator before the first apply.
+
+## Decision summary
+
+| # | Decision | Chosen | Status | ADR |
+|---|---|---|---|---|
+| D01 | Backend language and framework | Java 21 + Spring Boot 4 | Accepted | 0008 (to write) |
+| D02 | Java build tool | Maven | Accepted | 0008 (to write) |
+| D03 | Database | PostgreSQL 17 | Accepted | 0008 (to write) |
+| D04 | Messaging | Self-hosted Kafka (single broker, KRaft) | Accepted | 0004, 0006 (to write) |
+| D05 | Container platform | ECS on EC2 | Accepted | [0007](adr/0007-single-host-ecs-staging.md) |
+| D06 | Infrastructure as code | Terraform | Accepted | 0011 (to write) |
+| D07 | Identity provider | Amazon Cognito | Accepted | 0012 (to write) |
+| D08 | LLM access | Amazon Bedrock | Accepted | 0013 (to write) |
+| D09 | Frontend UI kit | Tailwind CSS + shadcn/ui + Framer Motion | **Proposed** (Jiajun decides) | 0010 (to write) |
+| D10 | CI/CD | GitHub Actions | Accepted | 0008 (to write) |
+| D11 | Network layout | Public subnets, no NAT Gateway | Accepted | [0007](adr/0007-single-host-ecs-staging.md) |
+| D12 | Staging hosting shape | One EC2 host running ECS | Accepted | [0007](adr/0007-single-host-ecs-staging.md) |
+| D13 | Database hosting | PostgreSQL container + backups | Accepted | [0007](adr/0007-single-host-ecs-staging.md) |
+| D14 | Ingress and TLS | CloudFront with an HTTP origin (prefix list + secret header) | Accepted | [0007](adr/0007-single-host-ecs-staging.md) |
+| D15 | Running hours | Scheduled start/stop (EventBridge Scheduler) | Accepted | [0007](adr/0007-single-host-ecs-staging.md) |
+| D16 | Python service framework | Django + Django REST Framework | Accepted (tech lead) | [0009](adr/0009-django-for-python-services.md) |
+
+## ADR index
+
+| ADR | Title | Status | File |
+|---|---|---|---|
+| 0001 | Record architecture decisions | Accepted | [adr/0001-record-architecture-decisions.md](adr/0001-record-architecture-decisions.md) |
+| 0002 | Monorepo | Accepted in design v2.0 | to be written |
+| 0003 | ML scorer unavailable: fail open to rules | Accepted in design v2.0 (`DESIGN.md` §4.3) | to be written |
+| 0004 | Synchronous REST for decisions, Kafka events for everything else | Accepted in design v2.0 (`DESIGN.md` §4.1) | to be written |
+| 0005 | Gateway fallback policy when the Risk Engine is unavailable | Accepted in design v2.0 (`DESIGN.md` §4.7) | to be written |
+| 0006 | Transactional outbox | Accepted in design v2.0 (`DESIGN.md` §11.3) | to be written |
+| 0007 | Single-host ECS staging with scheduled start/stop | Accepted | [adr/0007-single-host-ecs-staging.md](adr/0007-single-host-ecs-staging.md) |
+| 0008 | Core technology stack (D01, D02, D03, D10) | Accepted in design v2.0 | to be written |
+| 0009 | Django for the Python services | Accepted (tech lead), owner review pending | [adr/0009-django-for-python-services.md](adr/0009-django-for-python-services.md) |
+| 0010 | Frontend UI kit | Proposed | to be written by Jiajun before the first UI PR |
+| 0011 | Terraform for infrastructure as code | Accepted | to be written with the first infra PR |
+| 0012 | Amazon Cognito as identity provider | Accepted | to be written at M3 |
+| 0013 | Amazon Bedrock for LLM access | Accepted | to be written at M4 |
+
+Design v2.0 numbered the tech-stack ADR 0001. ADR-0001 is now "Record architecture decisions" and the stack decision moved to 0008
+(open question Q20). ADRs 0002–0006 keep the numbers that `DESIGN.md` already cites.
+
+---
+
+## D01 — Backend language and framework
+
+| Option | Fit | Learning curve | Cost | Ecosystem / hiring signal | Operational burden |
+|---|---|---|---|---|---|
+| **Java 21 + Spring Boot 4** | Strong: transactions, validation, JPA, Kafka, security and Testcontainers support are first-class | Low — the tech lead already works in Java | Free | Very strong: the default stack of banks and payment companies in Dublin | Moderate memory per service (512 MB budget each) |
+| Kotlin + Spring Boot | Same framework, more concise code | Medium — a new language for the team | Free | Good, but fewer openings ask for it | Same as Java |
+| Java + Quarkus | Good; fast start-up and low memory, attractive on a 4 GB host | Medium — different extension model and fewer examples | Free | Smaller than Spring | Lower memory, but less team knowledge when things break |
+
+**Chosen:** Java 21 + Spring Boot 4. **Why:** the hiring signal and the team's existing knowledge outweigh Quarkus's memory advantage.
+**Watch:** Spring Boot 4 library compatibility (`DESIGN.md` §16); the design names the 4.0.x line while 4.1.x is current — Q18.
+**Review:** before the first Java scaffold PR.
+
+## D02 — Java build tool
+
+| Option | Fit | Learning curve | Cost | Ecosystem / hiring signal | Operational burden |
+|---|---|---|---|---|---|
+| **Maven** | Two independent single-module services; convention over configuration is enough | Low | Free | The most common build tool in enterprise Java | Low; `./mvnw -B verify` is the whole CI |
+| Gradle | More flexible and faster incremental builds; pays off in large multi-module builds | Medium (Kotlin DSL, build logic) | Free | Common, especially with Kotlin and Android | Build scripts are code that needs maintaining |
+
+**Chosen:** Maven. **Review:** only if build times become a problem.
+
+## D03 — Database
+
+| Option | Fit | Learning curve | Cost | Ecosystem / hiring signal | Operational burden |
+|---|---|---|---|---|---|
+| **PostgreSQL 17** | Strong: ACID transactions for money, `NUMERIC`, `CHECK` constraints, `JSONB`, `SELECT … FOR UPDATE SKIP LOCKED` for the outbox | Low | Free (container) | Very strong | Self-managed here (D13) |
+| MySQL | Would work; weaker JSON and constraint story for this design | Low | Free | Strong | Similar |
+| DynamoDB | Poor fit: the ledger, the state machine and the outbox rely on multi-row relational transactions and ad-hoc queries | High — data modelling by access pattern | Pay per request; cheap at demo volume | Strong on AWS | Lowest (managed) |
+
+**Chosen:** PostgreSQL 17, one database per service (`sentinel`, `gateway`, `llm`). **Review:** not planned.
+
+## D04 — Messaging
+
+| Option | Fit | Learning curve | Cost | Ecosystem / hiring signal | Operational burden |
+|---|---|---|---|---|---|
+| **Self-hosted Kafka (single broker, KRaft)** | Strong: ordered per key, replayable, several consumer groups on one topic, the same in local, CI (Testcontainers) and staging | Medium | No extra cost on the existing host; 768 MB of its memory | Very strong in payments and fintech | We own the broker and its disk; a single broker has no redundancy |
+| Amazon MSK | Same API, managed | Medium | Too costly for a demo — the smallest cluster costs several times the whole staging budget | Strong | Low |
+| SQS / SNS | Simple and cheap, but no replay, and ordering needs FIFO queues; the outbox and inbox story is less interesting | Low | Near zero at demo volume | Good on AWS | Lowest |
+| EventBridge | Good for routing between AWS services; no ordering or replay guarantees suited to a payment lifecycle | Low | Near zero | Good on AWS | Lowest |
+
+**Chosen:** self-hosted Kafka. **Why:** the outbox tables remain the source of truth, so losing the single broker loses no business data.
+**Review:** when moving to the production shape (MSK).
+
+## D05 — Container platform
+
+| Option | Fit | Learning curve | Cost | Ecosystem / hiring signal | Operational burden |
+|---|---|---|---|---|---|
+| **ECS on EC2** | Good: real orchestration (services, task definitions, health checks, rollback) on one small host | Medium | Only the instance (D12) | Strong; task definitions carry over to Fargate | We patch and size one host |
+| ECS Fargate | Cleaner — no host — but each task needs its own vCPU/memory and an ALB or Service Connect to be reachable | Medium | Higher: seven or more always-billed tasks plus an ALB | Strong | Low |
+| EKS | Overkill for seven containers | High | Control-plane fee alone exceeds the staging budget | Very strong | High |
+| Lambda | Poor fit for Kafka consumers, JVM start-up and long-lived connections | Medium | Low at demo volume | Strong | Low, but a different architecture |
+
+**Chosen:** ECS on EC2. **Review:** at the production migration (Fargate).
+
+## D06 — Infrastructure as code
+
+| Option | Fit | Learning curve | Cost | Ecosystem / hiring signal | Operational burden |
+|---|---|---|---|---|---|
+| **Terraform** | Strong: modules per concern, `plan` in PRs, works beyond AWS | Medium (HCL, state) | Free; S3 state costs cents | Very strong; the most requested IaC skill | Remote state and locking to set up once |
+| AWS CDK | Good; real programming languages, but synthesises CloudFormation | Medium | Free | Good on AWS-only teams | CloudFormation stack behaviour (slow rollbacks) |
+| CloudFormation | Works; verbose YAML, AWS only | Medium | Free | Moderate | Low tooling, slow feedback |
+
+**Chosen:** Terraform, remote state in S3. **Open:** DynamoDB lock table vs S3 native locking — check against the provider and CLI versions in the first infra PR.
+**Review:** not planned.
+
+## D07 — Identity provider
+
+| Option | Fit | Learning curve | Cost | Ecosystem / hiring signal | Operational burden |
+|---|---|---|---|---|---|
+| **Amazon Cognito** | Good: user pool, groups as roles, Hosted UI, standard OIDC and JWKS for Spring Security and Python | Medium (its configuration has quirks) | Free tier covers this project | Good on AWS | None to run; one shared dev/staging pool |
+| Auth0 | Best developer experience | Low | Free tier, but a second vendor and account | Strong | None to run |
+| Keycloak | Full control, runs locally | Medium–high | Free, but needs ~500 MB+ on a 4 GB host | Strong in enterprise | We would run, upgrade and back it up |
+
+**Chosen:** Amazon Cognito. **Why:** no container on the host and no second vendor. **Trade-off:** local development depends on the shared cloud pool.
+**Review:** M3.
+
+## D08 — LLM access
+
+| Option | Fit | Learning curve | Cost | Ecosystem / hiring signal | Operational burden |
+|---|---|---|---|---|---|
+| **Amazon Bedrock** (Converse API) | Good: IAM-scoped access from the instance role, no API key to store, one API across models, same AWS bill and budget alarm | Low–medium | Pay per token; budget-capped (~$1–3/month at demo volume) | Strong: "LLM on AWS with IAM and guardrails" | Model access must be enabled per account |
+| Direct LLM provider API | Simplest SDK, newest models first | Low | Pay per token; a second bill | Strong | An API key to store and rotate; a second vendor |
+
+**Chosen:** Amazon Bedrock behind an `LlmProvider` interface, so a direct-API provider can be added without touching the service logic.
+**Open:** the model ID (Q19). **Review:** M4.
+
+## D09 — Frontend UI kit
+
+| Option | Fit | Learning curve | Cost | Ecosystem / hiring signal | Operational burden |
+|---|---|---|---|---|---|
+| **Tailwind CSS + shadcn/ui + Framer Motion** (+ TanStack Table, Recharts) | Strong for a custom marketing site with motion; components are copied into the repo and fully editable | Medium — tables and forms need more assembly | Free | Strong and current | We own the copied component code |
+| MUI + MUI X DataGrid (original choice) | Strong for the data-heavy app area out of the box; harder to make a distinctive marketing site | Low | Free tier of DataGrid is enough | Strong in enterprise dashboards | Low; a look that is recognisably Material |
+
+**Recommendation:** Tailwind CSS + shadcn/ui + Framer Motion for the public site and TanStack Table + Recharts in the app area.
+**Status:** **Proposed** — Jiajun decides and records ADR-0010 before the first UI PR (Q15).
+
+## D10 — CI/CD
+
+| Option | Fit | Learning curve | Cost | Ecosystem / hiring signal | Operational burden |
+|---|---|---|---|---|---|
+| **GitHub Actions** | Strong: next to the code, path-filtered workflows per component, OIDC to AWS, environments with required reviewers, ARM runners | Low | Free for public repositories; a monthly allowance for private ones | Very strong | Low |
+| AWS CodePipeline + CodeBuild | Works; pipelines live away from the PR | Medium | Pay per pipeline and build minute | Good on AWS-only teams | More resources to define in Terraform |
+
+**Chosen:** GitHub Actions. **Review:** not planned.
+
+## D11 — Network layout
+
+| Option | Fit | Learning curve | Cost | Ecosystem / hiring signal | Operational burden |
+|---|---|---|---|---|---|
+| **Public subnet, no NAT Gateway** | Enough for one host: inbound limited by the security group to the CloudFront prefix list, no SSH, SSM Session Manager only | Low | Nothing beyond the Elastic IP (~$3.6/month) | Must be explained as a deliberate cost trade-off | Security group discipline matters |
+| Private subnets + NAT Gateway | The textbook layout | Low | A NAT Gateway alone costs more than the whole compute budget (roughly $35/month before data — verify) | Strong | Low |
+| Private subnets + VPC endpoints | No NAT, private access to AWS APIs | Medium | Each interface endpoint is billed hourly; several are needed (ECR, SSM, Logs, Bedrock) | Strong | More resources |
+
+**Chosen:** public subnet, no NAT Gateway. **Review:** at the production migration.
+
+## D12 — Staging hosting shape
+
+| Option | Fit | Learning curve | Cost | Ecosystem / hiring signal | Operational burden |
+|---|---|---|---|---|---|
+| **One EC2 Graviton host running ECS** | Good: every container on one t4g.medium, real ECS deploys, stop/start keeps the data volume | Medium | ≈ $20–28/month on the weekday schedule | Good, and the migration path to Fargate is short | One host to patch; no high availability |
+| Fargate + ALB + RDS | The production shape | Medium | Several times higher: ALB (~$18/month) + RDS + per-task compute | Strongest | Lowest |
+| App Runner | Simple for stateless HTTP services; no place for Kafka or PostgreSQL | Low | Per-service charges add up across five services | Moderate | Low |
+| Lightsail | Cheapest fixed price for a VM | Low | Low | Weak — little of it transfers to production AWS | Manual, not IaC-friendly |
+| Non-AWS hosts (Oracle Free Tier, Hetzner) | Cheap or free compute | Low | Lowest | Weak for an AWS-focused portfolio; no Cognito/Bedrock/IAM integration | Manual |
+
+**Chosen:** one EC2 host running ECS (ADR-0007). Indicative monthly cost:
+
+| Item | Monthly |
+|---|---|
+| t4g.medium, ~14 h × 22 weekdays ≈ 310 h | ~$11–12 |
+| EBS gp3 root 30 GB + data 20 GB | ~$4–5 |
+| Elastic IP (charged 24/7) | ~$3.6 |
+| EBS snapshots, S3 backups, ECR storage | ~$1–2 |
+| CloudFront, S3 website, Cognito, CloudWatch (7-day logs) | ~$0–2 (mostly free tier) |
+| Bedrock tokens (demo volume, budget-capped) | ~$1–3 |
+| **Total** | **≈ $20–28/month**; the same setup running 24/7 ≈ $40–45 |
+
+**Review:** when out-of-memory kills appear (move to t4g.large) and at M5.
+
+## D13 — Database hosting
+
+| Option | Fit | Learning curve | Cost | Ecosystem / hiring signal | Operational burden |
+|---|---|---|---|---|---|
+| **PostgreSQL 17 container on the data volume** | Enough for demo data; identical to the local stack | Low | No extra cost; 384 MB of host memory | Must be explained as a cost trade-off | We own backups (nightly `pg_dump` to S3, daily EBS snapshots) and upgrades |
+| Amazon RDS (single-AZ) | Managed backups, patching and monitoring | Low | A second always-billed resource; cannot be stopped for more than seven days at a time | Strong | Low |
+
+**Chosen:** PostgreSQL container + backups. **Review:** at the production migration (RDS Multi-AZ).
+
+## D14 — Ingress and TLS
+
+| Option | Fit | Learning curve | Cost | Ecosystem / hiring signal | Operational burden |
+|---|---|---|---|---|---|
+| **CloudFront → HTTP origin, locked to the CloudFront prefix list + a secret header checked by nginx** | Gives HTTPS to the browser on the default `*.cloudfront.net` domain with no domain or certificate to buy | Medium | Mostly free tier | The trade-off (unencrypted hop inside AWS) must be explained | Rotate the secret header (stored in SSM) |
+| ALB + ACM | Managed TLS termination and health checks | Low | ~$18/month for the ALB; still needs a domain for a public certificate | Strong | Low |
+| Own domain + TLS to the origin | End-to-end encryption | Medium | Domain registration; certificate renewal on the host | Strong | Certificates on the instance |
+
+**Chosen:** CloudFront with an HTTP origin. **Upgrade path:** own domain + TLS to the origin. **Review:** M5 (threat model).
+
+## D15 — Running hours
+
+| Option | Fit | Learning curve | Cost | Ecosystem / hiring signal | Operational burden |
+|---|---|---|---|---|---|
+| **Scheduled start/stop** (EventBridge Scheduler, Mon–Fri 09:00–23:00 Europe/Dublin) | Good: a demo environment is only needed when someone looks at it; the website and `/sample` stay up | Low | Roughly halves compute cost (≈ $20–28 vs ≈ $40–45 a month) | Shows cost awareness | Boot must be reliable (≤ 5 min); alarms must tolerate downtime; `make aws-wake` before demos |
+| Always on | Simplest | None | ≈ $40–45/month | Neutral | None |
+| Spot instance | Cheapest per hour | Medium | Lowest | Good story | Interruptions with stateful Kafka and PostgreSQL on the host are painful |
+
+**Chosen:** scheduled start/stop. **Review:** M5.
+
+## D16 — Python service framework
+
+| Option | Fit | Learning curve | Cost | Ecosystem / hiring signal | Operational burden |
+|---|---|---|---|---|---|
+| **Django + Django REST Framework** | Strong for `llm-insights` (ORM, migrations, admin, auth and permissions, pagination and filtering for the console APIs). Heavier than needed for the stateless `ml-scorer` | Low–medium; one framework for both Python services | Free | Very strong: long-established and widely requested in Python backend roles | Kafka consumer must run as a separate process (management command); slightly more memory per service |
+| FastAPI (original choice) | Strong for a small, typed, stateless scoring API; Pydantic-native; needs SQLAlchemy + Alembic and hand-built auth for `llm-insights` | Low | Free | Strong and growing | Lowest memory; fewer built-in pieces |
+| Flask | Minimal; everything else is assembled by hand | Low | Free | Moderate | More glue code to own |
+
+**Chosen:** Django + Django REST Framework for `ml-scorer` and `llm-insights` — decided by the tech lead on 11 Nov 2026 (ADR-0009).
+**Open (Q11):** Zheng's review as owner; the API layer (Django REST Framework proposed, Django Ninja as the Pydantic-native alternative);
+the Django release line; the ML validation status code. **Review:** before the `ml-scorer` scaffold PR (RISK-50).
