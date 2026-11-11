@@ -1,0 +1,67 @@
+name: codeql
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: "23 5 * * 1" # Mondays 05:23 UTC
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: actions
+            patterns: ".github/workflows/*.yml .github/workflows/*.yaml"
+          - language: java-kotlin
+            patterns: "*.java"
+          - language: python
+            patterns: "*.py"
+          - language: javascript-typescript
+            patterns: "*.ts *.tsx *.js *.jsx"
+    steps:
+      - uses: actions/checkout@v7
+
+      # CodeQL fails when a language has no source files. The monorepo fills in component by
+      # component, so each language analyses itself as soon as its first source file lands.
+      - name: Check for ${{ matrix.language }} sources
+        id: detect
+        env:
+          PATTERNS: ${{ matrix.patterns }}
+        run: |
+          # shellcheck disable=SC2086
+          if [ -n "$(git ls-files -- $PATTERNS | head -n 1)" ]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "No sources for this language yet; skipping analysis."
+          fi
+
+      - name: Initialize CodeQL
+        if: steps.detect.outputs.found == 'true'
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+          queries: security-and-quality
+
+      - name: Perform CodeQL analysis
+        if: steps.detect.outputs.found == 'true'
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:${{ matrix.language }}
