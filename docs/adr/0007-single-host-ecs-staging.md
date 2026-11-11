@@ -67,6 +67,6 @@ module and the task definitions stay largely the same.
 
 **Revisit when**
 
-- Out-of-memory kills appear, or the `llm-insights` consumer container does not fit (open question Q13).
+- Out-of-memory kills appear.
 - The project gets its own domain.
 - The environment needs to be available outside the scheduled window regularly.

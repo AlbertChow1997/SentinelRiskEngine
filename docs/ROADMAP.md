@@ -48,8 +48,8 @@ in parallel with the backend (Section 3).
 
 | Sprint | Dates | Jiawei | Jiajun | Zheng | Checkpoint |
 |---|---|---|---|---|---|
-| S0 | Wed 11 – Sun 15 Nov 2026 | Repository bootstrap, living docs, sign-off issues | Read `DESIGN.md` §8; UI kit decision (ADR) | Read `DESIGN.md` §9 and §13; review ADR-0009 (Django) | Bootstrap PR merged |
-| S1 | 16 – 22 Nov | Terraform state, `network`, `ecr`, `github-oidc`, Budgets; hello-world service | Frontend scaffold, design tokens, navigation shell | `ml-scorer` Django scaffold, ML contract draft | |
+| S0 | Wed 11 – Sun 15 Nov 2026 | Repository bootstrap, living docs, sign-off issues | Read `DESIGN.md` §8; UI kit decision (ADR) | Read `DESIGN.md` §9 and §13; write the ML contract | Bootstrap PR merged |
+| S1 | 16 – 22 Nov | Terraform state, `network`, `ecr`, `github-oidc`, Budgets; hello-world service | Frontend scaffold, design tokens, navigation shell | `ml-scorer` FastAPI scaffold, ML contract draft | |
 | S2 | 23 – 29 Nov | `ecs-ec2-host`, `scheduler`, `cdn`, `deploy-staging.yml`, smoke test | Homepage; shell deployed to S3 + CloudFront | Synthetic data generator | **M0 · H0** |
 | S3 | 30 Nov – 6 Dec | Risk Engine skeleton, schema, repositories | `/sample` on bundled mock data | Shared feature module | H1 (Tue 1 Dec) |
 | S4 | 7 – 13 Dec | Rule engine, customer context *(reduced capacity — assessments, Q7)* | Generated API types, MSW, assessments list | Training and evaluation pipeline | H2 |
@@ -119,10 +119,10 @@ Jira assigns the real numbers when the tickets are created. Status values: To do
 
 | Key | Summary | Milestone | Status |
 |---|---|---|---|
-| RISK-140 | Review ADR-0009 (Django for Python services); write `openapi-ml-scorer-v1.yaml` | Bootstrap | To do |
-| RISK-50 … RISK-57 | ML scorer backlog (`DESIGN.md` §9.9), on Django | M1 | To do |
+| RISK-140 | Write `openapi-ml-scorer-v1.yaml` | Bootstrap | To do |
+| RISK-50 … RISK-57 | ML scorer backlog (`DESIGN.md` §9.9) | M1 | To do |
 | RISK-95 … RISK-98 | ML feedback loop (`DESIGN.md` §9.10) | M2 | To do |
-| RISK-141 | `llm-insights` Django scaffold, settings, health, `ci-llm.yml` | M4 | To do |
+| RISK-141 | `llm-insights` FastAPI scaffold, settings, health, Alembic baseline, `ci-llm.yml` | M4 | To do |
 | RISK-142 | `LlmProvider`, `StubProvider`, `BedrockProvider` with stubbed boto3 tests | M4 | To do |
 | RISK-143 | Versioned prompts, rendering with a field allow-list, Pydantic output validation | M4 | To do |
 | RISK-144 | Kafka consumer, selection and sampling, idempotency, budget guard, persistence | M4 | To do |
@@ -160,7 +160,8 @@ RISK-144 ← RISK-82; RISK-128/129 ← RISK-145.
 | Date | Entry |
 |---|---|
 | 11 Nov 2026 | Repository bootstrapped on branch `chore/RISK-10-repo-bootstrap`: hygiene files, CODEOWNERS, PR and issue templates, Dependabot, `Makefile`, `docker-compose.yml` skeleton (PostgreSQL + Kafka), `contracts.yml`, `codeql.yml`, component folders with `README.md` and `CLAUDE.md`. Living documents created: `DESIGN.md` v3.0, this roadmap, `TECH_DECISIONS.md`, ADR-0001, ADR-0007, ADR-0009. The three v2.0 contracts were imported unchanged. |
-| 11 Nov 2026 | Decision by the tech lead: `ml-scorer` and `llm-insights` use Django instead of FastAPI (ADR-0009, pending Zheng's review). |
+| 11 Nov 2026 | Python framework settled: `ml-scorer` and `llm-insights` use FastAPI. Django was evaluated the same day and rejected (ADR-0009). |
+| 11 Nov 2026 | Repository made private; Jiajun (`@jiajunxiao-work`) and Zheng (`@zliu-59`) invited as collaborators and added to CODEOWNERS. `codeql.yml` skips itself while the repository is private. |
 | 11 Nov 2026 | Schedule re-planned into milestones M0–M5 (this document). Old dates (29 Nov, 13 Dec) withdrawn. Awaiting team sign-off. |
 
 ## 7. Risks to the schedule
@@ -173,7 +174,7 @@ RISK-144 ← RISK-82; RISK-128/129 ← RISK-145.
 | First Terraform apply reveals cost or quota surprises | Low | M0 slips by days | Budgets alerts in the first apply; `terraform plan` reviewed in PR |
 | 4 GB host cannot hold all containers | Medium | M4 or M5 work to resize | Memory limits from day one; move to t4g.large and record it here |
 | Frontend scope (website + app + console ≈ 100 h) exceeds one person's capacity | Medium | M3 or M4 slips | `/docs` and prompt comparison are Could; `/pricing` and `/about` are small and can move after M3 |
-| Django migration of designs written for FastAPI uncovers rework | Low | Days in M1 and M4 | ADR-0009 consequences reviewed by Zheng in S0 |
+| Private repository on a plan without rulesets, required code-owner review or environment reviewers | Medium | No date impact, but the review and approval gates become convention rather than enforcement | Check the plan (Q21); if unavailable, enforce by team agreement and revisit before M0 |
 | Contract changes after a freeze | Medium | Rework in two components | Freeze points H1, H6, H11; additive-only rule; `oasdiff` in CI |
 
 ## 8. Jira setup (tech lead)

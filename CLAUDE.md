@@ -12,8 +12,8 @@ If something here conflicts with `docs/DESIGN.md`, **ask the user**. Don't guess
 | Person | GitHub | Owns |
 |---|---|---|
 | Jiawei Zhou | @AlbertChow1997 | Tech lead · `backend/` (risk engine) · `payment-gateway/` · `infra/` · CI/CD · releases |
-| Jiajun Xiao | @<jiajun-handle> | `frontend/` (website + web app) |
-| Zheng Liu | @<zheng-handle> | `ml-scorer/` · proposed owner of `llm-insights/` (confirm via issue) |
+| Jiajun Xiao | @jiajunxiao-work | `frontend/` (website + web app) |
+| Zheng Liu | @zliu-59 | `ml-scorer/` · proposed owner of `llm-insights/` (confirm via issue) |
 
 The user you are talking to is usually **Jiawei Zhou**. Only change another owner's area when the user explicitly asks. Even then, the change goes through a PR that owner reviews.
 
@@ -49,8 +49,8 @@ sentinel-pay/
 ├── CLAUDE.md                     # this file
 ├── backend/                      # Risk Engine — Java 21, Spring Boot 4, Maven
 ├── payment-gateway/              # Payment Gateway — Java 21, Spring Boot 4, Spring Kafka
-├── ml-scorer/                    # ML scoring — Python 3.12, Django, scikit-learn, uv
-├── llm-insights/                 # LLM insight service — Python 3.12, Django, boto3 (Bedrock)    [new]
+├── ml-scorer/                    # ML scoring — Python 3.12, FastAPI, scikit-learn, uv
+├── llm-insights/                 # LLM insight service — Python 3.12, FastAPI, boto3 (Bedrock)   [new]
 ├── frontend/                     # Website + web app — React 19, TypeScript, Vite
 ├── contracts/                    # OpenAPI + AsyncAPI contracts (shared, CODEOWNERS-protected)
 ├── infra/
@@ -120,7 +120,7 @@ Frontend:
   - Max input/output tokens
   - Daily cost budget: stop calling and publish nothing once the budget is exceeded
   - Idempotent on `assessmentId`
-- **Persistence** (own database `llm`, Django ORM with Django migrations):
+- **Persistence** (own database `llm`, Flyway-style migrations via Alembic):
   - `llm_invocation`: id, assessmentId, model, promptName, promptVersion, renderedPrompt, rawResponse, parsedOutput, status, latencyMs, inputTokens, outputTokens, estCostUsd, errorMessage, createdAt
   - `insight_feedback`: invocationId, rating (UP/DOWN), comment, userId, createdAt
 - **APIs** (add to a new `contracts/openapi-llm-insights-v1.yaml` first):
@@ -395,7 +395,7 @@ Seed decisions for `TECH_DECISIONS.md`:
 - PostgreSQL container + backups vs RDS
 - CloudFront with HTTP origin (prefix list + secret header) vs ALB + ACM vs own domain with TLS origin
 - Scheduled start/stop (EventBridge Scheduler) vs always-on vs Spot
-- **Django + Django REST Framework (accepted by the tech lead, ADR-0009)** vs FastAPI vs Flask for the Python services
+- **FastAPI (accepted, ADR-0009)** vs Django + Django REST Framework vs Flask for the Python services
 
 ---
 
@@ -428,10 +428,9 @@ Local ports: gateway 8080 · risk-engine 8081 · ml-scorer 8000 · llm-insights 
   - Formatting with Spotless (Google Java Format).
 - **Python:**
   - Type hints everywhere; Pydantic v2 models matching the contracts.
-  - Django + Django REST Framework for both Python services (ADR-0009). Views and serializers stay thin; no business logic in them.
-  - ruff (lint + format) and mypy.
+  - FastAPI for both Python services (ADR-0009).
+  - ruff (lint + format) and mypy; no business logic in route handlers.
   - Settings via `pydantic-settings`.
-  - Kafka consumers run as Django management commands in their own process, never inside a request worker.
 - **TypeScript/React:**
   - Strict mode; no `any`; generated API types only (never hand-written duplicates).
   - Server state in TanStack Query; components small and testable; ESLint + Prettier.

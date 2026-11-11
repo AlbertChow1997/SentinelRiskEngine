@@ -1,7 +1,7 @@
 # CLAUDE.md — LLM Insights (`llm-insights/`)
 
 Read the root `CLAUDE.md` first; this file only adds what is specific to this folder.
-Proposed owner: Zheng Liu. Design: `docs/DESIGN.md` §4.8, §6.6 and §13. Contract: `contracts/openapi-llm-insights-v1.yaml` (to be written first).
+Proposed owner: Zheng Liu (@zliu-59). Design: `docs/DESIGN.md` §4.8, §6.6 and §13. Contract: `contracts/openapi-llm-insights-v1.yaml` (to be written first).
 
 **Change this folder only when the user explicitly asks, and always through a PR that its owner reviews.**
 
@@ -19,11 +19,12 @@ Not scaffolded yet. The commands below are the target once RISK-141 lands; until
 ## Stack
 
 - Python 3.12, managed with **uv**.
-- **Django + Django REST Framework** (ADR-0009), Gunicorn. Django ORM on the `llm` PostgreSQL database; schema changes through **Django migrations**.
+- **FastAPI + Pydantic v2**, served by Uvicorn (ADR-0009).
+- SQLAlchemy on the `llm` PostgreSQL database; schema changes through **Alembic** migrations.
 - **Pydantic v2** validates the LLM's JSON output.
 - boto3 Bedrock Runtime, **Converse API**. Check the boto3 documentation for the current request and response shape; do not rely on memory.
 - `confluent-kafka` for the consumer and producer.
-- pytest + pytest-django, ruff, mypy.
+- pytest, httpx `TestClient`, ruff, mypy.
 
 ## Commands
 
@@ -32,23 +33,22 @@ uv sync
 uv run ruff check . && uv run ruff format --check .
 uv run mypy .
 LLM_PROVIDER=stub uv run pytest
-uv run python manage.py migrate
-uv run python manage.py runserver 8001             # web process
-uv run python manage.py consume_assessments        # Kafka consumer process
+uv run alembic upgrade head
+uv run uvicorn llm_insights.api.main:app --reload --port 8001
 ```
 
 ## Conventions
 
-- **Two processes, one image:** the web process and the `consume_assessments` management command. Never run the Kafka loop inside a request worker.
+- **One container:** the Kafka consumer starts from the FastAPI lifespan handler and runs beside the API. Keep its loop off the request path; a consumer failure must not take the API down, and the reverse.
 - All providers implement `LlmProvider`. Service code never imports boto3 directly.
 - Prompts are files: `prompts/<name>/v<N>.md`. **Never edit a prompt in place** — add `v<N+1>`. Every invocation records `promptName` and `promptVersion`.
 - Guardrails are not optional: 10 s timeout, 2 retries, token limits, daily cost budget, idempotent on `assessmentId`.
 - Invalid model output is stored with status `INVALID_OUTPUT` and never shown to analysts. A provider failure is stored as `ERROR`. Neither may crash the consumer.
 - Every invocation is persisted with prompt, raw response, tokens, latency and estimated cost.
-- Views and serializers stay thin; logic lives in `services/`.
-- JWTs are validated against the Cognito JWKS; roles come from `cognito:groups`. `userId` in feedback is the token's `sub`.
-- Never edit an applied migration; add a new one.
-- Type hints everywhere. Settings come from environment variables, validated at startup.
+- No business logic in route handlers; logic lives in `services/`.
+- JWTs are validated against the Cognito JWKS in a FastAPI dependency; roles come from `cognito:groups`. `userId` in feedback is the token's `sub`.
+- Never edit an applied Alembic revision; add a new one.
+- Type hints everywhere. Settings via `pydantic-settings`.
 
 ## Tests
 

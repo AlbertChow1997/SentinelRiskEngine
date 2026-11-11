@@ -41,8 +41,8 @@ The full design is in [`docs/DESIGN.md`](docs/DESIGN.md).
 |---|---|---|---|
 | [`backend/`](backend/) | Risk Engine | Java 21, Spring Boot 4, Maven | Jiawei Zhou |
 | [`payment-gateway/`](payment-gateway/) | Payment Gateway | Java 21, Spring Boot 4, Spring Kafka | Jiawei Zhou |
-| [`ml-scorer/`](ml-scorer/) | ML scoring service | Python 3.12, Django, scikit-learn, uv | Zheng Liu |
-| [`llm-insights/`](llm-insights/) | LLM insight service | Python 3.12, Django, Amazon Bedrock | Zheng Liu (proposed) |
+| [`ml-scorer/`](ml-scorer/) | ML scoring service | Python 3.12, FastAPI, scikit-learn, uv | Zheng Liu |
+| [`llm-insights/`](llm-insights/) | LLM insight service | Python 3.12, FastAPI, Amazon Bedrock | Zheng Liu (proposed) |
 | [`frontend/`](frontend/) | Website + web app | React 19, TypeScript, Vite | Jiajun Xiao |
 | [`contracts/`](contracts/) | OpenAPI 3.1 and AsyncAPI 3.0 contracts | — | shared |
 | [`infra/`](infra/) | Terraform for AWS staging, operations scripts | Terraform | Jiawei Zhou |
@@ -94,8 +94,8 @@ PostgreSQL 5432 · Kafka 9092 · Kafka UI 8085.
 | Person | Role |
 |---|---|
 | Jiawei Zhou ([@AlbertChow1997](https://github.com/AlbertChow1997)) | Tech lead · Risk Engine · Payment Gateway · infrastructure · CI/CD · releases |
-| Jiajun Xiao | Frontend: website and web app |
-| Zheng Liu | ML scoring · LLM insights (proposed) |
+| Jiajun Xiao ([@jiajunxiao-work](https://github.com/jiajunxiao-work)) | Frontend: website and web app |
+| Zheng Liu ([@zliu-59](https://github.com/zliu-59)) | ML scoring · LLM insights (proposed) |
 
 ## Licence
 

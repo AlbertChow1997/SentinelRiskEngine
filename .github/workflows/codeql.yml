@@ -18,6 +18,9 @@ concurrency:
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
+    # Code scanning on a private repository needs GitHub Advanced Security. Without it the
+    # upload step fails, so the job is skipped until the repository is public or licensed.
+    if: ${{ !github.event.repository.private }}
     runs-on: ubuntu-latest
     permissions:
       contents: read

@@ -6,7 +6,7 @@
 | **Last updated** | 11 Nov 2026 |
 | **Update when** | Any new dependency, service, cloud resource or replacement — in the same PR as the change |
 
-**Status values.** *Accepted* — agreed and in force. *Accepted (tech lead)* — decided by the tech lead, the area owner's review is pending.
+**Status values.** *Accepted* — agreed and in force.
 *Proposed* — a recommendation that the named owner still has to confirm.
 
 **Criteria.** Every table scores the options on the same five points: **Fit** for this project, **Learning curve** for this team,
@@ -32,7 +32,7 @@ Costs are indicative for eu-west-1 and must be re-checked with the AWS Pricing C
 | D13 | Database hosting | PostgreSQL container + backups | Accepted | [0007](adr/0007-single-host-ecs-staging.md) |
 | D14 | Ingress and TLS | CloudFront with an HTTP origin (prefix list + secret header) | Accepted | [0007](adr/0007-single-host-ecs-staging.md) |
 | D15 | Running hours | Scheduled start/stop (EventBridge Scheduler) | Accepted | [0007](adr/0007-single-host-ecs-staging.md) |
-| D16 | Python service framework | Django + Django REST Framework | Accepted (tech lead) | [0009](adr/0009-django-for-python-services.md) |
+| D16 | Python service framework | FastAPI | Accepted | [0009](adr/0009-fastapi-for-python-services.md) |
 
 ## ADR index
 
@@ -46,7 +46,7 @@ Costs are indicative for eu-west-1 and must be re-checked with the AWS Pricing C
 | 0006 | Transactional outbox | Accepted in design v2.0 (`DESIGN.md` §11.3) | to be written |
 | 0007 | Single-host ECS staging with scheduled start/stop | Accepted | [adr/0007-single-host-ecs-staging.md](adr/0007-single-host-ecs-staging.md) |
 | 0008 | Core technology stack (D01, D02, D03, D10) | Accepted in design v2.0 | to be written |
-| 0009 | Django for the Python services | Accepted (tech lead), owner review pending | [adr/0009-django-for-python-services.md](adr/0009-django-for-python-services.md) |
+| 0009 | FastAPI for the Python services (Django considered and rejected) | Accepted | [adr/0009-fastapi-for-python-services.md](adr/0009-fastapi-for-python-services.md) |
 | 0010 | Frontend UI kit | Proposed | to be written by Jiajun before the first UI PR |
 | 0011 | Terraform for infrastructure as code | Accepted | to be written with the first infra PR |
 | 0012 | Amazon Cognito as identity provider | Accepted | to be written at M3 |
@@ -229,10 +229,10 @@ Design v2.0 numbered the tech-stack ADR 0001. ADR-0001 is now "Record architectu
 
 | Option | Fit | Learning curve | Cost | Ecosystem / hiring signal | Operational burden |
 |---|---|---|---|---|---|
-| **Django + Django REST Framework** | Strong for `llm-insights` (ORM, migrations, admin, auth and permissions, pagination and filtering for the console APIs). Heavier than needed for the stateless `ml-scorer` | Low–medium; one framework for both Python services | Free | Very strong: long-established and widely requested in Python backend roles | Kafka consumer must run as a separate process (management command); slightly more memory per service |
-| FastAPI (original choice) | Strong for a small, typed, stateless scoring API; Pydantic-native; needs SQLAlchemy + Alembic and hand-built auth for `llm-insights` | Low | Free | Strong and growing | Lowest memory; fewer built-in pieces |
+| **FastAPI** | Strong for a small, typed, stateless scoring API; Pydantic-native, which matches the contract-first approach and the LLM output validation. `llm-insights` adds SQLAlchemy + Alembic and a small JWT dependency | Low | Free | Strong and growing, especially in ML and AI services | Lowest memory; the Kafka consumer can share the service's container |
+| Django + Django REST Framework | Strong for `llm-insights` alone (ORM, migrations, permissions, pagination built in); heavier than the stateless `ml-scorer` needs | Low–medium | Free | Strong: long-established in Python backend roles | More memory per service; the Kafka consumer needs its own process and container on a 4 GB host |
 | Flask | Minimal; everything else is assembled by hand | Low | Free | Moderate | More glue code to own |
 
-**Chosen:** Django + Django REST Framework for `ml-scorer` and `llm-insights` — decided by the tech lead on 11 Nov 2026 (ADR-0009).
-**Open (Q11):** Zheng's review as owner; the API layer (Django REST Framework proposed, Django Ninja as the Pydantic-native alternative);
-the Django release line; the ML validation status code. **Review:** before the `ml-scorer` scaffold PR (RISK-50).
+**Chosen:** FastAPI for `ml-scorer` and `llm-insights` (ADR-0009). Django was evaluated on 11 Nov 2026 and rejected: its
+built-in pieces help only one of the two services, and it costs memory and an extra container on the single staging host.
+**Review:** at M4, if the `llm-insights` console APIs turn out to need much hand-written paging, filtering and permission code.
