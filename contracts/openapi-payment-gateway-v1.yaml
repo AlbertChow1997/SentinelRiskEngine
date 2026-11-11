@@ -1,0 +1,538 @@
+openapi: 3.1.0
+info:
+  title: Sentinel Pay — Payment Gateway API
+  version: 1.0.0
+  summary: Merchant-facing card payment API with built-in real-time risk screening.
+  description: |
+    Producer: **Payment Gateway (Jiawei Zhou)** · Consumers: merchants (Postman / demo checkout), **Frontend (Jiajun Xiao)** for ops views.
+
+    - Merchant endpoints (`/api/v1/payments…`) require `X-API-Key`.
+    - Ops endpoints (`/api/v1/ops/…`) are read-only, unauthenticated, **local/demo only** (OAuth2 in a later version).
+    - `POST` endpoints that move money require an `Idempotency-Key` header (Stripe-style).
+    - Amounts are decimal numbers in major units (e.g. 49.99), max 2 decimals. Currency is ISO 4217.
+    - **No card numbers (PAN) are accepted.** Cards are represented by test tokens (see `PaymentMethodToken`).
+    - Errors use RFC 9457 Problem Details with an extra `code` field.
+servers:
+  - url: http://localhost:8080
+    description: Local
+tags:
+  - name: Payments
+  - name: Refunds
+  - name: Ops
+    description: Read-only views for the analyst/ops UI
+  - name: Operations
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /api/v1/payments:
+    post:
+      tags: [Payments]
+      operationId: createPayment
+      summary: Create and authorise a payment
+      description: |
+        Runs a synchronous risk check against the Risk Engine, then authorises with the (simulated) acquirer.
+        With `captureMethod = AUTOMATIC` the payment is captured immediately after authorisation.
+
+        Possible resulting statuses: `CAPTURED`, `AUTHORIZED`, `PENDING_RISK_REVIEW`, `DECLINED`, `FAILED`.
+
+        Replaying the same `Idempotency-Key` with the same body returns the original response with header
+        `Idempotent-Replayed: true`. Same key with a different body → 409 `IDEMPOTENCY_KEY_REUSED`.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentRequest'
+            examples:
+              autoCapture:
+                value:
+                  amount: 49.99
+                  currency: EUR
+                  customerId: cust-001
+                  countryCode: IE
+                  paymentMethodToken: tok_visa_success
+                  captureMethod: AUTOMATIC
+                  description: Order #1001
+                  merchantReference: order-1001
+      responses:
+        '201':
+          description: Payment created (check `status` for the outcome — a declined payment is still a created resource).
+          headers:
+            Location:
+              schema: { type: string }
+            Idempotent-Replayed:
+              schema: { type: boolean }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    get:
+      tags: [Payments]
+      operationId: listMerchantPayments
+      summary: List this merchant's payments (paged)
+      parameters:
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/PaymentStatus' }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: One page.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/payments/{paymentId}:
+    get:
+      tags: [Payments]
+      operationId: getPayment
+      summary: Get a payment
+      parameters:
+        - $ref: '#/components/parameters/PaymentId'
+      responses:
+        '200':
+          description: The payment.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/payments/{paymentId}/capture:
+    post:
+      tags: [Payments]
+      operationId: capturePayment
+      summary: Capture an AUTHORIZED payment (full or partial)
+      parameters:
+        - $ref: '#/components/parameters/PaymentId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  type: number
+                  exclusiveMinimum: 0
+                  description: Defaults to the full authorised amount. Must be ≤ authorised amount.
+      responses:
+        '200':
+          description: Captured.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Payment' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/payments/{paymentId}/cancel:
+    post:
+      tags: [Payments]
+      operationId: cancelPayment
+      summary: Cancel (void) an AUTHORIZED or PENDING_RISK_REVIEW payment
+      parameters:
+        - $ref: '#/components/parameters/PaymentId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Canceled.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Payment' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/payments/{paymentId}/refunds:
+    post:
+      tags: [Refunds]
+      operationId: createRefund
+      summary: Refund a CAPTURED / PARTIALLY_REFUNDED payment
+      parameters:
+        - $ref: '#/components/parameters/PaymentId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRefundRequest'
+      responses:
+        '201':
+          description: Refund created.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Refund' }
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/ops/payments:
+    get:
+      tags: [Ops]
+      operationId: opsListPayments
+      summary: Search all payments across merchants (ops UI)
+      security: []
+      parameters:
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/PaymentStatus' }
+        - name: merchantId
+          in: query
+          schema: { type: string }
+        - name: customerId
+          in: query
+          schema: { type: string }
+        - name: from
+          in: query
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          schema: { type: string, format: date-time }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - name: sort
+          in: query
+          schema: { type: string, default: 'createdAt,desc' }
+      responses:
+        '200':
+          description: One page.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaymentPage' }
+
+  /api/v1/ops/payments/{paymentId}:
+    get:
+      tags: [Ops]
+      operationId: opsGetPayment
+      summary: Payment detail incl. status history and ledger entries (ops UI)
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/PaymentId'
+      responses:
+        '200':
+          description: Payment with history.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaymentDetail' }
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/ops/stats/summary:
+    get:
+      tags: [Ops]
+      operationId: opsPaymentStats
+      summary: Payment KPIs for the dashboard
+      security: []
+      parameters:
+        - name: from
+          in: query
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: KPIs.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaymentStats' }
+
+  /actuator/health:
+    get:
+      tags: [Operations]
+      operationId: getHealth
+      security: []
+      summary: Health check
+      responses:
+        '200':
+          description: Up.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Per-merchant key, e.g. `sk_test_...`. Stored hashed (SHA-256) server-side.
+
+  parameters:
+    PaymentId:
+      name: paymentId
+      in: path
+      required: true
+      schema: { type: string, pattern: '^pay_[A-Za-z0-9]{20,}$', example: pay_01JD3K8X9Q2V7M4N6P8R }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Client-generated unique key (UUID recommended). Stored for 24 h per merchant.
+      schema: { type: string, minLength: 8, maxLength: 64 }
+    RequestId:
+      name: X-Request-Id
+      in: header
+      required: false
+      schema: { type: string, maxLength: 64 }
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 0, default: 0 }
+    Size:
+      name: size
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+
+  schemas:
+    PaymentStatus:
+      type: string
+      enum:
+        - RISK_CHECKING
+        - PENDING_RISK_REVIEW
+        - AUTHORIZING
+        - AUTHORIZED
+        - CAPTURED
+        - PARTIALLY_REFUNDED
+        - REFUNDED
+        - CANCELED
+        - DECLINED
+        - FAILED
+
+    DeclineReason:
+      type: string
+      enum: [RISK_DECLINED, RISK_REVIEW_REJECTED, RISK_REVIEW_TIMEOUT, RISK_UNAVAILABLE, INSUFFICIENT_FUNDS, CARD_DECLINED, EXPIRED_CARD]
+
+    PaymentMethodToken:
+      type: string
+      description: |
+        Test tokens understood by the simulated acquirer:
+        - `tok_visa_success`, `tok_mastercard_success` — approved
+        - `tok_insufficient_funds` — declined, INSUFFICIENT_FUNDS
+        - `tok_card_declined` — declined, CARD_DECLINED
+        - `tok_expired_card` — declined, EXPIRED_CARD
+        - `tok_acquirer_timeout` — acquirer times out → FAILED
+      enum: [tok_visa_success, tok_mastercard_success, tok_insufficient_funds, tok_card_declined, tok_expired_card, tok_acquirer_timeout]
+
+    CreatePaymentRequest:
+      type: object
+      required: [amount, currency, customerId, countryCode, paymentMethodToken]
+      properties:
+        amount: { type: number, exclusiveMinimum: 0, example: 49.99 }
+        currency: { type: string, pattern: '^[A-Z]{3}$', example: EUR }
+        customerId: { type: string, minLength: 1, maxLength: 64 }
+        countryCode: { type: string, pattern: '^[A-Z]{2}$', example: IE }
+        paymentMethodToken: { $ref: '#/components/schemas/PaymentMethodToken' }
+        captureMethod: { type: string, enum: [AUTOMATIC, MANUAL], default: AUTOMATIC }
+        description: { type: string, maxLength: 255 }
+        merchantReference: { type: string, maxLength: 64, description: Merchant's own order ID. }
+
+    RiskSummary:
+      type: object
+      description: Snapshot of the Risk Engine result for this payment.
+      properties:
+        assessmentId: { type: [string, 'null'], format: uuid }
+        decision: { type: [string, 'null'], enum: [APPROVE, REVIEW, DECLINE, null] }
+        riskScore: { type: [integer, 'null'], minimum: 0, maximum: 100 }
+        fallbackApplied: { type: boolean, description: True if the Risk Engine was unreachable and the fallback policy decided. }
+
+    Payment:
+      type: object
+      required: [id, merchantId, amount, currency, customerId, countryCode, status, captureMethod, amountCaptured, amountRefunded, createdAt, updatedAt]
+      properties:
+        id: { type: string, example: pay_01JD3K8X9Q2V7M4N6P8R }
+        merchantId: { type: string }
+        merchantReference: { type: [string, 'null'] }
+        amount: { type: number }
+        currency: { type: string }
+        customerId: { type: string }
+        countryCode: { type: string }
+        paymentMethodBrand: { type: string, enum: [VISA, MASTERCARD, UNKNOWN] }
+        captureMethod: { type: string, enum: [AUTOMATIC, MANUAL] }
+        status: { $ref: '#/components/schemas/PaymentStatus' }
+        declineReason:
+          oneOf:
+            - $ref: '#/components/schemas/DeclineReason'
+            - type: 'null'
+        amountCaptured: { type: number }
+        amountRefunded: { type: number }
+        authorizationCode: { type: [string, 'null'], description: From the simulated acquirer. }
+        risk: { $ref: '#/components/schemas/RiskSummary' }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    StatusChange:
+      type: object
+      required: [status, occurredAt]
+      properties:
+        fromStatus:
+          oneOf:
+            - $ref: '#/components/schemas/PaymentStatus'
+            - type: 'null'
+        status: { $ref: '#/components/schemas/PaymentStatus' }
+        reason: { type: [string, 'null'] }
+        actor: { type: string, example: system }
+        occurredAt: { type: string, format: date-time }
+
+    LedgerEntry:
+      type: object
+      required: [entryId, account, direction, amount, currency, entryType, createdAt]
+      properties:
+        entryId: { type: string, format: uuid }
+        journalId: { type: string, format: uuid, description: All lines of one double-entry journal share this ID. }
+        account: { type: string, enum: [ACQUIRER_RECEIVABLE, MERCHANT_PAYABLE, FEE_REVENUE] }
+        direction: { type: string, enum: [DEBIT, CREDIT] }
+        amount: { type: number }
+        currency: { type: string }
+        entryType: { type: string, enum: [CAPTURE, FEE, REFUND, FEE_REVERSAL] }
+        createdAt: { type: string, format: date-time }
+
+    PaymentDetail:
+      allOf:
+        - $ref: '#/components/schemas/Payment'
+        - type: object
+          required: [statusHistory, refunds, ledgerEntries]
+          properties:
+            statusHistory:
+              type: array
+              items: { $ref: '#/components/schemas/StatusChange' }
+            refunds:
+              type: array
+              items: { $ref: '#/components/schemas/Refund' }
+            ledgerEntries:
+              type: array
+              description: Should-have; empty list if the ledger is not implemented.
+              items: { $ref: '#/components/schemas/LedgerEntry' }
+
+    CreateRefundRequest:
+      type: object
+      required: [amount, reason]
+      properties:
+        amount: { type: number, exclusiveMinimum: 0, description: '≤ amountCaptured − amountRefunded' }
+        reason: { type: string, enum: [REQUESTED_BY_CUSTOMER, DUPLICATE, FRAUDULENT] }
+        note: { type: string, maxLength: 255 }
+
+    Refund:
+      type: object
+      required: [id, paymentId, amount, currency, reason, status, createdAt]
+      properties:
+        id: { type: string, example: re_01JD3M2A7B9C4D6E8F0G }
+        paymentId: { type: string }
+        amount: { type: number }
+        currency: { type: string }
+        reason: { type: string, enum: [REQUESTED_BY_CUSTOMER, DUPLICATE, FRAUDULENT] }
+        status: { type: string, enum: [SUCCEEDED, FAILED] }
+        createdAt: { type: string, format: date-time }
+
+    PaymentPage:
+      type: object
+      required: [content, page]
+      properties:
+        content:
+          type: array
+          items: { $ref: '#/components/schemas/Payment' }
+        page:
+          type: object
+          required: [number, size, totalElements, totalPages]
+          properties:
+            number: { type: integer }
+            size: { type: integer }
+            totalElements: { type: integer, format: int64 }
+            totalPages: { type: integer }
+
+    PaymentStats:
+      type: object
+      required: [from, to, totalPayments, byStatus, approvalRate, capturedVolume, refundedVolume, pendingRiskReview]
+      properties:
+        from: { type: string, format: date-time }
+        to: { type: string, format: date-time }
+        totalPayments: { type: integer, format: int64 }
+        byStatus:
+          type: object
+          additionalProperties: { type: integer, format: int64 }
+        approvalRate: { type: number, description: '(AUTHORIZED+CAPTURED+refunded states) / total' }
+        capturedVolume:
+          type: object
+          description: 'Per currency, e.g. {"EUR": 12345.60}'
+          additionalProperties: { type: number }
+        refundedVolume:
+          type: object
+          additionalProperties: { type: number }
+        pendingRiskReview: { type: integer, format: int64 }
+
+    ProblemDetail:
+      type: object
+      properties:
+        type: { type: string, default: about:blank }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        code:
+          type: string
+          description: e.g. IDEMPOTENCY_KEY_REUSED, IDEMPOTENCY_REQUEST_IN_PROGRESS, INVALID_PAYMENT_STATE, REFUND_EXCEEDS_CAPTURED, CAPTURE_EXCEEDS_AUTHORIZED, MISSING_IDEMPOTENCY_KEY
+        errors:
+          type: object
+          additionalProperties: { type: string }
+
+  responses:
+    ValidationError:
+      description: Validation failure (or missing Idempotency-Key).
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetail' }
+    Unauthorized:
+      description: Missing or invalid API key.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetail' }
+    NotFound:
+      description: Not found (or belongs to another merchant).
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetail' }
+    Conflict:
+      description: Idempotency key reuse or invalid state transition.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetail' }
+          example:
+            title: Conflict
+            status: 409
+            detail: Payment pay_01JD3K8X9Q2V7M4N6P8R is CAPTURED and cannot be canceled.
+            code: INVALID_PAYMENT_STATE

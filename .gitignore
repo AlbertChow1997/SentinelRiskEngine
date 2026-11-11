@@ -1,0 +1,82 @@
+# ---------- Secrets and local config (never commit) ----------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+
+# ---------- Personal working notes (kept local on purpose) ----------
+/local-notes/
+
+# ---------- Java / Maven ----------
+target/
+*.class
+*.jar
+!**/.mvn/wrapper/maven-wrapper.jar
+*.war
+hs_err_pid*
+.mvn/timing.properties
+
+# ---------- Python / uv ----------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+*.egg-info/
+dist/
+build/
+db.sqlite3
+staticfiles/
+.ipynb_checkpoints/
+
+# ---------- Node / frontend ----------
+node_modules/
+frontend/dist/
+frontend/coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+npm-debug.log*
+
+# ---------- Terraform ----------
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+tfplan
+*.tfplan
+
+# ---------- IDE / OS ----------
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.example.json
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+
+# ---------- Logs and temp ----------
+*.log
+logs/
+tmp/
+.contracts-base/

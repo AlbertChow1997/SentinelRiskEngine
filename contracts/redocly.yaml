@@ -1,0 +1,13 @@
+# Redocly CLI lint configuration for the OpenAPI contracts.
+# Used by `make contracts` and .github/workflows/contracts.yml.
+extends:
+  - recommended
+
+rules:
+  # TODO(bootstrap item 4): the risk-engine contract has no security scheme yet. Set this back
+  # to `error` in the PR that adds Cognito JWT security to the risk and gateway contracts.
+  security-defined: warn
+  # Local-only server URLs are deliberate until the staging URL exists.
+  no-server-example.com: off
+  # Re-enable once the team has chosen a licence.
+  info-license: off

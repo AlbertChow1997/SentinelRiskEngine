@@ -1,0 +1,195 @@
+asyncapi: 3.0.0
+info:
+  title: Sentinel Pay — Domain Events
+  version: 1.0.0
+  description: |
+    Kafka events exchanged between the Payment Gateway, Risk Engine and ML Scorer.
+
+    - Delivery: **at-least-once**. Producers publish through a transactional **outbox**; consumers are
+      **idempotent** (dedupe on `eventId` via a `processed_event` table).
+    - Message key: `paymentId` (payment events) / `transactionId` (risk events). In this system
+      `transactionId == paymentId`, so all events for one payment land on the same partition, in order.
+    - Format: JSON, camelCase, envelope below. Breaking changes → new topic suffix (`.v2`).
+    - Topic owners: `payments.events.v1` → Payment Gateway (Jiawei); `risk.assessments.v1` → Risk Engine (Jiawei).
+
+servers:
+  local:
+    host: localhost:9092
+    protocol: kafka
+    description: Host access (docker-compose)
+  docker:
+    host: kafka:19092
+    protocol: kafka
+    description: Container-to-container access
+
+channels:
+  paymentEvents:
+    address: payments.events.v1
+    description: Lifecycle events of payments. 3 partitions, retention 7 days.
+    messages:
+      PaymentAuthorized: { $ref: '#/components/messages/PaymentAuthorized' }
+      PaymentDeclined: { $ref: '#/components/messages/PaymentDeclined' }
+      PaymentCaptured: { $ref: '#/components/messages/PaymentCaptured' }
+      PaymentCanceled: { $ref: '#/components/messages/PaymentCanceled' }
+      PaymentRefunded: { $ref: '#/components/messages/PaymentRefunded' }
+  riskAssessmentEvents:
+    address: risk.assessments.v1
+    description: Risk assessment events. 3 partitions, retention 7 days.
+    messages:
+      RiskAssessmentCreated: { $ref: '#/components/messages/RiskAssessmentCreated' }
+      RiskAssessmentReviewed: { $ref: '#/components/messages/RiskAssessmentReviewed' }
+
+operations:
+  publishPaymentEvents:
+    action: send
+    channel: { $ref: '#/channels/paymentEvents' }
+    summary: Payment Gateway publishes payment lifecycle events.
+  consumePaymentEventsByRiskEngine:
+    action: receive
+    channel: { $ref: '#/channels/paymentEvents' }
+    summary: 'Risk Engine (group risk-engine.payment-events) records payment outcome on the assessment; FRAUDULENT refunds become fraud feedback.'
+  consumePaymentEventsByMl:
+    action: receive
+    channel: { $ref: '#/channels/paymentEvents' }
+    summary: 'ML Scorer feedback collector (group ml-scorer.feedback) stores labelled outcomes for retraining. Optional.'
+  publishRiskEvents:
+    action: send
+    channel: { $ref: '#/channels/riskAssessmentEvents' }
+    summary: Risk Engine publishes assessment events.
+  consumeRiskEventsByGateway:
+    action: receive
+    channel: { $ref: '#/channels/riskAssessmentEvents' }
+    summary: 'Payment Gateway (group gateway.risk-events) resumes or declines PENDING_RISK_REVIEW payments on RiskAssessmentReviewed.'
+    messages:
+      - $ref: '#/channels/riskAssessmentEvents/messages/RiskAssessmentReviewed'
+
+components:
+  schemas:
+    Envelope:
+      type: object
+      required: [eventId, eventType, eventVersion, occurredAt, source, data]
+      properties:
+        eventId: { type: string, format: uuid, description: Unique per event; consumers dedupe on this. }
+        eventType: { type: string, example: PaymentCaptured }
+        eventVersion: { type: integer, example: 1 }
+        occurredAt: { type: string, format: date-time }
+        source: { type: string, enum: [payment-gateway, risk-engine] }
+        correlationId: { type: string, description: X-Request-Id of the originating HTTP request. }
+        data: { type: object }
+
+    PaymentRef:
+      type: object
+      required: [paymentId, merchantId, customerId, amount, currency]
+      properties:
+        paymentId: { type: string }
+        merchantId: { type: string }
+        customerId: { type: string }
+        amount: { type: number }
+        currency: { type: string }
+        riskAssessmentId: { type: [string, 'null'], format: uuid }
+
+  messages:
+    PaymentAuthorized:
+      name: PaymentAuthorized
+      contentType: application/json
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              data:
+                allOf:
+                  - $ref: '#/components/schemas/PaymentRef'
+                  - type: object
+                    properties:
+                      authorizationCode: { type: string }
+    PaymentDeclined:
+      name: PaymentDeclined
+      contentType: application/json
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              data:
+                allOf:
+                  - $ref: '#/components/schemas/PaymentRef'
+                  - type: object
+                    required: [declineReason]
+                    properties:
+                      declineReason: { type: string, example: RISK_DECLINED }
+    PaymentCaptured:
+      name: PaymentCaptured
+      contentType: application/json
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              data:
+                allOf:
+                  - $ref: '#/components/schemas/PaymentRef'
+                  - type: object
+                    required: [amountCaptured]
+                    properties:
+                      amountCaptured: { type: number }
+    PaymentCanceled:
+      name: PaymentCanceled
+      contentType: application/json
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              data: { $ref: '#/components/schemas/PaymentRef' }
+    PaymentRefunded:
+      name: PaymentRefunded
+      contentType: application/json
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              data:
+                allOf:
+                  - $ref: '#/components/schemas/PaymentRef'
+                  - type: object
+                    required: [refundId, refundAmount, refundReason]
+                    properties:
+                      refundId: { type: string }
+                      refundAmount: { type: number }
+                      refundReason: { type: string, enum: [REQUESTED_BY_CUSTOMER, DUPLICATE, FRAUDULENT] }
+    RiskAssessmentCreated:
+      name: RiskAssessmentCreated
+      contentType: application/json
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              data:
+                type: object
+                required: [assessmentId, transactionId, decision, riskScore, degraded]
+                properties:
+                  assessmentId: { type: string, format: uuid }
+                  transactionId: { type: string }
+                  decision: { type: string, enum: [APPROVE, REVIEW, DECLINE] }
+                  riskScore: { type: integer }
+                  degraded: { type: boolean }
+    RiskAssessmentReviewed:
+      name: RiskAssessmentReviewed
+      contentType: application/json
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              data:
+                type: object
+                required: [assessmentId, transactionId, finalDecision, reviewer, reviewedAt]
+                properties:
+                  assessmentId: { type: string, format: uuid }
+                  transactionId: { type: string, description: Equals the paymentId when the assessment came from the gateway. }
+                  finalDecision: { type: string, enum: [APPROVE, DECLINE] }
+                  reviewer: { type: string }
+                  reviewedAt: { type: string, format: date-time }

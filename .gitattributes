@@ -1,0 +1,22 @@
+# Normalise line endings so Windows, macOS and Linux checkouts produce identical diffs.
+* text=auto eol=lf
+
+# Scripts that must keep LF even on Windows (they run inside Linux containers / CI).
+*.sh    text eol=lf
+mvnw    text eol=lf
+Makefile text eol=lf
+
+# Windows-only scripts.
+*.cmd   text eol=crlf
+*.bat   text eol=crlf
+
+# Binary files.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.pdf   binary
+*.jar   binary
+*.joblib binary
+*.woff2 binary

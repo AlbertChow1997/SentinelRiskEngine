@@ -1,0 +1,34 @@
+# Code owners are requested for review automatically; the `main` ruleset requires their approval.
+# Order matters: the last matching pattern wins.
+# A code owner needs write access to the repository: a line only takes effect once that person
+# has accepted the collaborator invitation.
+#
+#   @AlbertChow1997    Jiawei Zhou   tech lead, risk engine, payment gateway, infra, CI/CD
+#   @jiajunxiao-work   Jiajun Xiao   frontend
+#   @zliu-59           Zheng Liu     ml-scorer, llm-insights (proposed owner, confirm via issue)
+
+# Default: the tech lead reviews anything without a more specific owner.
+*                                           @AlbertChow1997
+
+# Services
+/backend/                                   @AlbertChow1997
+/payment-gateway/                           @AlbertChow1997
+/frontend/                                  @jiajunxiao-work
+/ml-scorer/                                 @zliu-59
+/llm-insights/                              @zliu-59
+
+# Contracts: producer and consumers must both approve.
+/contracts/                                 @AlbertChow1997
+/contracts/openapi-risk-engine-v1.yaml      @AlbertChow1997 @jiajunxiao-work
+/contracts/openapi-payment-gateway-v1.yaml  @AlbertChow1997 @jiajunxiao-work
+/contracts/openapi-ml-scorer-v1.yaml        @zliu-59 @AlbertChow1997
+/contracts/openapi-llm-insights-v1.yaml     @zliu-59 @jiajunxiao-work @AlbertChow1997
+/contracts/asyncapi-events-v1.yaml          @AlbertChow1997 @zliu-59
+
+# Platform, delivery and shared docs
+/infra/                                     @AlbertChow1997
+/.github/                                   @AlbertChow1997
+/docker-compose.yml                         @AlbertChow1997
+/Makefile                                   @AlbertChow1997
+/docs/                                      @AlbertChow1997
+/CLAUDE.md                                  @AlbertChow1997

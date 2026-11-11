@@ -1,0 +1,43 @@
+name: Question or blocker
+description: Something is unclear or blocked. Raise it instead of guessing.
+title: "[RISK-<n>] <short question or problem>"
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: Add a component label, add `blocked` if work has stopped, and assign the owner of the affected area.
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What we are doing and where (files, endpoint, contract section).
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / Question
+      description: The specific thing that is unclear or broken.
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Options considered
+      value: |
+        1. Option A — pros / cons
+        2. Option B — pros / cons
+    validations:
+      required: true
+  - type: textarea
+    id: recommendation
+    attributes:
+      label: Recommendation
+      description: What we suggest and why.
+  - type: input
+    id: needed-by
+    attributes:
+      label: Needed by
+      description: Date or milestone, and what is blocked until then.
+    validations:
+      required: true
