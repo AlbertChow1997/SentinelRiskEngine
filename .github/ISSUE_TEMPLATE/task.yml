@@ -1,5 +1,5 @@
 name: Task
-description: A piece of technical work that needs discussion on GitHub. The backlog itself lives in Jira (project RISK).
+description: A backlog item. Add it to the Sentinel Pay project board and set its milestone.
 title: "[RISK-<n>] <short task summary>"
 labels: ["task"]
 body:

@@ -35,5 +35,5 @@ What actually went wrong, traced back with "why?" until a cause in the system or
 ## Where we got lucky
 
 ## Actions
-| Action | Type (prevent / detect / mitigate) | Owner | Jira | Due |
+| Action | Type (prevent / detect / mitigate) | Owner | Issue | Due |
 ```

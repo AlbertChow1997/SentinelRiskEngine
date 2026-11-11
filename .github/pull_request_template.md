@@ -1,9 +1,8 @@
-<!-- Title: Conventional Commit with the Jira key, e.g. `feat(gateway): RISK-73 add idempotency key replay` -->
+<!-- Title: Conventional Commit with the backlog ID, e.g. `feat(gateway): RISK-73 add idempotency key replay` -->
 
 ## Links
 
-- Jira: RISK-
-- GitHub issue: #
+- Closes #<!-- the GitHub issue for this work, titled [RISK-<n>] … -->
 
 ## What and why
 

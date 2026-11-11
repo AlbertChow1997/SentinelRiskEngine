@@ -5,7 +5,7 @@
 | **Status** | Accepted |
 | **Date** | 11 Nov 2026 |
 | **Deciders** | Jiawei Zhou (tech lead) |
-| **Related** | Jira RISK-10 · `docs/TECH_DECISIONS.md` |
+| **Related** | RISK-10 · `docs/TECH_DECISIONS.md` |
 
 ## Context
 
