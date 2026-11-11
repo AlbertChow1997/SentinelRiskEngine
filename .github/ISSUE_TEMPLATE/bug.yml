@@ -1,0 +1,63 @@
+name: Bug
+description: Something behaves differently from the contract or the design doc.
+title: "[RISK-<n>] <short description of the bug>"
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Never paste secrets, tokens, personal data or card numbers. Redact logs first.
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - backend (risk-engine)
+        - payment-gateway
+        - ml-scorer
+        - llm-insights
+        - frontend
+        - contracts
+        - infra / CI/CD
+        - docs
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Environment (local / staging), commit SHA, endpoint or page.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      value: |
+        1.
+        2.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: Quote the contract or the DESIGN.md section if you can.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: Include the `X-Request-Id` and relevant log lines.
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - Low — cosmetic or has an easy workaround
+        - Medium — a feature is wrong but the demo still works
+        - High — blocks a demo, a release or another teammate
+    validations:
+      required: true

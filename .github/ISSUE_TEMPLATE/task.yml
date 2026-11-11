@@ -1,0 +1,31 @@
+name: Task
+description: A piece of technical work that needs discussion on GitHub. The backlog itself lives in Jira (project RISK).
+title: "[RISK-<n>] <short task summary>"
+labels: ["task"]
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Why this work is needed and where it fits (milestone, DESIGN.md section).
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      value: |
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: Tickets, contracts or hand-offs this task waits for, or that wait for it.
+  - type: input
+    id: needed-by
+    attributes:
+      label: Needed by
+      description: Date or milestone.

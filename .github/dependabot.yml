@@ -1,0 +1,43 @@
+# Dependabot keeps dependencies current. Only ecosystems whose manifest already exists are enabled;
+# enabling one for a folder without a manifest only produces Dependabot errors.
+# The PR that scaffolds a component uncomments its block below.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(ci)"
+
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(deps)"
+
+  # - package-ecosystem: maven
+  #   directories: ["/backend", "/payment-gateway"]
+  #   schedule: { interval: weekly }
+  #   commit-message: { prefix: "chore(deps)" }
+
+  # - package-ecosystem: uv
+  #   directories: ["/ml-scorer", "/llm-insights"]
+  #   schedule: { interval: weekly }
+  #   commit-message: { prefix: "chore(deps)" }
+
+  # - package-ecosystem: npm
+  #   directory: /frontend
+  #   schedule: { interval: weekly }
+  #   commit-message: { prefix: "chore(deps)" }
+
+  # - package-ecosystem: docker
+  #   directories: ["/backend", "/payment-gateway", "/ml-scorer", "/llm-insights", "/frontend"]
+  #   schedule: { interval: weekly }
+  #   commit-message: { prefix: "chore(deps)" }
+
+  # - package-ecosystem: terraform
+  #   directories: ["/infra/terraform/envs/staging", "/infra/terraform/modules/*"]
+  #   schedule: { interval: weekly }
+  #   commit-message: { prefix: "chore(deps)" }

@@ -1,0 +1,52 @@
+name: Decision needed
+description: A technology, design or schedule choice that needs team sign-off.
+title: "[RISK-<n>] Decision: <what must be decided>"
+labels: ["decision-needed"]
+body:
+  - type: markdown
+    attributes:
+      value: The outcome is recorded as an ADR in `docs/adr/` and a row in `docs/TECH_DECISIONS.md`.
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What we are doing and where (files, endpoint, contract section).
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / Question
+      description: The decision to make, and why it cannot wait.
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Options considered
+      value: |
+        1. Option A — pros / cons
+        2. Option B — pros / cons
+    validations:
+      required: true
+  - type: textarea
+    id: recommendation
+    attributes:
+      label: Recommendation
+      description: What we suggest and why.
+    validations:
+      required: true
+  - type: input
+    id: deciders
+    attributes:
+      label: Who decides
+      description: Owner of the affected area, plus anyone who must agree.
+    validations:
+      required: true
+  - type: input
+    id: needed-by
+    attributes:
+      label: Needed by
+      description: Date or milestone, and what is blocked until then.
+    validations:
+      required: true

@@ -1,0 +1,32 @@
+# Code owners are requested for review automatically; the `main` ruleset requires their approval.
+# Order matters: the last matching pattern wins.
+#
+# TODO(Q1 in docs/DESIGN.md §18): the GitHub handles for Jiajun Xiao and Zheng Liu are not known yet.
+# GitHub ignores lines that contain an unknown owner, so those lines are commented out until the
+# handles are confirmed. Replace <jiajun-handle> / <zheng-handle> and uncomment them in one PR.
+
+# Default: the tech lead reviews anything without a more specific owner.
+*                                             @AlbertChow1997
+
+# Services
+/backend/                                     @AlbertChow1997
+/payment-gateway/                             @AlbertChow1997
+# /frontend/                                  @<jiajun-handle>
+# /ml-scorer/                                 @<zheng-handle>
+# /llm-insights/                              @<zheng-handle>          # proposed owner, confirm via issue
+
+# Contracts: producer and consumers must both approve.
+/contracts/                                   @AlbertChow1997
+# /contracts/openapi-risk-engine-v1.yaml      @AlbertChow1997 @<jiajun-handle>
+# /contracts/openapi-payment-gateway-v1.yaml  @AlbertChow1997 @<jiajun-handle>
+# /contracts/openapi-ml-scorer-v1.yaml        @<zheng-handle> @AlbertChow1997
+# /contracts/openapi-llm-insights-v1.yaml     @<zheng-handle> @<jiajun-handle> @AlbertChow1997
+# /contracts/asyncapi-events-v1.yaml          @AlbertChow1997 @<zheng-handle>
+
+# Platform, delivery and shared docs
+/infra/                                       @AlbertChow1997
+/.github/                                     @AlbertChow1997
+/docker-compose.yml                           @AlbertChow1997
+/Makefile                                     @AlbertChow1997
+/docs/                                        @AlbertChow1997
+/CLAUDE.md                                    @AlbertChow1997
