@@ -5,7 +5,7 @@
 | **Status** | **Proposed.** Milestones, dates and owners below are a proposal for team sign-off (open question Q10 in `DESIGN.md` §18). Nothing here is agreed until the sign-off issue is closed |
 | **Last updated** | 11 Nov 2026 |
 | **Owner** | Jiawei Zhou (tech lead). Updated at every sprint planning, at least weekly, and whenever scope or dates move |
-| **Related** | `docs/DESIGN.md` (what we build) · `docs/TECH_DECISIONS.md` (with what) · Jira project `RISK` (backlog and sprints) |
+| **Related** | `docs/DESIGN.md` (what we build) · `docs/TECH_DECISIONS.md` (with what) · GitHub Project "Sentinel Pay" (backlog and sprints) |
 
 ## 1. Why the schedule changed
 
@@ -39,7 +39,7 @@ in parallel with the backend (Section 3).
 | Jiajun | Analyst UI 23 h + payments UI 11 h | Website ~30 h, auth, product area and dashboards ~25 h, LLM Console ~12 h | ≈ 101 h | ≈ 8.5 |
 | Zheng | ML scorer 20 h + feedback loop 8 h | LLM Insights ~35 h | ≈ 63 h | ≈ 5.5 |
 
-- The carried-over figures are the backlog estimates in `DESIGN.md` §7.11, §8.6–8.7, §9.9–9.10 and §10.11. The new-scope figures are first estimates and will be replaced by ticket estimates in Jira.
+- The carried-over figures are the backlog estimates in `DESIGN.md` §7.11, §8.6–8.7, §9.9–9.10 and §10.11. The new-scope figures are first estimates and will be replaced by the estimates on the issues.
 - **Jiawei is the critical path.** Eleven weeks of work plus the assessment period and a two-week holiday break gives mid-March.
 - Zheng has the most slack. Candidates to move from Jiawei to Zheng: the Newman E2E collections, the `ml-scorer` and `llm-insights` CI workflows, and the LLM alarms.
 - Availability (~12 h/week each) is an assumption until Q2 is answered.
@@ -72,8 +72,8 @@ milestone; move a milestone before cutting tests. Any move is recorded in Sectio
 
 ## 4. Backlog by person
 
-Jira keys in the 10–98 range come from design v2.0. Keys from 100 upwards are **proposed placeholders** for the new scope;
-Jira assigns the real numbers when the tickets are created. Status values: To do · In progress · In review · Done.
+`RISK-<n>` is the backlog ID of an item; its GitHub issue is titled `[RISK-<n>] …`. IDs 10–98 come from design v2.0 and
+IDs from 100 upwards cover the new scope. A new item takes the next free number. Status values: To do · In progress · In review · Done.
 
 ### 4.1 Jiawei Zhou — backend, gateway, infra, CI/CD
 
@@ -81,7 +81,7 @@ Jira assigns the real numbers when the tickets are created. Status values: To do
 |---|---|---|---|
 | RISK-10 | Monorepo scaffold, CODEOWNERS, PR and issue templates, living docs, contracts import, `contracts.yml`, `codeql.yml` | Bootstrap | In review |
 | RISK-100 | Contracts: `openapi-llm-insights-v1.yaml`, `risk.insights.v1`, JWT security on gateway and risk contracts, `POST /api/v1/merchants/me` | Bootstrap | To do |
-| RISK-101 | Branch ruleset on `main`, GitHub Environment `staging` with required reviewer, labels | Bootstrap | To do |
+| RISK-101 | GitHub Project, milestones, labels and backlog issues (Section 8); branch ruleset on `main`; GitHub Environment `staging` with required reviewer; squash merge only | Bootstrap | To do |
 | RISK-102 | Terraform remote state, `network`, `ecr`, `github-oidc`, AWS Budgets alerts; `terraform.yml` | M0 | To do |
 | RISK-103 | `ecs-ec2-host`, `ecs-service`, `scheduler`; `aws-wake` / `aws-sleep` / `aws-status` scripts | M0 | To do |
 | RISK-104 | `cdn` module (S3 + CloudFront + origin rules), nginx reverse proxy with the secret header | M0 | To do |
@@ -162,6 +162,7 @@ RISK-144 ← RISK-82; RISK-128/129 ← RISK-145.
 | 11 Nov 2026 | Repository bootstrapped on branch `chore/RISK-10-repo-bootstrap`: hygiene files, CODEOWNERS, PR and issue templates, Dependabot, `Makefile`, `docker-compose.yml` skeleton (PostgreSQL + Kafka), `contracts.yml`, `codeql.yml`, component folders with `README.md` and `CLAUDE.md`. Living documents created: `DESIGN.md` v3.0, this roadmap, `TECH_DECISIONS.md`, ADR-0001, ADR-0007, ADR-0009. The three v2.0 contracts were imported unchanged. |
 | 11 Nov 2026 | Python framework settled: `ml-scorer` and `llm-insights` use FastAPI. Django was evaluated the same day and rejected (ADR-0009). |
 | 11 Nov 2026 | Repository made private; Jiajun (`@jiajunxiao-work`) and Zheng (`@zliu-59`) invited as collaborators and added to CODEOWNERS. `codeql.yml` skips itself while the repository is private. |
+| 11 Nov 2026 | Tracking moved from Jira to GitHub Issues and a GitHub Project; `RISK-<n>` stays as the backlog ID (Section 8). MIT licence added. |
 | 11 Nov 2026 | Schedule re-planned into milestones M0–M5 (this document). Old dates (29 Nov, 13 Dec) withdrawn. Awaiting team sign-off. |
 
 ## 7. Risks to the schedule
@@ -177,13 +178,15 @@ RISK-144 ← RISK-82; RISK-128/129 ← RISK-145.
 | Private repository on a plan without rulesets, required code-owner review or environment reviewers | Medium | No date impact, but the review and approval gates become convention rather than enforcement | Check the plan (Q21); if unavailable, enforce by team agreement and revisit before M0 |
 | Contract changes after a freeze | Medium | Rework in two components | Freeze points H1, H6, H11; additive-only rule; `oasdiff` in CI |
 
-## 8. Jira setup (tech lead)
+## 8. Tracking setup: GitHub Issues + GitHub Project (tech lead)
 
-1. **Invite** Jiajun and Zheng (Jira Cloud Free: up to 10 users). Consider renaming the project to "Sentinel Pay"; the key `RISK` stays.
-2. **Components:** `Backend`, `Gateway`, `Frontend`, `ML`, `LLM`, `Infra`, `Docs`.
-3. **Epics:** `Platform & CI/CD` (M0), `Risk Engine` and `ML Scorer` and `Analyst UI` (M1), `Payment Gateway` and `Event Integration (Kafka)` and `Payments UI` and `ML Feedback Loop` (M2), `Website` and `Authentication & Roles` and `Dashboards` (M3), `LLM Insights` and `LLM Console` (M4), `Hardening & Release` (M5).
-4. **Versions:** one Jira version per milestone (`M0` … `M5`), plus `v1.0.0` on the M5 date. Set *Fix version* on every work item.
-5. **Work items:** from Section 4 and the backlog tables in `DESIGN.md`. Keys there are suggestions.
-6. **Sprints:** as in Section 3.
-7. **Board:** `To Do → In Progress → In Review → Done`; quick filters per assignee and per component.
-8. **GitHub for Jira:** branches, commits and PRs that contain `RISK-n` appear on the ticket. GitHub issues carry the Jira key in the title, and the Jira ticket links back to the issue.
+The team uses GitHub only; Jira from design v2.0 was dropped on 11 Nov 2026 (`TECH_DECISIONS.md` D17).
+
+1. **Project:** create one GitHub Project named "Sentinel Pay", linked to this repository. Give Jiajun and Zheng write access to it.
+2. **Fields:** *Status* (To do → In progress → In review → Done), *Iteration* (one week, Monday start, matching Section 3), *Estimate* (number, hours).
+3. **Views:** a board grouped by Status for the current iteration; a table grouped by milestone; one filtered view per assignee.
+4. **Milestones:** `M0` … `M5` with the target dates of Section 2. Every backlog issue has a milestone.
+5. **Labels:** type — `task`, `bug`, `question`, `decision-needed`, `blocked`; component — `backend`, `gateway`, `frontend`, `ml`, `llm`, `infra`, `contracts`, `docs`.
+6. **Issues:** one per backlog item in Section 4 and in the `DESIGN.md` backlog tables, titled `[RISK-<n>] <summary>`, created with the *Task* template. Create the items of the current and next milestone first; later ones can wait.
+7. **Dependencies:** write "Blocked by #<n>" in the issue body and add the `blocked` label while it applies.
+8. **Automation:** enable the built-in project workflows — new issues go to "To do", a PR that says `Closes #<n>` moves the card to "In review", and merging it closes the issue and moves the card to "Done".

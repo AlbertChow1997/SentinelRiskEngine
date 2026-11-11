@@ -33,6 +33,7 @@ Costs are indicative for eu-west-1 and must be re-checked with the AWS Pricing C
 | D14 | Ingress and TLS | CloudFront with an HTTP origin (prefix list + secret header) | Accepted | [0007](adr/0007-single-host-ecs-staging.md) |
 | D15 | Running hours | Scheduled start/stop (EventBridge Scheduler) | Accepted | [0007](adr/0007-single-host-ecs-staging.md) |
 | D16 | Python service framework | FastAPI | Accepted | [0009](adr/0009-fastapi-for-python-services.md) |
+| D17 | Work tracking | GitHub Issues + GitHub Projects | Accepted | — (process tooling; recorded here) |
 
 ## ADR index
 
@@ -236,3 +237,15 @@ Design v2.0 numbered the tech-stack ADR 0001. ADR-0001 is now "Record architectu
 **Chosen:** FastAPI for `ml-scorer` and `llm-insights` (ADR-0009). Django was evaluated on 11 Nov 2026 and rejected: its
 built-in pieces help only one of the two services, and it costs memory and an extra container on the single staging host.
 **Review:** at M4, if the `llm-insights` console APIs turn out to need much hand-written paging, filtering and permission code.
+
+## D17 — Work tracking
+
+| Option | Fit | Learning curve | Cost | Ecosystem / hiring signal | Operational burden |
+|---|---|---|---|---|---|
+| **GitHub Issues + GitHub Projects** | Enough for three people: board, one-week iterations, estimates, milestones; issues, PRs and code in one place | Low | Free | The workflow (tickets, sprints, linked PRs) is what transfers; the tool is common in newer companies | One system; `Closes #n` keeps the board current |
+| Jira (design v2.0) | Full-featured: epics, versions, reports | Medium | Free up to 10 users | Strong in banks and large payment companies | Two systems to keep in sync with GitHub; a second account for everyone |
+| Linear | Fast and pleasant | Low | Free tier | Common in start-ups | Two systems to keep in sync |
+
+**Chosen:** GitHub Issues + GitHub Projects (decided 11 Nov 2026). **Why:** for a three-person team, keeping Jira and GitHub linked
+both ways is overhead with no benefit. The `RISK-<n>` keys stay as backlog IDs in issue titles, branches and commits.
+**Review:** not planned.

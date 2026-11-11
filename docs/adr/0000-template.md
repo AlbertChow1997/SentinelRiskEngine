@@ -5,7 +5,7 @@
 | **Status** | Proposed \| Accepted \| Superseded by ADR-NNNN |
 | **Date** | DD Mon YYYY |
 | **Deciders** | <owner of the affected area, plus anyone who must agree> |
-| **Related** | Jira RISK-<n> · GitHub issue #<n> · `TECH_DECISIONS.md` D<nn> |
+| **Related** | RISK-<n> (GitHub issue #<n>) · `TECH_DECISIONS.md` D<nn> |
 
 ## Context
 

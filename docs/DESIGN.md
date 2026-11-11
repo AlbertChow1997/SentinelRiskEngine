@@ -7,7 +7,7 @@
 | **Author / Tech lead** | Jiawei Zhou |
 | **Team** | Jiawei Zhou (Risk Engine, Payment Gateway, infrastructure, CI/CD) · Jiajun Xiao (Frontend) · Zheng Liu (ML Scoring; proposed owner of LLM Insights) |
 | **Repo** | `github.com/AlbertChow1997/SentinelRiskEngine` (private monorepo; rename to `sentinel-pay` proposed — Q6) |
-| **Jira** | Project key `RISK` (components: Backend, Gateway, Frontend, ML, LLM, Infra, Docs) |
+| **Tracking** | GitHub Issues + the GitHub Project "Sentinel Pay"; backlog IDs `RISK-<n>` (design v2.0 planned Jira; replaced on 11 Nov 2026 — `TECH_DECISIONS.md` D17) |
 | **Contracts** | `contracts/` — summary in Section 6, status in `contracts/README.md` |
 | **Schedule** | `docs/ROADMAP.md` (milestones M0–M5). The dates in design v2.0 no longer hold |
 | **Decisions** | `docs/TECH_DECISIONS.md` and `docs/adr/` |
@@ -51,7 +51,8 @@
 5. **Python services stay on FastAPI** — `ml-scorer` and the new `llm-insights` both use FastAPI. Django was evaluated and rejected on 11 Nov 2026 (ADR-0009).
 6. **Frontend UI kit** — Tailwind CSS + shadcn/ui + Framer Motion is **Proposed** in place of MUI; Jiajun decides (Section 8.1).
 7. **Engineering process** — Conventional Commits, ADRs, three living documents, runbooks and an Operational Readiness Review (Section 5).
-8. **Schedule and Jira setup moved** to `docs/ROADMAP.md`. Sections 13 and 14 of v2.0 (Schedule, Jira setup) are replaced here by the LLM Insights and Authentication designs.
+8. **Schedule and tracking setup moved** to `docs/ROADMAP.md`. Sections 13 and 14 of v2.0 (Schedule, Jira setup) are replaced here by the LLM Insights and Authentication designs.
+9. **GitHub Issues and a GitHub Project replace Jira** as the backlog and sprint tool (`TECH_DECISIONS.md` D17). The `RISK-<n>` keys remain as backlog IDs.
 
 Sections not listed above are carried over from v2.0 unchanged.
 
@@ -130,7 +131,7 @@ A merchant wants to take card payments without building payment processing or fr
 
 | Area | Owner (R/A) | Consulted | Informed |
 |---|---|---|---|
-| Overall architecture, repo, CI, Jira, releases | **Jiawei Zhou** | Jiajun, Zheng | — |
+| Overall architecture, repo, CI, project board, releases | **Jiawei Zhou** | Jiajun, Zheng | — |
 | Risk Engine service (`backend/`), Java rules, risk database | **Jiawei Zhou** | Zheng (features), Jiajun (API shape) | — |
 | **Payment Gateway (`payment-gateway/`), gateway database, ledger** | **Jiawei Zhou** | Jiajun (ops API shape) | Zheng |
 | **Kafka topics & event contract (`asyncapi-events-v1.yaml`)** | **Jiawei Zhou** | Zheng (consumer) | Jiajun |
@@ -410,8 +411,8 @@ Each component folder has a `README.md` and its own `CLAUDE.md` with stack-speci
 ### 5.2 Branching & commits
 
 - Trunk-based: `main` is always releasable; short-lived branches `feature/RISK-<n>-short-name`, `fix/RISK-<n>-…`, `chore/…`, `docs/…`.
-- One Jira ticket → one branch → one PR.
-- Commit messages follow **Conventional Commits** with the Jira key: `feat(gateway): RISK-73 add idempotency key replay`. (Design v2.0 used `RISK-<n>: summary`; this replaces it.)
+- One issue → one branch → one PR. The PR says `Closes #<issue>`.
+- Commit messages follow **Conventional Commits** with the backlog ID: `feat(gateway): RISK-73 add idempotency key replay`. (Design v2.0 used `RISK-<n>: summary`; this replaces it.)
 - Rebase on `main` before opening a PR; squash-merge; no force-push to `main`.
 - Releases are semantic version tags `vX.Y.Z` with generated release notes and `CHANGELOG.md`.
 
@@ -420,7 +421,7 @@ Each component folder has a `README.md` and its own `CLAUDE.md` with stack-speci
 - Every PR needs **one approval from another team member** (CODEOWNERS enforces owner approval).
 - Reviewer turnaround target: **24 hours**. The author resolves every comment or explains why not.
 - PR size target: < 400 changed lines (excluding generated code and lockfiles). Do not mix refactors with features.
-- The PR template asks for: Jira link and linked issue, what/why, how it was tested, screenshots for UI changes, risk and rollback plan, docs updated?, contract changed?, **AI assistance used (which parts)**.
+- The PR template asks for: the linked issue, what/why, how it was tested, screenshots for UI changes, risk and rollback plan, docs updated?, contract changed?, **AI assistance used (which parts)**.
 - No PR without tests for new behaviour.
 
 ### 5.4 Contract change process
@@ -451,7 +452,7 @@ Each component workflow runs only when its folder (or `contracts/`) changes (`on
 
 ### 5.6 Definition of Done (team-wide)
 
-1. Acceptance criteria met; Jira ticket linked to the PR.
+1. Acceptance criteria met; issue linked to the PR.
 2. Tests added or updated; CI green; coverage not reduced on core packages.
 3. Reviewed and approved by another team member.
 4. Contracts, `DESIGN.md`, `ROADMAP.md`, `TECH_DECISIONS.md` and runbooks updated where relevant.
@@ -462,14 +463,14 @@ Each component workflow runs only when its folder (or `contracts/`) changes (`on
 
 | Ceremony | When | Length | Notes |
 |---|---|---|---|
-| Sprint planning | Start of each one-week sprint | 30 min | Pull tickets from the Jira backlog; update `docs/ROADMAP.md` |
+| Sprint planning | Start of each one-week sprint | 30 min | Pull issues from the project backlog into the iteration; update `docs/ROADMAP.md` |
 | Async stand-up | Daily | 3 lines | Yesterday / today / blockers in the team chat |
 | Sync check-in | Mid-sprint | 30 min | Integration risks and hand-offs first |
 | Sprint review + demo | End of each sprint | 30–45 min | Demo scripts in Section 12.4 |
 | Design review | When a `DESIGN.md` change PR is opened | async, then 30 min if needed | Required before implementing a new component or a significant change |
 | Retrospective | At each milestone | 30 min | What to keep / change |
 
-Concrete dates are in `docs/ROADMAP.md`. Technical questions, decisions, bugs and blockers go to **GitHub Issues**; the backlog and sprint plan live in **Jira** (project `RISK`). Link both ways.
+Concrete dates are in `docs/ROADMAP.md`. Technical questions, decisions, bugs and blockers and the backlog itself are all **GitHub Issues**, planned on the GitHub Project "Sentinel Pay" (setup in `docs/ROADMAP.md` §8).
 
 ### 5.8 AI-assisted development policy
 
@@ -784,7 +785,7 @@ Coverage target: ≥ 80 % line coverage on `rules`, `assessment.service`.
 
 | Key | Summary | Est. | Sprint |
 |---|---|---|---|
-| RISK-10 | Monorepo scaffold, CODEOWNERS, PR template, branch ruleset, invite team to Jira/GitHub | 1.5 h | 1 |
+| RISK-10 | Monorepo scaffold, CODEOWNERS, PR template, branch ruleset, invite team to GitHub | 1.5 h | 1 |
 | RISK-11 | Spring Boot skeleton in `backend/`, stub endpoint, validation, Problem Details (ex-Sprint 1) | 2.5 h | 1 |
 | RISK-12 | `backend-ci.yml` with path filters | 1 h | 1 |
 | RISK-13 | PostgreSQL in docker-compose, Flyway V1, JPA entities, repositories + Testcontainers test | 3 h | 1 |

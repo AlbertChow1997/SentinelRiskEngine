@@ -83,9 +83,10 @@ PostgreSQL 5432 · Kafka 9092 · Kafka UI 8085.
 ## How we work
 
 - **Contracts first.** `contracts/` changes before the code that depends on it.
-- **One Jira ticket → one branch → one pull request**, ideally under 400 changed lines, with tests.
-- Branches: `feature/RISK-<n>-short-name`, `fix/RISK-<n>-…`, `chore/…`, `docs/…`. Commits: Conventional Commits with the Jira key, for example `feat(gateway): RISK-73 add idempotency key replay`.
+- **One issue → one branch → one pull request**, ideally under 400 changed lines, with tests.
+- Branches: `feature/RISK-<n>-short-name`, `fix/RISK-<n>-…`, `chore/…`, `docs/…`. Commits: Conventional Commits with the backlog ID, for example `feat(gateway): RISK-73 add idempotency key replay`.
 - Every pull request needs one approval from another team member and green checks; `main` is squash-merged and always releasable.
+- The backlog and sprints live in GitHub Issues and a GitHub Project; every issue is titled `[RISK-<n>] …`.
 - Decisions are recorded as ADRs. Questions and blockers become GitHub issues instead of guesses.
 - No secrets, personal data or card numbers in the repository, in logs or in LLM prompts.
 

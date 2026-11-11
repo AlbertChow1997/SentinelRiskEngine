@@ -33,7 +33,7 @@ The user you are talking to is usually **Jiawei Zhou**. Only change another owne
 3. **Never commit secrets.** That includes keys, passwords, tokens, `.env` files and AWS account IDs in plain text. Use `.env.example` with placeholders, AWS SSM Parameter Store / Secrets Manager, and GitHub OIDC (no long-lived AWS keys anywhere).
 4. **No real payment data.** Never accept or store card numbers (PAN). Cards are test tokens. IDs are pseudonymous. LLM prompts carry no personal data.
 5. **The LLM is advisory only.** It never approves, declines or changes a payment or risk decision. The workflow must behave identically if the LLM step is down.
-6. **Small, reviewable changes.** One Jira ticket → one branch → one PR, ideally under 400 changed lines. Don't mix refactors with features.
+6. **Small, reviewable changes.** One issue → one branch → one PR, ideally under 400 changed lines. Don't mix refactors with features.
 7. **Tests with every change.** No PR without tests for new behaviour. Run the component's checks locally before saying a task is done.
 8. **Docs move with code.** If behaviour, architecture, schedule or a technology choice changes, update `DESIGN.md`, `ROADMAP.md` or `TECH_DECISIONS.md` in the same PR.
 9. **Unclear or blocked? Raise a GitHub issue; don't guess.** Draft the issue (template in §9.4), show it to the user, and create it with `gh issue create` only after the user confirms.
@@ -302,8 +302,12 @@ Also:
 
 ### 9.1 Planning and tracking
 
-- **Jira (project `RISK`)** is the backlog and the sprint plan: epics, stories, estimates and releases.
-- **GitHub Issues** hold technical questions, decisions, bugs and blockers between teammates. Link both ways: put the Jira key in the issue title (`[RISK-123] …`) and the issue URL in the Jira ticket.
+- **GitHub Issues + one GitHub Project** ("Sentinel Pay") are the backlog and the sprint plan. There is no Jira.
+  - Every piece of work is an issue titled `[RISK-<n>] …`. `RISK-<n>` is the backlog ID used in `docs/ROADMAP.md`, branch names and commits; a new item takes the next free number.
+  - The project board has the columns To do → In progress → In review → Done, an *Iteration* field for the one-week sprints, an *Estimate* field (hours), and GitHub **milestones** `M0` … `M5`.
+  - Labels: one type (`task`, `bug`, `question`, `decision-needed`, `blocked`) and one component (`backend`, `gateway`, `frontend`, `ml`, `llm`, `infra`, `contracts`, `docs`).
+  - Questions, decisions, bugs and blockers between teammates are issues too (templates in `.github/ISSUE_TEMPLATE/`).
+  - A PR says `Closes #<issue>` so merging it closes the issue and moves the card.
 - **One-week sprints.** Status lives in `docs/ROADMAP.md`, updated at least weekly.
 
 ### 9.2 Design before build
@@ -316,9 +320,9 @@ Also:
 ### 9.3 Branches, commits, PRs
 
 - **Branch:** `feature/RISK-<n>-short-name`, `fix/RISK-<n>-…`, `chore/…`, `docs/…`.
-- **Commits:** Conventional Commits with the Jira key, e.g. `feat(gateway): RISK-73 add idempotency key replay`.
+- **Commits:** Conventional Commits with the backlog ID, e.g. `feat(gateway): RISK-73 add idempotency key replay`.
 - **PR description** (template enforced) covers:
-  - Jira link and linked issue
+  - Linked issue (`Closes #<n>`)
   - What / why
   - How it was tested
   - Screenshots for UI changes
@@ -354,7 +358,7 @@ Date / milestone and what is blocked until then.
 
 ### 9.5 Definition of Done
 
-1. Acceptance criteria met; Jira ticket linked.
+1. Acceptance criteria met; issue linked.
 2. Tests added; CI green; coverage not reduced on core packages.
 3. Reviewed and approved by a teammate.
 4. Contracts, `DESIGN.md`, `ROADMAP.md`, `TECH_DECISIONS.md`, runbooks updated where relevant.
@@ -375,7 +379,7 @@ Date / milestone and what is blocked until then.
 | File | Purpose | Must contain | Update when |
 |---|---|---|---|
 | `docs/DESIGN.md` | How the system works | Overview and goals; architecture diagrams; components; workflows (payment, held payment, LLM insight); data models; contracts summary; frontend IA (§5); auth (§6); AWS architecture (§7); NFRs; risks; open questions | Any behaviour or architecture change |
-| `docs/ROADMAP.md` | When and who | Milestones with target dates; sprint plan; per-person backlog with Jira keys and status; dependency/hand-off table; progress log (dated entries); risks to schedule | Every sprint planning, weekly status, and whenever scope/dates move |
+| `docs/ROADMAP.md` | When and who | Milestones with target dates; sprint plan; per-person backlog with backlog IDs and status; dependency/hand-off table; progress log (dated entries); risks to schedule | Every sprint planning, weekly status, and whenever scope/dates move |
 | `docs/TECH_DECISIONS.md` | Why this technology | One comparison table per decision (options × criteria: fit, learning curve, cost, ecosystem/hiring signal, operational burden); chosen option; ADR link; review date | Any new dependency, service, cloud resource or replacement |
 
 Seed decisions for `TECH_DECISIONS.md`:
@@ -478,7 +482,7 @@ Work through these in order. Each item is its own branch and PR unless noted. Be
 5. **Tooling:** `Makefile`, `docker-compose.yml` skeleton, `contracts.yml` and `codeql.yml` workflows.
 6. **Infra skeleton** (plan only): `infra/terraform` with remote-state bootstrap instructions and the modules from §7.2 (`network`, `ecs-ec2-host`, `ecr`, `scheduler`, `github-oidc` first), ADR-0007 for the single-host decision, `aws-wake`/`aws-sleep`/`aws-status` scripts, and the `deploy-staging.yml` workflow behind the `staging` environment approval. Add the AWS Budgets alerts in the very first apply. **Stop and ask before any apply.**
 7. **Component `CLAUDE.md` files** for `backend/`, `payment-gateway/`, `ml-scorer/`, `llm-insights/`, `frontend/`, `infra/`, holding stack-specific commands and conventions.
-8. Summarise what was created, list open questions as draft GitHub issues, and suggest the next Jira tickets.
+8. Summarise what was created, list open questions as draft GitHub issues, and suggest the next backlog issues.
 
 ---
 
