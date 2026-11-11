@@ -14,7 +14,7 @@ name: sentinel-pay
 
 services:
   postgres:
-    image: postgres:17
+    image: postgres:18
     environment:
       POSTGRES_DB: sentinel
       POSTGRES_USER: ${POSTGRES_USER:?copy .env.example to .env}
