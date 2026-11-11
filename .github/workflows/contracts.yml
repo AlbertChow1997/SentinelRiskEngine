@@ -1,0 +1,68 @@
+name: contracts
+
+on:
+  pull_request:
+    paths:
+      - "contracts/**"
+      - ".github/workflows/contracts.yml"
+  push:
+    branches: [main]
+    paths:
+      - "contracts/**"
+      - ".github/workflows/contracts.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: contracts-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate OpenAPI and AsyncAPI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+
+      - name: Lint OpenAPI contracts (Redocly)
+        run: npx --yes @redocly/cli@2 lint --config contracts/redocly.yaml contracts/openapi-*.yaml
+
+      - name: Validate AsyncAPI contracts
+        run: |
+          npx --yes @asyncapi/cli@6 config analytics --disable
+          for f in contracts/asyncapi-*.yaml; do
+            npx --yes @asyncapi/cli@6 validate "$f"
+          done
+
+  breaking-changes:
+    name: Detect breaking changes (oasdiff)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Compare each OpenAPI contract with the base branch
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+        run: |
+          mkdir -p .contracts-base
+          status=0
+          for f in contracts/openapi-*.yaml; do
+            if git cat-file -e "$BASE_REF:$f" 2>/dev/null; then
+              git show "$BASE_REF:$f" > ".contracts-base/$(basename "$f")"
+              echo "::group::oasdiff breaking $f"
+              docker run --rm -v "$PWD":/work -w /work tufin/oasdiff \
+                breaking ".contracts-base/$(basename "$f")" "$f" --fail-on ERR || status=1
+              echo "::endgroup::"
+            else
+              echo "$f is a new contract; nothing to compare."
+            fi
+          done
+          exit $status
