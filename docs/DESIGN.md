@@ -1922,7 +1922,7 @@ Due dates are tracked in `docs/ROADMAP.md`. Q1–Q9 are carried over from design
 | Q14 | LLM persistence details: separate `risk_insight` table or latest successful invocation; is a budget skip stored as a row? | Zheng |
 | Q15 | Frontend UI kit: Tailwind CSS + shadcn/ui + Framer Motion, or stay with MUI? (ADR before the first UI PR) | Jiajun |
 | Q16 | Who writes `openapi-ml-scorer-v1.yaml`, and by when? It is referenced since v1.0 but is not in the repository | Zheng |
-| Q17 | Licence for the repository | Jiawei |
+| Q17 | *Closed 11 Nov 2026:* the repository is MIT-licensed (`LICENSE`) | — |
 | Q18 | Spring Boot line: 4.0.x as designed, or the current 4.1.x? | Jiawei |
 | Q19 | Bedrock model ID and whether new-account AWS credits are available | Jiawei |
 | Q20 | ADR numbering: design v2.0 used 0001 for "tech stack"; 0001 is now "record architecture decisions" and the stack decision moves to 0008 — accept? | Jiawei |

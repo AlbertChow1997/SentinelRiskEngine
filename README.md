@@ -99,4 +99,4 @@ PostgreSQL 5432 · Kafka 9092 · Kafka UI 8085.
 
 ## Licence
 
-Not chosen yet. Until a licence file is added, all rights are reserved by the authors.
+[MIT](LICENSE).

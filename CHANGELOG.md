@@ -12,4 +12,5 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - ADR-0001 (record architecture decisions), ADR-0007 (single-host ECS staging), ADR-0009 (FastAPI for the Python services).
 - Contracts imported from design v2.0: Risk Engine API, Payment Gateway API, domain events.
 - Tooling: `Makefile`, local `docker-compose.yml` (PostgreSQL + Kafka), `contracts.yml` and `codeql.yml` workflows.
+- MIT licence.
 - Skeletons for runbooks, the ORR checklist, the threat model and post-incident reviews.
