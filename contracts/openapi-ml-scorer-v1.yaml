@@ -1,0 +1,430 @@
+openapi: 3.1.0
+info:
+  title: Sentinel ML Scorer — Internal API
+  version: 1.0.0
+  summary: Fraud probability and top-3 explanations for one transaction.
+  description: |
+    Producer: **ML scorer (Zheng Liu)** · Consumer: **Risk Engine (Jiawei Zhou)**.
+
+    - Internal only: reachable from the Risk Engine inside the Docker network / ECS host, never through
+      CloudFront or nginx. There is no authentication; network isolation is the control (`DESIGN.md` §14).
+    - Stateless: the Risk Engine sends the transaction **and** its `customerContext` (`DESIGN.md` §7.4).
+      The scorer keeps no customer history.
+    - All timestamps are UTC, ISO 8601. All JSON field names are camelCase.
+    - Requests may carry fields not listed here; the scorer ignores unknown fields (forward compatibility).
+    - Validation errors use FastAPI's default `422` body. Other errors use RFC 9457 Problem Details
+      (`application/problem+json`). The Risk Engine treats **any** non-2xx response or timeout as
+      "ML unavailable" and decides on rules only (`degraded = true`, `ML_UNAVAILABLE`).
+    - Latency target: p95 < 50 ms for `POST /v1/score`. The Risk Engine read timeout is 200 ms.
+    - The model is trained on **synthetic** data; `GET /v1/model-info` says so.
+    - Changes to this file require approval from both producer and consumer (see CODEOWNERS).
+servers:
+  - url: http://localhost:8000
+    description: Local (docker-compose / uvicorn)
+security: []
+tags:
+  - name: Scoring
+    description: Fraud scoring called by the Risk Engine for every assessment.
+  - name: Operations
+    description: Health and model metadata.
+
+paths:
+  /v1/score:
+    post:
+      tags: [Scoring]
+      operationId: scoreTransaction
+      summary: Score one transaction
+      description: |
+        Builds the feature vector from the transaction and `customerContext`, runs the model and returns
+        `score = round(fraudProbability × 100)` with up to three factors that explain it.
+        Deterministic for a given model version: the same request returns the same response.
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScoreRequest'
+            examples:
+              normal:
+                summary: Returning customer, typical amount
+                value:
+                  transactionId: tx-001
+                  amount: 49.99
+                  currency: EUR
+                  countryCode: IE
+                  transactionTime: '2026-11-18T09:59:00Z'
+                  customerContext:
+                    txnCount1h: 0
+                    txnCount24h: 2
+                    avgAmount30d: 42.10
+                    minutesSinceLastTxn: 310
+                    usualCountryCode: IE
+                    isNewCustomer: false
+              amountSpike:
+                summary: Amount far above the 30-day average, foreign country, at night
+                value:
+                  transactionId: tx-002
+                  amount: 520.00
+                  currency: EUR
+                  countryCode: US
+                  transactionTime: '2026-11-18T02:14:00Z'
+                  customerContext:
+                    txnCount1h: 1
+                    txnCount24h: 3
+                    avgAmount30d: 42.10
+                    minutesSinceLastTxn: 12
+                    usualCountryCode: IE
+                    isNewCustomer: false
+              newCustomer:
+                summary: First transaction of a customer (no history)
+                value:
+                  transactionId: tx-003
+                  amount: 1200.00
+                  currency: EUR
+                  countryCode: IE
+                  transactionTime: '2026-11-18T14:30:00Z'
+                  customerContext:
+                    txnCount1h: 0
+                    txnCount24h: 0
+                    avgAmount30d: null
+                    minutesSinceLastTxn: null
+                    usualCountryCode: null
+                    isNewCustomer: true
+      responses:
+        '200':
+          description: Transaction scored.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScoreResponse'
+              examples:
+                normal:
+                  summary: Response to the `normal` request
+                  value:
+                    transactionId: tx-001
+                    score: 3
+                    fraudProbability: 0.0312
+                    modelVersion: hgb-1.0.0
+                    factors:
+                      - feature: amountToAvgRatio
+                        description: Amount is 1.2x the customer's 30-day average
+                        contribution: 0.02
+                      - feature: minutesSinceLastTxn
+                        description: Last transaction was 310 minutes ago
+                        contribution: -0.05
+                      - feature: countryMismatch
+                        description: Country matches the customer's usual country
+                        contribution: -0.08
+                amountSpike:
+                  summary: Response to the `amountSpike` request
+                  value:
+                    transactionId: tx-002
+                    score: 87
+                    fraudProbability: 0.8691
+                    modelVersion: hgb-1.0.0
+                    factors:
+                      - feature: amountToAvgRatio
+                        description: Amount is 12.4x the customer's 30-day average
+                        contribution: 0.42
+                      - feature: countryMismatch
+                        description: Country US differs from the customer's usual country IE
+                        contribution: 0.21
+                      - feature: isNight
+                        description: Transaction at 02:14 UTC, inside the 00:00-05:59 night window
+                        contribution: 0.11
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '503':
+          $ref: '#/components/responses/ModelNotLoaded'
+        '500':
+          $ref: '#/components/responses/Problem'
+
+  /v1/model-info:
+    get:
+      tags: [Operations]
+      operationId: getModelInfo
+      summary: Describe the loaded model
+      description: Version, algorithm, features, evaluation metrics and training-data label of the model in memory.
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '200':
+          description: Model metadata.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelInfo'
+        '503':
+          $ref: '#/components/responses/ModelNotLoaded'
+
+  /health:
+    get:
+      tags: [Operations]
+      operationId: getHealth
+      summary: Liveness and model status
+      description: |
+        Returns **200 while the process is running**, even if the model failed to load; `modelLoaded` tells
+        the two cases apart. This keeps the container healthy so the Risk Engine can start and fall back to
+        rules (fail-open) instead of being blocked by a missing model.
+      responses:
+        '200':
+          description: Process is up.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+              examples:
+                ready:
+                  value: { status: UP, modelLoaded: true, modelVersion: hgb-1.0.0 }
+                modelMissing:
+                  value: { status: UP, modelLoaded: false, modelVersion: null }
+
+components:
+  parameters:
+    RequestId:
+      name: X-Request-Id
+      in: header
+      required: false
+      description: Correlation ID forwarded by the Risk Engine. Generated by the scorer if absent and echoed back.
+      schema: { type: string, maxLength: 64 }
+
+  headers:
+    RequestId:
+      description: Correlation ID echoed back.
+      schema: { type: string }
+
+  schemas:
+    ScoreRequest:
+      type: object
+      required: [transactionId, amount, currency, countryCode, transactionTime, customerContext]
+      properties:
+        transactionId:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: |
+            Same ID as in the Risk Engine request (= `paymentId` for gateway payments). Used for logging and,
+            from v2.0, to store the scored feature vector for the feedback loop (RISK-95). Pseudonymous.
+          example: tx-001
+        amount:
+          type: number
+          exclusiveMinimum: 0
+          description: Major units, as received by the Risk Engine.
+          example: 49.99
+        currency: { type: string, pattern: '^[A-Z]{3}$', example: EUR }
+        countryCode: { type: string, pattern: '^[A-Z]{2}$', example: IE }
+        transactionTime:
+          type: string
+          format: date-time
+          description: UTC. `hourOfDay` and `isNight` are derived from it (UTC hour; local time is a known v1 limitation).
+        customerContext:
+          $ref: '#/components/schemas/CustomerContext'
+
+    CustomerContext:
+      type: object
+      description: |
+        Built by the Risk Engine from the customer's earlier assessments, excluding the current one
+        (`DESIGN.md` §7.4). The Java rules see the same values. Every field is required; nullable fields are
+        `null` when there is no history, never omitted.
+      required: [txnCount1h, txnCount24h, avgAmount30d, minutesSinceLastTxn, usualCountryCode, isNewCustomer]
+      properties:
+        txnCount1h:
+          type: integer
+          minimum: 0
+          description: Transactions in [t − 60 min, t).
+        txnCount24h:
+          type: integer
+          minimum: 0
+          description: Transactions in [t − 24 h, t).
+        avgAmount30d:
+          type: [number, 'null']
+          minimum: 0
+          description: Average amount over [t − 30 d, t); null if none.
+        minutesSinceLastTxn:
+          type: [integer, 'null']
+          minimum: 0
+          description: Minutes since the previous transaction; null if none.
+        usualCountryCode:
+          type: [string, 'null']
+          pattern: '^[A-Z]{2}$'
+          description: Most frequent country over [t − 90 d, t); null if none.
+        isNewCustomer:
+          type: boolean
+          description: True when the customer has no earlier transactions at all.
+
+    ScoreResponse:
+      type: object
+      required: [transactionId, score, fraudProbability, modelVersion, factors]
+      properties:
+        transactionId: { type: string, example: tx-001 }
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: round(fraudProbability × 100). Becomes `mlScore` on the risk assessment.
+          example: 87
+        fraudProbability:
+          type: number
+          minimum: 0
+          maximum: 1
+          example: 0.8691
+        modelVersion:
+          type: string
+          description: Version of the model that produced the score. Stored as `modelVersion` on the risk assessment.
+          example: hgb-1.0.0
+        factors:
+          type: array
+          description: |
+            Up to three features that most explain the score, most important first (heuristic in v1; SHAP
+            planned for v1.1). Same shape as `MlFactor` in `openapi-risk-engine-v1.yaml`, which stores them
+            unchanged as `mlFactors`.
+          maxItems: 3
+          items:
+            $ref: '#/components/schemas/MlFactor'
+
+    MlFactor:
+      type: object
+      required: [feature, description, contribution]
+      properties:
+        feature:
+          type: string
+          description: Feature name from `ModelInfo.features`.
+          example: amountToAvgRatio
+        description:
+          type: string
+          description: Human-readable sentence for analysts. Contains no personal data.
+          example: Amount is 12.4x the customer's 30-day average
+        contribution:
+          type: number
+          description: Positive = increases risk, negative = decreases risk.
+          example: 0.42
+
+    ModelInfo:
+      type: object
+      required: [modelVersion, algorithm, trainedAt, features, metrics, trainingData]
+      properties:
+        modelVersion: { type: string, example: hgb-1.0.0 }
+        algorithm: { type: string, example: HistGradientBoostingClassifier }
+        trainedAt: { type: string, format: date-time }
+        features:
+          type: array
+          description: Feature names in model input order (`DESIGN.md` §9.4).
+          items: { type: string }
+          example:
+            - logAmount
+            - amountToAvgRatio
+            - hourOfDay
+            - isNight
+            - txnCount1h
+            - txnCount24h
+            - minutesSinceLastTxn
+            - countryMismatch
+            - isNewCustomer
+            - isHighRiskCountry
+        metrics:
+          $ref: '#/components/schemas/ModelMetrics'
+        trainingData:
+          $ref: '#/components/schemas/TrainingData'
+
+    ModelMetrics:
+      type: object
+      description: Evaluation on the time-based hold-out set (last 12 of 60 days). PR-AUC is the main metric.
+      required: [prAuc, rocAuc, precisionAt50, recallAt50, precisionAt70, recallAt70]
+      properties:
+        prAuc: { type: number, minimum: 0, maximum: 1, example: 0.71 }
+        rocAuc: { type: number, minimum: 0, maximum: 1, example: 0.95 }
+        precisionAt50: { type: number, minimum: 0, maximum: 1, description: Precision at score ≥ 50. }
+        recallAt50: { type: number, minimum: 0, maximum: 1, description: Recall at score ≥ 50. }
+        precisionAt70: { type: number, minimum: 0, maximum: 1, description: Precision at score ≥ 70. }
+        recallAt70: { type: number, minimum: 0, maximum: 1, description: Recall at score ≥ 70. }
+
+    TrainingData:
+      type: object
+      required: [synthetic, description, rows, fraudRate]
+      properties:
+        synthetic:
+          type: boolean
+          description: True for every v1 model. The metrics describe synthetic data, not real-world performance.
+          example: true
+        description: { type: string, example: 'Synthetic, seed 42, 100,000 transactions over 60 days' }
+        rows: { type: integer, minimum: 0, example: 100000 }
+        fraudRate: { type: number, minimum: 0, maximum: 1, example: 0.02 }
+
+    Health:
+      type: object
+      required: [status, modelLoaded, modelVersion]
+      properties:
+        status:
+          type: string
+          enum: [UP]
+          description: Always UP when the process answers.
+        modelLoaded: { type: boolean }
+        modelVersion: { type: [string, 'null'], example: hgb-1.0.0 }
+
+    ProblemDetail:
+      type: object
+      properties:
+        type: { type: string, default: about:blank }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        code:
+          type: string
+          description: Machine-readable error code, e.g. MODEL_NOT_LOADED.
+
+    ValidationError:
+      type: object
+      description: FastAPI's default validation error body.
+      required: [detail]
+      properties:
+        detail:
+          type: array
+          items:
+            type: object
+            required: [loc, msg, type]
+            properties:
+              loc:
+                type: array
+                items:
+                  oneOf:
+                    - type: string
+                    - type: integer
+              msg: { type: string }
+              type: { type: string }
+
+  responses:
+    ValidationError:
+      description: Malformed body or field validation failure.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ValidationError' }
+          example:
+            detail:
+              - loc: [body, currency]
+                msg: "String should match pattern '^[A-Z]{3}$'"
+                type: string_pattern_mismatch
+    ModelNotLoaded:
+      description: The model is not loaded (startup failure or missing artefact). The Risk Engine falls back to rules.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetail' }
+          example:
+            type: about:blank
+            title: Model not loaded
+            status: 503
+            detail: The fraud model is not available; retry later or decide on rules only.
+            code: MODEL_NOT_LOADED
+    Problem:
+      description: Unexpected error.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetail' }

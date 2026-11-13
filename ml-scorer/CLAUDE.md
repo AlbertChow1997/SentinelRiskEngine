@@ -1,7 +1,7 @@
 # CLAUDE.md — ML Scorer (`ml-scorer/`)
 
 Read the root `CLAUDE.md` first; this file only adds what is specific to this folder.
-Owner: Zheng Liu (@zliu-59). Design: `docs/DESIGN.md` §9. Contract: `contracts/openapi-ml-scorer-v1.yaml` (to be written first — Q16).
+Owner: Zheng Liu (@zliu-59). Design: `docs/DESIGN.md` §9. Contract: `contracts/openapi-ml-scorer-v1.yaml`.
 
 **This folder belongs to Zheng.** Change it only when the user explicitly asks, and always through a PR that Zheng reviews.
 

@@ -119,7 +119,7 @@ IDs from 100 upwards cover the new scope. A new item takes the next free number.
 
 | Key | Summary | Milestone | Status |
 |---|---|---|---|
-| RISK-140 | Write `openapi-ml-scorer-v1.yaml` | Bootstrap | To do |
+| RISK-140 | Write `openapi-ml-scorer-v1.yaml` | Bootstrap | In review |
 | RISK-50 … RISK-57 | ML scorer backlog (`DESIGN.md` §9.9) | M1 | To do |
 | RISK-95 … RISK-98 | ML feedback loop (`DESIGN.md` §9.10) | M2 | To do |
 | RISK-141 | `llm-insights` FastAPI scaffold, settings, health, Alembic baseline, `ci-llm.yml` | M4 | To do |
@@ -164,6 +164,7 @@ RISK-144 ← RISK-82; RISK-128/129 ← RISK-145.
 | 11 Nov 2026 | Repository made private; Jiajun (`@jiajunxiao-work`) and Zheng (`@zliu-59`) invited as collaborators and added to CODEOWNERS. `codeql.yml` skips itself while the repository is private. |
 | 11 Nov 2026 | Tracking moved from Jira to GitHub Issues and a GitHub Project; `RISK-<n>` stays as the backlog ID (Section 8). MIT licence added. |
 | 11 Nov 2026 | Schedule re-planned into milestones M0–M5 (this document). Old dates (29 Nov, 13 Dec) withdrawn. Awaiting team sign-off. |
+| 13 Nov 2026 | `contracts/openapi-ml-scorer-v1.yaml` written (RISK-140): `POST /v1/score`, `GET /v1/model-info`, `GET /health`. Q16 closed. Freezes at H1 (Tue 1 Dec). |
 
 ## 7. Risks to the schedule
 
