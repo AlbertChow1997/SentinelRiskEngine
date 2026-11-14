@@ -100,7 +100,7 @@ IDs from 100 upwards cover the new scope. A new item takes the next free number.
 
 | Key | Summary | Milestone | Status |
 |---|---|---|---|
-| RISK-120 | ADR: UI kit (Tailwind CSS + shadcn/ui + Framer Motion vs MUI) | Bootstrap | To do |
+| RISK-120 | ADR: UI kit (Tailwind CSS + shadcn/ui + Framer Motion vs MUI) | Bootstrap | In review (ADR-0010) |
 | RISK-30 | Vite + React + TypeScript scaffold, lint, theme, router, app shell, `ci-frontend.yml` | M0 | To do |
 | RISK-121 | Homepage: hero, product showcase, how-it-works, KPI strip, API snippet, footer disclaimer | M0–M3 | To do |
 | RISK-122 | `/sample`: scenario player on a bundled mock dataset | M3 | To do |
