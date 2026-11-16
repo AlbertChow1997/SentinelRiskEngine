@@ -500,7 +500,7 @@ AI tools (Claude, Copilot, etc.) are encouraged for scaffolding, boilerplate, te
 
 ## 6. Interface contracts (summary)
 
-Full definitions are in `contracts/`. OpenAPI files target OpenAPI 3.1; the event file targets AsyncAPI 3.0. As of 11 Nov 2026 the repository holds the Risk Engine, Payment Gateway and events contracts imported unchanged from design v2.0. Still to be written, contract first: `openapi-ml-scorer-v1.yaml` (Section 6.2), `openapi-llm-insights-v1.yaml` (Section 6.6), and the authentication changes listed in Section 6.7.
+Full definitions are in `contracts/`. OpenAPI files target OpenAPI 3.1; the event file targets AsyncAPI 3.0. As of 11 Nov 2026 the repository holds the Risk Engine, Payment Gateway and events contracts imported unchanged from design v2.0. `openapi-ml-scorer-v1.yaml` (Section 6.2) was added in RISK-140. Still to be written, contract first: `openapi-llm-insights-v1.yaml` (Section 6.6), and the authentication changes listed in Section 6.7.
 
 ### 6.1 Risk Engine API (1.1.0) — producer Risk Engine, consumers Frontend & Gateway
 
@@ -1922,7 +1922,7 @@ Due dates are tracked in `docs/ROADMAP.md`. Q1–Q9 are carried over from design
 | Q13 | Does Zheng own `llm-insights`? Does its Kafka consumer stay inside the web process or get its own container? | Zheng + Jiawei |
 | Q14 | LLM persistence details: separate `risk_insight` table or latest successful invocation; is a budget skip stored as a row? | Zheng |
 | Q15 | Frontend UI kit: Tailwind CSS + shadcn/ui + Framer Motion, or stay with MUI? (ADR before the first UI PR) | Jiajun |
-| Q16 | Who writes `openapi-ml-scorer-v1.yaml`, and by when? It is referenced since v1.0 but is not in the repository | Zheng |
+| Q16 | *Closed 13 Nov 2026:* Zheng wrote `openapi-ml-scorer-v1.yaml` (RISK-140); it freezes at H1 | — |
 | Q17 | *Closed 11 Nov 2026:* the repository is MIT-licensed (`LICENSE`) | — |
 | Q18 | Spring Boot line: 4.0.x as designed, or the current 4.1.x? | Jiawei |
 | Q19 | Bedrock model ID and whether new-account AWS credits are available | Jiawei |
