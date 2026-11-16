@@ -39,6 +39,7 @@ The user you are talking to is usually **Jiawei Zhou**. Only change another owne
 9. **Unclear or blocked? Raise a GitHub issue; don't guess.** Draft the issue (template in §9.4), show it to the user, and create it with `gh issue create` only after the user confirms.
 10. **Verify versions.** Don't rely on memory for library APIs, especially Spring Boot 4, Spring Kafka, React 19, Terraform AWS provider and Bedrock SDKs. Check official docs or the versions already in the build files. When unsure, say so.
 11. **Ask before anything irreversible or costly:** `terraform apply`, deleting AWS resources, force-pushing, rewriting history, changing branch protection, or anything that incurs AWS charges.
+12. **Write a local explanation for every change.** Before handoff, create or update a numbered Chinese note in the git-ignored `local-notes/` directory and update its index. Follow `AGENTS.md` and `local-notes/README.md`; record actual implementation, validation, limitations and next steps. This also applies to reviews, merges, configuration and documentation updates. Never force-add local notes to GitHub; they supplement the English project docs.
 
 ---
 
