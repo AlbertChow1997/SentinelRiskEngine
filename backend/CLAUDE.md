@@ -5,25 +5,27 @@ Owner: Jiawei Zhou. Design: `docs/DESIGN.md` §4.3–4.4 and §7. Contract: `con
 
 ## Status
 
-Not scaffolded yet. The commands below are the target once RISK-11 lands; until then `make test-backend` prints "skipped".
+RISK-11 provides the M0 walking skeleton: health, JSON logs, request IDs, tests and an ARM64-capable container.
+It starts without PostgreSQL, Kafka or AWS. Persistence and business APIs arrive in M1; backend CI is RISK-12 (#7).
 
 ## Stack
 
-- Java 21, Spring Boot 4 (confirm the exact line before generating — open question Q18), Maven wrapper.
-- Spring Web, Validation, Spring Data JPA, PostgreSQL driver, Flyway, Actuator, Spring for Apache Kafka, Spring Security OAuth2 Resource Server.
-- `resilience4j-circuitbreaker` (core library, used programmatically), springdoc-openapi (Boot 4 line), WireMock and Testcontainers for tests.
+- Java 21, Spring Boot 4.1.2, Maven 3.10.1 via Maven Wrapper 3.3.4 (ADR-0008, Q18 closed).
+- Current dependencies: Spring MVC, Actuator and Spring MVC test support.
+- Planned with implementation tickets: Validation, JPA, PostgreSQL 18 driver, Flyway, Kafka and OAuth2 Resource Server.
+- Add resilience4j, springdoc-openapi, WireMock and PostgreSQL 18 Testcontainers only with the features that use them.
 - **Check versions against official docs or the `pom.xml`.** AI tools often produce Spring Boot 3 APIs.
 
 ## Commands
 
 ```bash
-./mvnw -B verify                 # unit + Testcontainers integration tests, JaCoCo report
+./mvnw -B verify                 # formatting, unit/HTTP tests, executable jar and JaCoCo report
 ./mvnw spotless:apply            # format (Google Java Format)
 ./mvnw spotless:check            # what CI runs
-./mvnw spring-boot:run           # needs `make up` for PostgreSQL and Kafka; listens on :8081
+./mvnw spring-boot:run           # standalone M0 service; listens on :8081
 ```
 
-Integration tests need a running Docker daemon (Testcontainers).
+On Windows use `mvnw.cmd`. The current tests need no Docker daemon. Future Testcontainers integration tests will need one.
 
 ## Conventions
 

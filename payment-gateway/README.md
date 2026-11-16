@@ -6,7 +6,7 @@ a simulated acquirer, a double-entry ledger and domain events through a transact
 | | |
 |---|---|
 | **Owner** | Jiawei Zhou (@AlbertChow1997) |
-| **Stack** | Java 21, Spring Boot 4, Maven, PostgreSQL 17 (database `gateway`), Flyway, Spring for Apache Kafka |
+| **Stack** | Java 21, Spring Boot 4, Maven, PostgreSQL 18 (database `gateway`), Flyway, Spring for Apache Kafka |
 | **Port** | 8080 |
 | **Contract** | `contracts/openapi-payment-gateway-v1.yaml`; events in `contracts/asyncapi-events-v1.yaml` |
 | **Design** | `docs/DESIGN.md` §4.5–4.7, §10, §11 |

@@ -1,0 +1,6 @@
+target/
+.git/
+*.log
+.env*
+README.md
+CLAUDE.md

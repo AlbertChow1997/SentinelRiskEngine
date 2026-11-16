@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Purpose** | Why each technology was chosen: one comparison table per decision, the chosen option, the ADR that records it and when to look again |
-| **Last updated** | 11 Nov 2026 |
+| **Last updated** | 16 Nov 2026 |
 | **Update when** | Any new dependency, service, cloud resource or replacement — in the same PR as the change |
 
 **Status values.** *Accepted* — agreed and in force.
@@ -17,16 +17,16 @@ Costs are indicative for eu-west-1 and must be re-checked with the AWS Pricing C
 
 | # | Decision | Chosen | Status | ADR |
 |---|---|---|---|---|
-| D01 | Backend language and framework | Java 21 + Spring Boot 4 | Accepted | 0008 (to write) |
-| D02 | Java build tool | Maven | Accepted | 0008 (to write) |
-| D03 | Database | PostgreSQL 17 | Accepted | 0008 (to write) |
+| D01 | Backend language and framework | Java 21 + Spring Boot 4 | Accepted | [0008](adr/0008-core-technology-stack.md) |
+| D02 | Java build tool | Maven | Accepted | [0008](adr/0008-core-technology-stack.md) |
+| D03 | Database | PostgreSQL 18 | Accepted | [0008](adr/0008-core-technology-stack.md) |
 | D04 | Messaging | Self-hosted Kafka (single broker, KRaft) | Accepted | 0004, 0006 (to write) |
 | D05 | Container platform | ECS on EC2 | Accepted | [0007](adr/0007-single-host-ecs-staging.md) |
 | D06 | Infrastructure as code | Terraform | Accepted | 0011 (to write) |
 | D07 | Identity provider | Amazon Cognito | Accepted | 0012 (to write) |
 | D08 | LLM access | Amazon Bedrock | Accepted | 0013 (to write) |
 | D09 | Frontend UI kit | Tailwind CSS + shadcn/ui + Framer Motion | **Proposed** (Jiajun decides) | 0010 (to write) |
-| D10 | CI/CD | GitHub Actions | Accepted | 0008 (to write) |
+| D10 | CI/CD | GitHub Actions | Accepted | [0008](adr/0008-core-technology-stack.md) |
 | D11 | Network layout | Public subnets, no NAT Gateway | Accepted | [0007](adr/0007-single-host-ecs-staging.md) |
 | D12 | Staging hosting shape | One EC2 host running ECS | Accepted | [0007](adr/0007-single-host-ecs-staging.md) |
 | D13 | Database hosting | PostgreSQL container + backups | Accepted | [0007](adr/0007-single-host-ecs-staging.md) |
@@ -46,7 +46,7 @@ Costs are indicative for eu-west-1 and must be re-checked with the AWS Pricing C
 | 0005 | Gateway fallback policy when the Risk Engine is unavailable | Accepted in design v2.0 (`DESIGN.md` §4.7) | to be written |
 | 0006 | Transactional outbox | Accepted in design v2.0 (`DESIGN.md` §11.3) | to be written |
 | 0007 | Single-host ECS staging with scheduled start/stop | Accepted | [adr/0007-single-host-ecs-staging.md](adr/0007-single-host-ecs-staging.md) |
-| 0008 | Core technology stack (D01, D02, D03, D10) | Accepted in design v2.0 | to be written |
+| 0008 | Core technology stack (D01, D02, D03, D10) | Accepted; updated 16 Nov 2026 | [adr/0008-core-technology-stack.md](adr/0008-core-technology-stack.md) |
 | 0009 | FastAPI for the Python services (Django considered and rejected) | Accepted | [adr/0009-fastapi-for-python-services.md](adr/0009-fastapi-for-python-services.md) |
 | 0010 | Frontend UI kit | Proposed | to be written by Jiajun before the first UI PR |
 | 0011 | Terraform for infrastructure as code | Accepted | to be written with the first infra PR |
@@ -67,8 +67,8 @@ Design v2.0 numbered the tech-stack ADR 0001. ADR-0001 is now "Record architectu
 | Java + Quarkus | Good; fast start-up and low memory, attractive on a 4 GB host | Medium — different extension model and fewer examples | Free | Smaller than Spring | Lower memory, but less team knowledge when things break |
 
 **Chosen:** Java 21 + Spring Boot 4. **Why:** the hiring signal and the team's existing knowledge outweigh Quarkus's memory advantage.
-**Watch:** Spring Boot 4 library compatibility (`DESIGN.md` §16); the design names the 4.0.x line while 4.1.x is current — Q18.
-**Review:** before the first Java scaffold PR.
+**Baseline:** Spring Boot 4.1.2 and Java 21, selected on 16 Nov 2026 for the M0 scaffold (ADR-0008; Q18 closed).
+**Review:** library compatibility when persistence, OpenAPI tooling and security are added.
 
 ## D02 — Java build tool
 
@@ -83,11 +83,11 @@ Design v2.0 numbered the tech-stack ADR 0001. ADR-0001 is now "Record architectu
 
 | Option | Fit | Learning curve | Cost | Ecosystem / hiring signal | Operational burden |
 |---|---|---|---|---|---|
-| **PostgreSQL 17** | Strong: ACID transactions for money, `NUMERIC`, `CHECK` constraints, `JSONB`, `SELECT … FOR UPDATE SKIP LOCKED` for the outbox | Low | Free (container) | Very strong | Self-managed here (D13) |
+| **PostgreSQL 18** | Strong: ACID transactions for money, `NUMERIC`, `CHECK` constraints, `JSONB`, `SELECT … FOR UPDATE SKIP LOCKED` for the outbox | Low | Free (container) | Very strong | Self-managed here (D13) |
 | MySQL | Would work; weaker JSON and constraint story for this design | Low | Free | Strong | Similar |
 | DynamoDB | Poor fit: the ledger, the state machine and the outbox rely on multi-row relational transactions and ad-hoc queries | High — data modelling by access pattern | Pay per request; cheap at demo volume | Strong on AWS | Lowest (managed) |
 
-**Chosen:** PostgreSQL 17, one database per service (`sentinel`, `gateway`, `llm`). **Review:** not planned.
+**Chosen:** PostgreSQL 18, one database per service (`sentinel`, `gateway`, `llm`), explicitly confirmed by the owner on 16 Nov 2026 (ADR-0008). Local, integration-test and staging database versions follow this baseline. The official image volume mounts at `/var/lib/postgresql`. Major upgrades require an explicit decision; Dependabot remains within 18. **Review:** before any major upgrade.
 
 ## D04 — Messaging
 
@@ -201,7 +201,7 @@ Design v2.0 numbered the tech-stack ADR 0001. ADR-0001 is now "Record architectu
 
 | Option | Fit | Learning curve | Cost | Ecosystem / hiring signal | Operational burden |
 |---|---|---|---|---|---|
-| **PostgreSQL 17 container on the data volume** | Enough for demo data; identical to the local stack | Low | No extra cost; 384 MB of host memory | Must be explained as a cost trade-off | We own backups (nightly `pg_dump` to S3, daily EBS snapshots) and upgrades |
+| **PostgreSQL 18 container on the data volume** | Enough for demo data; identical to the local stack | Low | No extra cost; 384 MB of host memory | Must be explained as a cost trade-off | We own backups (nightly `pg_dump` to S3, daily EBS snapshots) and upgrades |
 | Amazon RDS (single-AZ) | Managed backups, patching and monitoring | Low | A second always-billed resource; cannot be stopped for more than seven days at a time | Strong | Low |
 
 **Chosen:** PostgreSQL container + backups. **Review:** at the production migration (RDS Multi-AZ).
