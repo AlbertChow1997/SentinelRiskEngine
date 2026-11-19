@@ -7,12 +7,13 @@ API and event contracts are the only thing services share. Code follows the cont
 |---|---|---|---|---|
 | `openapi-risk-engine-v1.yaml` | OpenAPI 3.1 (API 1.1.0) | risk-engine | frontend, payment-gateway, llm-insights | Imported from design v2.0. Not frozen. JWT security pending |
 | `openapi-payment-gateway-v1.yaml` | OpenAPI 3.1 (API 1.0.0) | payment-gateway | merchants, frontend | Imported from design v2.0. Not frozen. JWT on ops endpoints and `POST /api/v1/merchants/me` pending |
-| `asyncapi-events-v1.yaml` | AsyncAPI 3.0 | payment-gateway, risk-engine | all services | Imported from design v2.0. Not frozen. `risk.insights.v1` pending |
+| `asyncapi-events-v1.yaml` | AsyncAPI 3.0 (API 1.1.0) | payment-gateway, risk-engine, llm-insights | all services | Adds `risk.insights.v1`; existing topics/messages unchanged. Not frozen |
 | `openapi-ml-scorer-v1.yaml` | OpenAPI 3.1 (API 1.0.0) | ml-scorer | risk-engine | Written in RISK-140. Not frozen (freeze point H1, Tue 1 Dec 2026). Internal only, no authentication |
-| `openapi-llm-insights-v1.yaml` | OpenAPI 3.1 | llm-insights | frontend | **Missing** — bootstrap item 4 |
+| `openapi-llm-insights-v1.yaml` | OpenAPI 3.1 (API 1.0.0) | llm-insights | frontend | RISK-100 draft: five JWT-protected advisory/console APIs; producer/consumer review required before H11 |
 
-The three imported files are byte-for-byte copies of the design v2.0 contracts, so the next contract PR shows
-the security and LLM additions as a clean diff.
+The Risk Engine and Gateway OpenAPI files remain imported from design v2.0; their JWT and merchant-provisioning
+changes are still pending under RISK-100. The original AsyncAPI messages/schemas are preserved while insights is added.
+Q12 remains open for calls into the Risk Engine; this additive slice does not choose its service-to-service authentication.
 
 ## Change process
 

@@ -1,0 +1,452 @@
+openapi: 3.1.0
+info:
+  title: Sentinel LLM Insights API
+  version: 1.0.0
+  summary: Advisory risk summaries and a developer invocation console.
+  description: |
+    Producer: LLM Insights (Zheng Liu); consumers: frontend (Jiajun Xiao) and analysts/developers.
+    This draft implements DESIGN.md sections 6.6 and 13, before service implementation.
+    Insights are AI-generated and advisory: no endpoint changes a payment or risk decision.
+    Cognito access-token JWTs are required (token_use=access). Validate signature, issuer, expiry,
+    configured client_id and cognito:groups; validate a resource audience when one is configured.
+    x-required-roles documents allowed groups (any listed group); it is not an OAuth scope.
+    The backend enforces these roles; a UI role check is insufficient.
+    Times are UTC ISO 8601, JSON names are camelCase. Unknown fields are ignored for compatibility.
+    Request IDs are forwarded/generated and echoed; payloads and prompts must not be logged.
+    Public validation errors use HTTP 400 Problem Details, including mapped FastAPI request validation errors.
+    The contract remains unfrozen until H11. Pagination, feedback and statistics shapes require owner review.
+servers:
+  - url: http://localhost:8001
+    description: Local service
+security:
+  - BearerAuth: []
+tags:
+  - name: Insights
+    description: Analyst-facing advisory output only.
+  - name: Console
+    description: Developer/admin access to invocation records and aggregates.
+  - name: Feedback
+    description: Analyst feedback, attributed to the authenticated subject.
+paths:
+  /api/v1/insights/{assessmentId}:
+    get:
+      operationId: getLatestInsight
+      tags: [Insights]
+      summary: Get the latest valid insight for an assessment
+      description: Returns only a SUCCESS invocation's validated parsed output; 404 if no valid insight exists.
+      x-required-roles: [analyst, admin]
+      parameters:
+        - $ref: '#/components/parameters/AssessmentId'
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '200':
+          description: Latest valid advisory insight.
+          headers: { X-Request-Id: { $ref: '#/components/headers/RequestId' } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Insight' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '500': { $ref: '#/components/responses/Problem' }
+  /api/v1/llm/invocations:
+    get:
+      operationId: listInvocations
+      tags: [Console]
+      summary: Search invocation metadata without raw prompts
+      description: |
+        Zero-based pages, ordered by createdAt descending then invocationId ascending.
+        Filters are combined with AND; from is inclusive and to is exclusive. from >= to is invalid.
+        Defaults to the last 24 hours ending now. Raw prompt/response content requires the detail endpoint.
+      x-required-roles: [developer, admin]
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+        - { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+        - { name: assessmentId, in: query, schema: { type: string, format: uuid } }
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/InvocationStatus' } }
+        - { name: model, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: promptName, in: query, schema: { type: string, maxLength: 100 } }
+        - { name: promptVersion, in: query, schema: { type: string, pattern: '^v[1-9][0-9]*$' } }
+      responses:
+        '200':
+          description: Metadata page; an empty result has content [] and totalElements 0.
+          headers: { X-Request-Id: { $ref: '#/components/headers/RequestId' } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InvocationPage' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '500': { $ref: '#/components/responses/Problem' }
+  /api/v1/llm/invocations/{id}:
+    get:
+      operationId: getInvocation
+      tags: [Console]
+      summary: Inspect an invocation, its output and feedback
+      description: |
+        Developer/admin only. Includes stored rendered prompt, raw provider response and validation errors.
+        Never return these fields from the analyst insight endpoint or write them to request logs.
+      x-required-roles: [developer, admin]
+      parameters:
+        - $ref: '#/components/parameters/InvocationId'
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '200':
+          description: Invocation detail, including failures.
+          headers: { X-Request-Id: { $ref: '#/components/headers/RequestId' } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InvocationDetail' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '500': { $ref: '#/components/responses/Problem' }
+  /api/v1/llm/stats:
+    get:
+      operationId: getInvocationStats
+      tags: [Console]
+      summary: Get invocation, latency, token, cost and feedback aggregates
+      description: |
+        Defaults to the last 24 hours. Uses terminal invocation rows; budget skips that did not call the
+        provider are excluded. Q14's storage choice for budget skips remains open.
+        Counts are zero for an empty interval; ratios/percentiles without observations are null.
+      x-required-roles: [developer, admin]
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+      responses:
+        '200':
+          description: Aggregates and grouped breakdowns for the requested interval.
+          headers: { X-Request-Id: { $ref: '#/components/headers/RequestId' } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InvocationStats' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '500': { $ref: '#/components/responses/Problem' }
+  /api/v1/llm/invocations/{id}/feedback:
+    post:
+      operationId: recordInsightFeedback
+      tags: [Feedback]
+      summary: Record an analyst rating and optional comment
+      description: |
+        The userId comes from the verified JWT sub, never the request body. Each submission is a feedback
+        record. Comments must contain no personal/payment data. Feedback cannot alter a risk decision.
+      x-required-roles: [analyst, admin]
+      parameters:
+        - $ref: '#/components/parameters/InvocationId'
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FeedbackRequest' }
+            example: { rating: UP, comment: Useful explanation of the amount spike. }
+      responses:
+        '201':
+          description: Feedback recorded.
+          headers: { X-Request-Id: { $ref: '#/components/headers/RequestId' } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Feedback' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: The invocation has no valid SUCCESS insight to rate.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetail' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '500': { $ref: '#/components/responses/Problem' }
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Cognito access token; validate intended client and map cognito:groups to roles. ID tokens are not API credentials.
+  parameters:
+    RequestId:
+      name: X-Request-Id
+      in: header
+      schema: { type: string, maxLength: 64 }
+      description: Correlation ID; generated if absent, echoed on responses.
+    AssessmentId:
+      name: assessmentId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    InvocationId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    From:
+      name: from
+      in: query
+      description: Inclusive UTC lower bound; defaults to 24 hours before to.
+      schema: { type: string, format: date-time }
+    To:
+      name: to
+      in: query
+      description: Exclusive UTC upper bound; defaults to now. Must be later than from.
+      schema: { type: string, format: date-time }
+  headers:
+    RequestId:
+      description: Request correlation ID.
+      schema: { type: string }
+  schemas:
+    InsightOutput:
+      type: object
+      required: [summary, keySignals, suggestedAction, confidence, caveats]
+      properties:
+        summary: { type: string, minLength: 1, description: Two to four sentences for the analyst. }
+        keySignals: { type: array, items: { type: string } }
+        suggestedAction: { type: string, enum: [APPROVE, DECLINE, NEEDS_MORE_INFO], description: Advisory only. }
+        confidence: { type: string, enum: [LOW, MEDIUM, HIGH], description: 'Model self-report, not calibrated probability.' }
+        caveats: { type: array, items: { type: string } }
+    Insight:
+      allOf:
+        - $ref: '#/components/schemas/InsightOutput'
+        - type: object
+          required: [assessmentId, invocationId, generatedAt, model, promptName, promptVersion, advisory]
+          properties:
+            assessmentId: { type: string, format: uuid }
+            invocationId: { type: string, format: uuid }
+            generatedAt: { type: string, format: date-time }
+            model: { type: string }
+            promptName: { type: string }
+            promptVersion: { type: string, pattern: '^v[1-9][0-9]*$' }
+            advisory: { type: boolean, const: true }
+      example:
+        assessmentId: 11111111-1111-4111-8111-111111111111
+        invocationId: 22222222-2222-4222-8222-222222222222
+        generatedAt: '2026-11-19T12:00:00Z'
+        model: stub-v1
+        promptName: case_summary
+        promptVersion: v1
+        advisory: true
+        summary: The transaction is much larger than the historical average. An analyst should review the available evidence.
+        keySignals: [Amount exceeds the historical average]
+        suggestedAction: NEEDS_MORE_INFO
+        confidence: MEDIUM
+        caveats: [Synthetic portfolio data]
+    InvocationStatus:
+      type: string
+      enum: [SUCCESS, INVALID_OUTPUT, ERROR]
+    InvocationSummary:
+      type: object
+      required: [invocationId, assessmentId, model, promptName, promptVersion, status, latencyMs, inputTokens, outputTokens, estCostUsd, createdAt]
+      properties:
+        invocationId: { type: string, format: uuid }
+        assessmentId: { type: string, format: uuid }
+        model: { type: string }
+        promptName: { type: string }
+        promptVersion: { type: string, pattern: '^v[1-9][0-9]*$' }
+        status: { $ref: '#/components/schemas/InvocationStatus' }
+        latencyMs: { type: [integer, 'null'], minimum: 0 }
+        inputTokens: { type: [integer, 'null'], minimum: 0 }
+        outputTokens: { type: [integer, 'null'], minimum: 0 }
+        estCostUsd: { type: [number, 'null'], minimum: 0, description: Estimate only; null when usage is unknown. }
+        createdAt: { type: string, format: date-time }
+    InvocationPage:
+      type: object
+      required: [content, page, size, totalElements, totalPages]
+      properties:
+        content: { type: array, items: { $ref: '#/components/schemas/InvocationSummary' } }
+        page: { type: integer, minimum: 0 }
+        size: { type: integer, minimum: 1, maximum: 100 }
+        totalElements: { type: integer, minimum: 0 }
+        totalPages: { type: integer, minimum: 0 }
+      example: { content: [], page: 0, size: 20, totalElements: 0, totalPages: 0 }
+    InvocationDetail:
+      type: object
+      additionalProperties: true
+      allOf:
+        - $ref: '#/components/schemas/InvocationSummary'
+        - type: object
+          required: [renderedPrompt, rawResponse, parsedOutput, validationErrors, errorMessage, feedback]
+          properties:
+            renderedPrompt: { type: [string, 'null'] }
+            rawResponse: { type: [string, 'null'] }
+            parsedOutput:
+              description: Validated output for SUCCESS only; null for errors or invalid output.
+              anyOf:
+                - $ref: '#/components/schemas/InsightOutput'
+                - type: 'null'
+            validationErrors: { type: array, items: { type: string } }
+            errorMessage: { type: [string, 'null'] }
+            feedback: { type: array, items: { $ref: '#/components/schemas/Feedback' } }
+        - oneOf:
+            - type: object
+              additionalProperties: true
+              required: [status, parsedOutput]
+              properties:
+                status: { type: string, enum: [SUCCESS] }
+                parsedOutput: { $ref: '#/components/schemas/InsightOutput' }
+            - type: object
+              additionalProperties: true
+              required: [status, parsedOutput]
+              properties:
+                status: { type: string, enum: [INVALID_OUTPUT, ERROR] }
+                parsedOutput: { type: 'null' }
+      example:
+        invocationId: 22222222-2222-4222-8222-222222222222
+        assessmentId: 11111111-1111-4111-8111-111111111111
+        model: stub-v1
+        promptName: case_summary
+        promptVersion: v1
+        status: ERROR
+        latencyMs: 100
+        inputTokens: null
+        outputTokens: null
+        estCostUsd: null
+        createdAt: '2026-11-19T12:00:00Z'
+        renderedPrompt: null
+        rawResponse: null
+        parsedOutput: null
+        validationErrors: []
+        errorMessage: Provider unavailable
+        feedback: []
+    FeedbackRequest:
+      type: object
+      required: [rating]
+      properties:
+        rating: { type: string, enum: [UP, DOWN] }
+        comment: { type: string, maxLength: 1000 }
+    Feedback:
+      allOf:
+        - $ref: '#/components/schemas/FeedbackRequest'
+        - type: object
+          required: [id, invocationId, userId, createdAt]
+          properties:
+            id: { type: string, format: uuid }
+            invocationId: { type: string, format: uuid }
+            userId: { type: string, description: 'Verified Cognito sub, not a name or email.' }
+            createdAt: { type: string, format: date-time }
+      example:
+        id: 44444444-4444-4444-8444-444444444444
+        invocationId: 22222222-2222-4222-8222-222222222222
+        userId: analyst-sub-001
+        rating: UP
+        comment: Useful explanation of the amount spike.
+        createdAt: '2026-11-19T12:05:00Z'
+    InvocationStats:
+      type: object
+      required: [from, to, totalCalls, statusCounts, successRate, invalidOutputRate, errorRate, latencyMs, inputTokens, outputTokens, estCostUsd, feedback, breakdowns]
+      properties:
+        from: { type: string, format: date-time }
+        to: { type: string, format: date-time }
+        totalCalls: { type: integer, minimum: 0 }
+        statusCounts:
+          type: object
+          required: [SUCCESS, INVALID_OUTPUT, ERROR]
+          properties:
+            SUCCESS: { type: integer, minimum: 0 }
+            INVALID_OUTPUT: { type: integer, minimum: 0 }
+            ERROR: { type: integer, minimum: 0 }
+        successRate: { $ref: '#/components/schemas/NullableRatio' }
+        invalidOutputRate: { $ref: '#/components/schemas/NullableRatio' }
+        errorRate: { $ref: '#/components/schemas/NullableRatio' }
+        latencyMs:
+          type: object
+          required: [p50, p95]
+          properties:
+            p50: { type: [number, 'null'], minimum: 0 }
+            p95: { type: [number, 'null'], minimum: 0 }
+        inputTokens: { type: integer, minimum: 0 }
+        outputTokens: { type: integer, minimum: 0 }
+        estCostUsd: { type: number, minimum: 0, description: Sum of known estimates; unknown usage is not billed as measured usage. }
+        feedback:
+          type: object
+          required: [up, down, positiveRatio]
+          properties:
+            up: { type: integer, minimum: 0 }
+            down: { type: integer, minimum: 0 }
+            positiveRatio: { $ref: '#/components/schemas/NullableRatio' }
+        breakdowns:
+          type: array
+          items:
+            type: object
+            required: [dimension, key, calls, inputTokens, outputTokens, estCostUsd]
+            properties:
+              dimension: { type: string, enum: [DAY, MODEL, PROMPT] }
+              key: { type: string, description: 'UTC YYYY-MM-DD, model ID, or promptName/promptVersion.' }
+              calls: { type: integer, minimum: 0 }
+              inputTokens: { type: integer, minimum: 0 }
+              outputTokens: { type: integer, minimum: 0 }
+              estCostUsd: { type: number, minimum: 0 }
+      example:
+        from: '2026-11-18T12:00:00Z'
+        to: '2026-11-19T12:00:00Z'
+        totalCalls: 0
+        statusCounts: { SUCCESS: 0, INVALID_OUTPUT: 0, ERROR: 0 }
+        successRate: null
+        invalidOutputRate: null
+        errorRate: null
+        latencyMs: { p50: null, p95: null }
+        inputTokens: 0
+        outputTokens: 0
+        estCostUsd: 0
+        feedback: { up: 0, down: 0, positiveRatio: null }
+        breakdowns: []
+    NullableRatio:
+      type: [number, 'null']
+      minimum: 0
+      maximum: 1
+    ProblemDetail:
+      type: object
+      required: [type, title, status]
+      properties:
+        type: { type: string, default: about:blank }
+        title: { type: string }
+        status: { type: integer, minimum: 400, maximum: 599 }
+        detail: { type: string }
+        instance: { type: string }
+        code: { type: string }
+    ValidationProblem:
+      allOf:
+        - $ref: '#/components/schemas/ProblemDetail'
+        - type: object
+          properties:
+            errors:
+              type: object
+              additionalProperties: { type: string }
+              description: Field paths mapped to messages; never echo input values.
+  responses:
+    Unauthorized:
+      description: JWT missing, expired or invalid.
+      headers:
+        WWW-Authenticate:
+          schema: { type: string, example: Bearer }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetail' }
+    Forbidden:
+      description: Valid JWT without an allowed group.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetail' }
+    NotFound:
+      description: Invocation not found, or assessment has no valid SUCCESS insight.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetail' }
+    Problem:
+      description: Unexpected service error; never includes raw prompts, responses or credentials.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetail' }
+    ValidationError:
+      description: Invalid path/query/body or interval (from must be earlier than to); map FastAPI validation failures to public API Problem Details.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ValidationProblem' }
