@@ -6,7 +6,7 @@ signed-in product area for merchants and analysts, role-based dashboards and an 
 | | |
 |---|---|
 | **Owner** | Jiajun Xiao (@jiajunxiao-work) |
-| **Stack** | React 19, TypeScript (strict), Vite, React Router, TanStack Query. UI kit: **Proposed** Tailwind CSS + shadcn/ui + Framer Motion — Jiajun decides (open question Q15) |
+| **Stack** | React 19, TypeScript (strict), Vite, React Router, TanStack Query. UI kit: Tailwind CSS v4 + shadcn/ui with our own design tokens, Storybook ([ADR-0010](../docs/adr/0010-frontend-ui-kit.md)) |
 | **Ports** | 5173 (dev) · 3000 (Docker) |
 | **Contracts** | All OpenAPI files in `contracts/`; types are generated, never hand-written |
 | **Design** | `docs/DESIGN.md` §8, especially §8.8 (information architecture) |

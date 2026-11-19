@@ -7,7 +7,7 @@ Owner: Jiajun Xiao. Design: `docs/DESIGN.md` §8 (§8.8 takes precedence for rou
 
 ## Status
 
-Not scaffolded yet. The UI kit is decided in ADR-0010. The commands below are the target once RISK-30 lands.
+Scaffolded (RISK-30). The UI kit is decided in ADR-0010: design tokens live in `src/styles/index.css`, shadcn/ui components in `src/components/ui/`, and every component has a Storybook story.
 
 ## Stack
 
