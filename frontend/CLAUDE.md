@@ -31,6 +31,7 @@ npm test -- --run            # Vitest
 npm run build
 npm run generate:api         # regenerate types from ../contracts/*.yaml
 npx playwright test          # UI smoke tests against the preview build
+npm run storybook            # component catalogue on :6006 (axe a11y panel)
 ```
 
 ## Conventions
