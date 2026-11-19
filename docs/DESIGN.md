@@ -49,7 +49,7 @@
 3. **Authentication and roles** — Amazon Cognito with four roles. Ops and analytics endpoints are no longer unauthenticated; merchants are provisioned on first login (Section 14).
 4. **AWS staging environment** — ECS on a single EC2 Graviton host with scheduled start/stop, CloudFront, S3, Cognito and Bedrock; deployed only through the pipeline (Section 19, ADR-0007).
 5. **Python services stay on FastAPI** — `ml-scorer` and the new `llm-insights` both use FastAPI. Django was evaluated and rejected on 11 Nov 2026 (ADR-0009).
-6. **Frontend UI kit** — Tailwind CSS + shadcn/ui + Framer Motion is **Proposed** in place of MUI; Jiajun decides (Section 8.1).
+6. **Frontend UI kit** — Tailwind CSS + shadcn/ui with our own design tokens, Motion, TanStack Table and Recharts replace MUI (Section 8.1, ADR-0010, decided 14 Nov 2026).
 7. **Engineering process** — Conventional Commits, ADRs, three living documents, runbooks and an Operational Readiness Review (Section 5).
 8. **Schedule and tracking setup moved** to `docs/ROADMAP.md`. Sections 13 and 14 of v2.0 (Schedule, Jira setup) are replaced here by the LLM Insights and Authentication designs.
 9. **GitHub Issues and a GitHub Project replace Jira** as the backlog and sprint tool (`TECH_DECISIONS.md` D17). The `RISK-<n>` keys remain as backlog IDs.
@@ -225,7 +225,7 @@ The staging deployment of this system (CloudFront, S3, one ECS host) is in Secti
 | `payment-gateway` | Jiawei | Java 21, Spring Boot 4.1.x, Spring for Apache Kafka | 8080 | Merchant API, payment lifecycle, idempotency, risk check, acquirer simulation, ledger, outbox |
 | `risk-engine` | Jiawei | Java 21, Spring Boot 4.1.x | 8081 | Risk API, rules, context features, ML orchestration, decisions, audit, risk events |
 | `ml-scorer` | Zheng | Python 3.12, FastAPI, scikit-learn, uv | 8000 | Fraud probability + explanation; feedback collector (`ml-feedback`, no port) |
-| `frontend` | Jiajun | React 19, TypeScript, Vite, TanStack Query; UI kit **Proposed**: Tailwind CSS + shadcn/ui + Framer Motion (was MUI) | 5173 dev / 3000 docker | Public website, merchant and analyst web app, LLM Console |
+| `frontend` | Jiajun | React 19, TypeScript, Vite, TanStack Query; UI kit: Tailwind CSS + shadcn/ui with own design tokens (ADR-0010; was MUI) | 5173 dev / 3000 docker | Public website, merchant and analyst web app, LLM Console |
 | `postgres` | Jiawei | PostgreSQL 18 | 5432 | Databases `sentinel` (risk), `gateway` and `llm` — **one database per service** |
 | `kafka` | Jiawei | Apache Kafka 4.x, KRaft mode (no ZooKeeper) | 9092 | Event backbone |
 | `kafka-ui` (Could) | Jiawei | kafbat/kafka-ui | 8085 | Inspect topics during demos |
@@ -850,7 +850,8 @@ Release 2 backlog items: RISK-82, RISK-83 (Section 10.11).
 | Concern | Choice | Why |
 |---|---|---|
 | Build | Vite + React 19 + TypeScript (strict) | Industry default for new SPAs |
-| UI kit | **Proposed:** Tailwind CSS + shadcn/ui + Framer Motion for the public site, TanStack Table in the app area. Original choice: MUI + MUI X DataGrid. **Jiajun decides**; record the decision as an ADR before the first UI PR | Marketing pages need custom layout and motion; data tables need server-side paging and sorting |
+| UI kit | Tailwind CSS v4 + shadcn/ui (Radix primitives) styled with our own design tokens; Motion (formerly Framer Motion) for animation; TanStack Table (+ TanStack Virtual) for tables. One kit for the public site and the app area (ADR-0010; replaces MUI + MUI X DataGrid) | Marketing pages need custom layout and motion; data tables need server-side paging and sorting; one token-driven library keeps the site and the app consistent |
+| Component catalogue | Storybook, with axe accessibility checks | Documents every shared component and its states |
 | Routing | React Router | Standard |
 | Server state | TanStack Query | Caching, loading/error states, invalidation after review |
 | API types | `openapi-typescript` + `openapi-fetch` generated from `contracts/openapi-risk-engine-v1.yaml` | Types always match the contract; a contract change = compile error |
@@ -868,7 +869,7 @@ Release 2 backlog items: RISK-82, RISK-83 (Section 10.11).
 | Route | Page | Content | API calls | Priority |
 |---|---|---|---|---|
 | `/` | Dashboard | KPI cards (total, approve/review/decline counts, decline rate, pending review, degraded count, avg score), decision bar chart, score histogram, 5 most recent high-risk cases; time range 24 h / 7 d | `GET /stats/summary`, `GET /risk-assessments?minScore=70&size=5` | Must |
-| `/assessments` | Assessments | Server-side paged DataGrid; filters: decision, status, customerId, min score, date range; sort by time/score/amount; row click → detail | `GET /risk-assessments` | Must |
+| `/assessments` | Assessments | Server-side paged table (TanStack Table); filters: decision, status, customerId, min score, date range; sort by time/score/amount; row click → detail | `GET /risk-assessments` | Must |
 | `/assessments/:id` | Assessment detail | Transaction info; score breakdown (rule vs ML vs final); rule hits table; ML top factors; review panel; audit timeline; "degraded" banner | `GET /risk-assessments/{id}`, `GET …/audit-events` | Must |
 | `/review` | Review queue | `status=PENDING_REVIEW`, oldest first; Approve / Decline buttons → dialog with note; queue refreshes after action | `GET /risk-assessments?status=PENDING_REVIEW&sort=assessedAt,asc`, `POST …/review` | Must |
 | `/simulate` | Transaction simulator | Form for all request fields; preset buttons (Normal, High amount, High-risk country, Blocklisted customer, Burst ×6); shows the returned assessment; "Generate new transactionId" | `POST /risk-assessments` | Must |
@@ -928,7 +929,7 @@ frontend/src/
 
 | Route | Page | Content | API |
 |---|---|---|---|
-| `/payments` | Payments | Paged DataGrid: id, merchant, amount, status chip, risk score badge, created; filters status/merchant/customer/date | `GET /api/v1/ops/payments` |
+| `/payments` | Payments | Paged table: id, merchant, amount, status chip, risk score badge, created; filters status/merchant/customer/date | `GET /api/v1/ops/payments` |
 | `/payments/:id` | Payment detail | Summary card; **status timeline**; refunds; ledger table (debits/credits, balanced check ✓); link "View risk assessment →" | `GET /api/v1/ops/payments/{id}` |
 | `/checkout` | Demo checkout (merchant simulator) | Amount, currency, customer, country, **test-token picker**, capture method; result panel; Capture / Cancel / Refund buttons for the created payment; auto-generates `Idempotency-Key` (with a "resend same key" button to demo idempotency) | merchant endpoints with `VITE_DEMO_MERCHANT_KEY` |
 | `/assessments/:id` | (extend) | Show `paymentStatus`, `fraudConfirmed` badge, link to payment | risk API 1.1.0 |
@@ -1924,7 +1925,7 @@ Due dates are tracked in `docs/ROADMAP.md`. Q1–Q9 are carried over from design
 | Q12 | Service-to-service authentication once the Risk Engine API requires a JWT (network-only trust, a shared internal header, or Cognito client credentials) | Jiawei |
 | Q13 | Does Zheng own `llm-insights`? Does its Kafka consumer stay inside the web process or get its own container? | Zheng + Jiawei |
 | Q14 | LLM persistence details: separate `risk_insight` table or latest successful invocation; is a budget skip stored as a row? | Zheng |
-| Q15 | Frontend UI kit: Tailwind CSS + shadcn/ui + Framer Motion, or stay with MUI? (ADR before the first UI PR) | Jiajun |
+| Q15 | *Closed 14 Nov 2026:* the frontend uses Tailwind CSS + shadcn/ui with our own design tokens; MUI is not used (ADR-0010) | — |
 | Q16 | *Closed 13 Nov 2026:* Zheng wrote `openapi-ml-scorer-v1.yaml` (RISK-140); it freezes at H1 | — |
 | Q17 | *Closed 11 Nov 2026:* the repository is MIT-licensed (`LICENSE`) | — |
 | Q18 | *Closed 16 Nov 2026:* Java 21 + Spring Boot 4.1.2 selected for the backend scaffold (ADR-0008); gateway follows the same line | — |

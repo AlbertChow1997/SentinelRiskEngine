@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Purpose** | Why each technology was chosen: one comparison table per decision, the chosen option, the ADR that records it and when to look again |
-| **Last updated** | 16 Nov 2026 |
+| **Last updated** | 19 Nov 2026 |
 | **Update when** | Any new dependency, service, cloud resource or replacement — in the same PR as the change |
 
 **Status values.** *Accepted* — agreed and in force.
@@ -25,7 +25,7 @@ Costs are indicative for eu-west-1 and must be re-checked with the AWS Pricing C
 | D06 | Infrastructure as code | Terraform | Accepted | 0011 (to write) |
 | D07 | Identity provider | Amazon Cognito | Accepted | 0012 (to write) |
 | D08 | LLM access | Amazon Bedrock | Accepted | 0013 (to write) |
-| D09 | Frontend UI kit | Tailwind CSS + shadcn/ui + Framer Motion | **Proposed** (Jiajun decides) | 0010 (to write) |
+| D09 | Frontend UI kit | Tailwind CSS + shadcn/ui (Radix) with own design tokens, Motion, TanStack Table, Recharts | Accepted | [0010](adr/0010-frontend-ui-kit.md) |
 | D10 | CI/CD | GitHub Actions | Accepted | [0008](adr/0008-core-technology-stack.md) |
 | D11 | Network layout | Public subnets, no NAT Gateway | Accepted | [0007](adr/0007-single-host-ecs-staging.md) |
 | D12 | Staging hosting shape | One EC2 host running ECS | Accepted | [0007](adr/0007-single-host-ecs-staging.md) |
@@ -48,7 +48,7 @@ Costs are indicative for eu-west-1 and must be re-checked with the AWS Pricing C
 | 0007 | Single-host ECS staging with scheduled start/stop | Accepted | [adr/0007-single-host-ecs-staging.md](adr/0007-single-host-ecs-staging.md) |
 | 0008 | Core technology stack (D01, D02, D03, D10) | Accepted; updated 16 Nov 2026 | [adr/0008-core-technology-stack.md](adr/0008-core-technology-stack.md) |
 | 0009 | FastAPI for the Python services (Django considered and rejected) | Accepted | [adr/0009-fastapi-for-python-services.md](adr/0009-fastapi-for-python-services.md) |
-| 0010 | Frontend UI kit | Proposed | to be written by Jiajun before the first UI PR |
+| 0010 | Tailwind CSS and shadcn/ui with our own design tokens for the frontend | Accepted | [adr/0010-frontend-ui-kit.md](adr/0010-frontend-ui-kit.md) |
 | 0011 | Terraform for infrastructure as code | Accepted | to be written with the first infra PR |
 | 0012 | Amazon Cognito as identity provider | Accepted | to be written at M3 |
 | 0013 | Amazon Bedrock for LLM access | Accepted | to be written at M4 |
@@ -148,11 +148,14 @@ Design v2.0 numbered the tech-stack ADR 0001. ADR-0001 is now "Record architectu
 
 | Option | Fit | Learning curve | Cost | Ecosystem / hiring signal | Operational burden |
 |---|---|---|---|---|---|
-| **Tailwind CSS + shadcn/ui + Framer Motion** (+ TanStack Table, Recharts) | Strong for a custom marketing site with motion; components are copied into the repo and fully editable | Medium — tables and forms need more assembly | Free | Strong and current | We own the copied component code |
+| **Tailwind CSS + shadcn/ui (Radix) + Motion** with own design tokens (+ TanStack Table, Recharts) | Strong for a custom marketing site with motion and for a token-driven component library; components are copied into the repo and fully editable; Radix gives accessible primitives | Medium — tables and forms need more assembly | Free | Strong and current; design systems and component libraries are a common frontend interview topic | We own the copied component code |
 | MUI + MUI X DataGrid (original choice) | Strong for the data-heavy app area out of the box; harder to make a distinctive marketing site | Low | Free tier of DataGrid is enough | Strong in enterprise dashboards | Low; a look that is recognisably Material |
+| Split: Tailwind for the site, MUI for the app | Best fit per area | Medium–high — two systems | Free | Mixed | Two sets of tokens and components for one owner; inconsistent look |
 
-**Recommendation:** Tailwind CSS + shadcn/ui + Framer Motion for the public site and TanStack Table + Recharts in the app area.
-**Status:** **Proposed** — Jiajun decides and records ADR-0010 before the first UI PR (Q15).
+**Chosen:** Tailwind CSS v4 + shadcn/ui on Radix primitives, styled with our own design tokens (CSS variables), Motion (formerly
+Framer Motion) for animation, TanStack Table (+ TanStack Virtual) and Recharts in the app area, one kit for the whole frontend.
+Storybook is the component catalogue, with axe accessibility checks (ADR-0010, decided by Jiajun on 14 Nov 2026).
+**Review:** M3, if the app-area tables take much longer to build than a ready-made data grid would.
 
 ## D10 — CI/CD
 

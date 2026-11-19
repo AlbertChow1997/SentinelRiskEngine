@@ -7,12 +7,14 @@ Owner: Jiajun Xiao. Design: `docs/DESIGN.md` §8 (§8.8 takes precedence for rou
 
 ## Status
 
-Not scaffolded yet. The UI kit decision (ADR-0010) comes before the first UI PR. The commands below are the target once RISK-30 lands.
+Not scaffolded yet. The UI kit is decided in ADR-0010. The commands below are the target once RISK-30 lands.
 
 ## Stack
 
 - React 19, TypeScript strict, Vite, React Router, TanStack Query.
 - API types generated from `contracts/` with `openapi-typescript`; calls through `openapi-fetch`.
+- UI kit (ADR-0010): Tailwind CSS v4 with our own design tokens (CSS variables), shadcn/ui components on Radix primitives in `src/components/ui/`, Motion (formerly Framer Motion) for animation, TanStack Table (+ TanStack Virtual) for tables. No MUI.
+- Storybook is the component catalogue; axe checks accessibility on stories and in Playwright.
 - React Hook Form + Zod, MSW for mocks, Recharts for charts.
 - Auth: `react-oidc-context` / `oidc-client-ts`, Authorization Code + PKCE against Cognito.
 - Vitest + React Testing Library; Playwright for end-to-end UI tests; ESLint + Prettier.
@@ -44,6 +46,7 @@ npx playwright test          # UI smoke tests against the preview build
 - Times: local time on screen, UTC in a tooltip.
 - Score bands match the backend: 0–39 Low (green), 40–69 Medium (amber), 70–100 High (red). Always show the text label as well as the colour.
 - Accessibility target is WCAG 2.1 AA: keyboard navigation, contrast, alt text, `prefers-reduced-motion`.
+- Colours, spacing, radius and motion come from the design tokens; never hard-code a hex value or a one-off size in a component.
 - The visual style is *inspired by* modern fintech marketing sites. **Do not copy any third party's logo, wordmark, illustrations, copy, exact gradients or code.** Brand: "Sentinel Pay".
 - Footer on every page: *"Portfolio project — not a real payment service."* Pricing is labelled as demo pricing.
 - Never commit a real key. `.env.example` holds placeholders.
