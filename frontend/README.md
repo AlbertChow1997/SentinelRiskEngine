@@ -10,8 +10,17 @@ signed-in product area for merchants and analysts, role-based dashboards and an 
 | **Ports** | 5173 (dev) · 3000 (Docker) |
 | **Contracts** | All OpenAPI files in `contracts/`; types are generated, never hand-written |
 | **Design** | `docs/DESIGN.md` §8, especially §8.8 (information architecture) |
-| **Status** | Not scaffolded yet — first tickets RISK-120 (UI kit ADR) and RISK-30 (scaffold, milestone M0) |
+| **Status** | Scaffolded (RISK-30): site shell, routing, design tokens, tests and CI. Pages land in RISK-121 onwards |
 
 Every page footer says: *"Portfolio project — not a real payment service."*
+
+## Quick start
+
+```bash
+npm ci
+npm run dev          # http://localhost:5173, proxies /api to the risk engine on :8081
+npm test -- --run    # Vitest + React Testing Library
+npm run build        # type-check and production build into dist/
+```
 
 Working conventions for this folder are in [`CLAUDE.md`](CLAUDE.md).
