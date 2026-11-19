@@ -1,6 +1,6 @@
 import type { RouteObject } from 'react-router'
 import { SiteLayout } from '@/layout/SiteLayout'
-import { HomePage } from '@/pages/HomePage'
+import { HomePage } from '@/pages/home/HomePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
 import { RouteErrorPage } from '@/pages/RouteErrorPage'
