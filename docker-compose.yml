@@ -1,9 +1,9 @@
 # Sentinel Pay — local stack (skeleton).
 #
-#   make up                      -> shared infrastructure only (postgres, kafka)
+#   make up                      -> risk-engine, postgres and kafka
 #   docker compose --profile tools up -d   -> also Kafka UI on :8085
 #
-# Application services (payment-gateway, risk-engine, ml-scorer, ml-feedback, llm-insights,
+# Application services (payment-gateway, ml-scorer, ml-feedback, llm-insights,
 # frontend) are added here by the PR that scaffolds each component. The target shape and
 # port map are in docs/DESIGN.md §12.1. Local ports: gateway 8080, risk-engine 8081,
 # ml-scorer 8000, llm-insights 8001, frontend 3000, postgres 5432, kafka 9092, kafka-ui 8085.
@@ -22,7 +22,8 @@ services:
     volumes:
       # Creates the extra per-service databases: gateway, llm (one database per service).
       - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
-      - postgres-data:/var/lib/postgresql/data
+      # PostgreSQL 18 stores PGDATA in /var/lib/postgresql/18/docker.
+      - postgres-data:/var/lib/postgresql
     ports:
       - "5432:5432"
     healthcheck:
@@ -30,6 +31,15 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  risk-engine:
+    build: ./backend
+    ports:
+      - "8081:8081"
+    # M0 exposes health only; database, Kafka and ML integration arrive in M1/M2.
+    init: true
+    mem_limit: 512m
+    stop_grace_period: 30s
 
   kafka:
     image: apache/kafka:4.3.1

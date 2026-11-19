@@ -39,6 +39,7 @@ The user you are talking to is usually **Jiawei Zhou**. Only change another owne
 9. **Unclear or blocked? Raise a GitHub issue; don't guess.** Draft the issue (template in §9.4), show it to the user, and create it with `gh issue create` only after the user confirms.
 10. **Verify versions.** Don't rely on memory for library APIs, especially Spring Boot 4, Spring Kafka, React 19, Terraform AWS provider and Bedrock SDKs. Check official docs or the versions already in the build files. When unsure, say so.
 11. **Ask before anything irreversible or costly:** `terraform apply`, deleting AWS resources, force-pushing, rewriting history, changing branch protection, or anything that incurs AWS charges.
+12. **Write a local explanation for every change.** Before handoff, create or update a numbered Chinese note in the git-ignored `local-notes/` directory and update its index. Follow `AGENTS.md` and `local-notes/README.md`; record actual implementation, validation, limitations and next steps. This also applies to reviews, merges, configuration and documentation updates. Never force-add local notes to GitHub; they supplement the English project docs.
 
 ---
 
@@ -231,7 +232,7 @@ Managed services: ECR · Cognito · Bedrock · SSM Parameter Store · CloudWatch
 | Container orchestration | **ECS on EC2**, one ECS service per component, **bridge** network mode with static host ports | `minimumHealthyPercent = 0`, `maximumPercent = 100` (one host + static ports means a short restart per deploy — accepted, documented). Deployment circuit breaker with rollback enabled |
 | Service-to-service calls | Via the host: services call each other at `http://<docker0 gateway>:<port>` (e.g. `172.17.0.1:8000`) set through env vars | Service Connect is the cleaner option but its Envoy sidecars cost ~50 MB each; revisit if memory allows (record in TECH_DECISIONS) |
 | Images | **ARM64 only** (`linux/arm64`), built on GitHub-hosted ARM runners or with `docker buildx`; stored in **ECR** with scan-on-push and a lifecycle policy (keep last 10) | Verify every base image (Kafka, Postgres, Python, JRE) publishes `linux/arm64` |
-| Database | **PostgreSQL 17 container** on the data volume | Nightly `pg_dump` to a private S3 bucket (7-day lifecycle) + daily EBS snapshots via **Data Lifecycle Manager** (keep 7). Upgrade path: RDS |
+| Database | **PostgreSQL 18 container** on the data volume | Nightly `pg_dump` to a private S3 bucket (7-day lifecycle) + daily EBS snapshots via **Data Lifecycle Manager** (keep 7). Upgrade path: RDS |
 | Kafka | **Single-broker KRaft container** on the data volume | MSK is too costly; outbox tables remain the source of truth |
 | Ingress | **CloudFront** for HTTPS on the default `*.cloudfront.net` domain; nginx on the instance as reverse proxy | CloudFront → origin is HTTP, locked to the CloudFront prefix list + secret header (stored in SSM). Upgrade path: own domain + TLS to origin. No ALB (saves ~$18/month) |
 | Static IP | One **Elastic IP** so the CloudFront origin hostname survives stop/start | Billed hourly whether the instance runs or not (~$3.6/month) |

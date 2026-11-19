@@ -9,7 +9,8 @@ Sentinel Pay simulates an enterprise fintech product: a **payment gateway** that
 the way a large engineering organisation would: design docs, architecture decision records, small reviewed pull requests,
 CI/CD, infrastructure as code and operational readiness reviews.
 
-**Status:** repository bootstrap. Documents, contracts and tooling are in place; the services are not scaffolded yet.
+**Status:** the Risk Engine M0 skeleton provides health checks, request correlation, JSON logs and a container build.
+Other services are not scaffolded yet. Documents, contracts and shared tooling are in place.
 See [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Architecture
@@ -56,9 +57,9 @@ contract checks.
 
 ```bash
 cp .env.example .env     # local-only settings; .env is git-ignored
-make up                  # start PostgreSQL and Kafka
+make up                  # start the Risk Engine health service, PostgreSQL 18 and Kafka
 make contracts           # validate the OpenAPI and AsyncAPI contracts
-make test                # run every component's tests (components not scaffolded yet are skipped)
+make test                # run backend checks; components not scaffolded yet are skipped
 make down
 ```
 

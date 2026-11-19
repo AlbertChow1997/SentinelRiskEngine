@@ -16,6 +16,10 @@ updates:
       interval: weekly
     commit-message:
       prefix: "chore(deps)"
+    ignore:
+      # Stay on the agreed PostgreSQL 18 line; review major upgrades explicitly.
+      - dependency-name: postgres
+        update-types: ["version-update:semver-major"]
 
   # - package-ecosystem: maven
   #   directories: ["/backend", "/payment-gateway"]

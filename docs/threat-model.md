@@ -38,6 +38,7 @@ llm-insights ──▶ [boundary: instance role] ──▶ Bedrock
 | EP6 | Kafka topics | Network-internal only | M2 |
 | EP7 | Deploy pipeline | GitHub OIDC + environment approval | M0 |
 | EP8 | SSM Session Manager | IAM | M0 |
+| EP9 | `/actuator/health` and its liveness/readiness groups | None; status only, no component details | M0 (RISK-11) |
 
 ## 3. Threats and mitigations
 
@@ -60,9 +61,12 @@ Seed entries from the design. Each row needs an owner and a status once the comp
 | T13 | Elevation of privilege | A user grants themself a role | Roles are Cognito groups; only an admin assigns them; backends trust only the signed claim | Planned (M3) |
 | T14 | Elevation of privilege | Prompt injection through transaction fields makes the LLM output misleading text | Output schema validation; the LLM is advisory and cannot act; fields are typed and length-limited before rendering | Planned (M4) |
 | T15 | Elevation of privilege | A compromised workflow deploys to AWS | OIDC role limited to this repository and branch; environment approval gate; least-privilege IAM policy | Planned (M0) |
+| T16 | Information disclosure | Actuator leaks environment variables or configuration | Only health exposed; details disabled; HTTP test verifies `/actuator/env` is unavailable | Implemented (RISK-11) |
+| T17 | Tampering | Caller-controlled request IDs inject log content or leak into another request | Restrict to 1–64 safe ASCII characters; generate a UUID otherwise; restore MDC in `finally`; do not log payloads | Implemented (RISK-11) |
 
 ## 4. Review log
 
 | Date | Change | Reviewer |
 |---|---|---|
 | 11 Nov 2026 | Skeleton created with seed threats from `DESIGN.md` | — |
+| 16 Nov 2026 | RISK-11 adds health-only HTTP entry point and request-ID safeguards | Pending teammate review |
