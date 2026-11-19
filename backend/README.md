@@ -50,4 +50,7 @@ when its major version or volume layout changes. Never delete a volume to upgrad
 - Official Unix/Windows Maven wrappers, multi-stage Dockerfile and minimal build context.
 
 Entities/migrations, risk APIs, rules, scoring, ML calls, JWT and Kafka follow in their implementation tickets.
-RISK-12 (#7) adds backend CI and Maven Dependabot configuration. See [`CLAUDE.md`](CLAUDE.md) for conventions.
+`ci-backend.yml` runs `./mvnw -B -ntp verify` with Temurin 21 for PRs and main pushes affecting `backend/`, `contracts/`
+or that workflow, and supports manual runs. It uploads `backend-jacoco` and `backend-test-results` artifacts for 14 days.
+Maven Dependabot checks `backend/` weekly; the gateway remains disabled until it has a POM.
+See [`CLAUDE.md`](CLAUDE.md) for conventions.

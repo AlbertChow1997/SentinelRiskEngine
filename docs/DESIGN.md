@@ -438,7 +438,8 @@ Each component workflow runs only when its folder (or `contracts/`) changes (`on
 
 | Workflow | Trigger | Steps | Status |
 |---|---|---|---|
-| `ci-backend.yml`, `ci-gateway.yml` | PR / push touching the folder or `contracts/` | `./mvnw -B verify` (unit + Testcontainers), JaCoCo coverage report | With each scaffold PR |
+| `ci-backend.yml` | PR / main push touching `backend/`, `contracts/` or the workflow; manual | Java 21, `./mvnw -B -ntp verify`, JaCoCo and test-result artifacts (14 days) | Added in RISK-12; current M0 tests need no Docker |
+| `ci-gateway.yml` | PR / push touching the folder or `contracts/` | `./mvnw -B verify`, JaCoCo coverage report | With the gateway scaffold |
 | `ci-ml.yml`, `ci-llm.yml` | same | `uv sync`, `ruff check`, `ruff format --check`, `mypy`, `pytest` (`StubProvider` only, no cloud calls) | With each scaffold PR |
 | `ci-frontend.yml` | same | `npm ci`, lint, typecheck, unit tests, build, Playwright smoke against the preview build | With the scaffold PR |
 | `contracts.yml` | changes in `contracts/` | Validate OpenAPI (Redocly) and AsyncAPI (AsyncAPI CLI); detect breaking changes (`oasdiff`) | **Exists** |

@@ -6,7 +6,8 @@ Owner: Jiawei Zhou. Design: `docs/DESIGN.md` §4.3–4.4 and §7. Contract: `con
 ## Status
 
 RISK-11 provides the M0 walking skeleton: health, JSON logs, request IDs, tests and an ARM64-capable container.
-It starts without PostgreSQL, Kafka or AWS. Persistence and business APIs arrive in M1; backend CI is RISK-12 (#7).
+It starts without PostgreSQL, Kafka or AWS. Persistence and business APIs arrive in M1.
+RISK-12 (#7) adds `ci-backend.yml`: Java 21 verification, coverage/test artifacts and backend Maven Dependabot updates.
 
 ## Stack
 
