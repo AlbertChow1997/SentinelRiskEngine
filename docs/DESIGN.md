@@ -222,11 +222,11 @@ The staging deployment of this system (CloudFront, S3, one ECS host) is in Secti
 
 | Component | Owner | Tech | Port | Responsibility |
 |---|---|---|---|---|
-| `payment-gateway` | Jiawei | Java 21, Spring Boot 4.0.x, Spring for Apache Kafka | 8080 | Merchant API, payment lifecycle, idempotency, risk check, acquirer simulation, ledger, outbox |
-| `risk-engine` | Jiawei | Java 21, Spring Boot 4.0.x | 8081 | Risk API, rules, context features, ML orchestration, decisions, audit, risk events |
+| `payment-gateway` | Jiawei | Java 21, Spring Boot 4.1.x, Spring for Apache Kafka | 8080 | Merchant API, payment lifecycle, idempotency, risk check, acquirer simulation, ledger, outbox |
+| `risk-engine` | Jiawei | Java 21, Spring Boot 4.1.x | 8081 | Risk API, rules, context features, ML orchestration, decisions, audit, risk events |
 | `ml-scorer` | Zheng | Python 3.12, FastAPI, scikit-learn, uv | 8000 | Fraud probability + explanation; feedback collector (`ml-feedback`, no port) |
 | `frontend` | Jiajun | React 19, TypeScript, Vite, TanStack Query; UI kit: Tailwind CSS + shadcn/ui with own design tokens (ADR-0010; was MUI) | 5173 dev / 3000 docker | Public website, merchant and analyst web app, LLM Console |
-| `postgres` | Jiawei | PostgreSQL 17 | 5432 | Databases `sentinel` (risk), `gateway` and `llm` — **one database per service** |
+| `postgres` | Jiawei | PostgreSQL 18 | 5432 | Databases `sentinel` (risk), `gateway` and `llm` — **one database per service** |
 | `kafka` | Jiawei | Apache Kafka 4.x, KRaft mode (no ZooKeeper) | 9092 | Event backbone |
 | `kafka-ui` (Could) | Jiawei | kafbat/kafka-ui | 8085 | Inspect topics during demos |
 | `llm-insights` | Zheng (proposed) | Python 3.12, FastAPI, SQLAlchemy + Alembic, boto3 (Bedrock), Pydantic v2, uv | 8001 | Advisory case summaries for analysts; LLM invocation log, stats and feedback |
@@ -500,7 +500,7 @@ AI tools (Claude, Copilot, etc.) are encouraged for scaffolding, boilerplate, te
 
 ## 6. Interface contracts (summary)
 
-Full definitions are in `contracts/`. OpenAPI files target OpenAPI 3.1; the event file targets AsyncAPI 3.0. As of 11 Nov 2026 the repository holds the Risk Engine, Payment Gateway and events contracts imported unchanged from design v2.0. Still to be written, contract first: `openapi-ml-scorer-v1.yaml` (Section 6.2), `openapi-llm-insights-v1.yaml` (Section 6.6), and the authentication changes listed in Section 6.7.
+Full definitions are in `contracts/`. OpenAPI files target OpenAPI 3.1; the event file targets AsyncAPI 3.0. As of 11 Nov 2026 the repository holds the Risk Engine, Payment Gateway and events contracts imported unchanged from design v2.0. `openapi-ml-scorer-v1.yaml` (Section 6.2) was added in RISK-140. Still to be written, contract first: `openapi-llm-insights-v1.yaml` (Section 6.6), and the authentication changes listed in Section 6.7.
 
 ### 6.1 Risk Engine API (1.1.0) — producer Risk Engine, consumers Frontend & Gateway
 
@@ -591,11 +591,13 @@ None of the imported contracts has been frozen yet (freeze points H1, H6, H11), 
 
 | Concern | Choice |
 |---|---|
-| Runtime | Java 21, Spring Boot 4.0.x (latest stable) |
+| Runtime | Java 21, Spring Boot 4.1.2 (ADR-0008) |
 | Initializr dependencies | Spring Web, Validation, Spring Data JPA, PostgreSQL Driver, Flyway Migration, Actuator, Testcontainers |
 | Extra libraries | springdoc-openapi (Boot 4–compatible line), `resilience4j-circuitbreaker` (core library, used programmatically — avoids starter compatibility issues), WireMock (tests) |
 | HTTP client | Spring `RestClient` with connect timeout 100 ms, read timeout 200 ms |
-| Tests | JUnit 5, AssertJ, MockMvc, Testcontainers (PostgreSQL), WireMock |
+| Tests | JUnit Jupiter (Spring Boot-managed), AssertJ, MockMvc, Testcontainers (PostgreSQL), WireMock |
+
+The RISK-11 M0 scaffold includes only Spring MVC, Actuator, JSON logging and request correlation. It listens on 8081 and starts without infrastructure. The stack and package tree below describe the M1/M2 implementation target. PostgreSQL 18 is the baseline for every persistence environment (ADR-0008).
 
 ### 7.2 Package structure (package-by-feature)
 
@@ -774,7 +776,7 @@ JSONB columns map with Hibernate `@JdbcTypeCode(SqlTypes.JSON)`. `audit_event` i
 
 | Level | What | Tools |
 |---|---|---|
-| Unit | Each rule, `ScoreAggregator` (thresholds, escalation, hard decline, degraded), request hashing | JUnit 5, AssertJ |
+| Unit | Each rule, `ScoreAggregator` (thresholds, escalation, hard decline, degraded), request hashing | JUnit Jupiter (Spring Boot-managed), AssertJ |
 | Web slice | Validation, Problem Details, 404/409 mapping | `@WebMvcTest`, MockMvc |
 | Integration | Repository queries, context builder, idempotency race, optimistic locking | `@SpringBootTest`, Testcontainers PostgreSQL (`@ServiceConnection`) |
 | Contract-ish | ML client against WireMock stubs built from `openapi-ml-scorer-v1.yaml` examples; timeout → fallback | WireMock |
@@ -1114,11 +1116,11 @@ For each feature, compare the request's value with the training distribution (st
 
 | Concern | Choice |
 |---|---|
-| Runtime | Java 21, Spring Boot 4.0.x — same baseline as the Risk Engine |
+| Runtime | Java 21, Spring Boot 4.1.x — same baseline as the Risk Engine |
 | Initializr dependencies | Spring Web, Validation, Spring Data JPA, PostgreSQL Driver, Flyway Migration, **Spring for Apache Kafka**, Actuator, Testcontainers |
 | Extra libraries | springdoc-openapi, `resilience4j-circuitbreaker` (core), `ulid-creator` (sortable IDs), WireMock (tests) |
 | HTTP client to Risk Engine | `RestClient`, connect 100 ms / read 300 ms, circuit breaker (window 20, failure 50 %, open 30 s) |
-| Tests | JUnit 5, AssertJ, MockMvc, Testcontainers (PostgreSQL **and** Kafka `apache/kafka` image), WireMock, Awaitility (async assertions) |
+| Tests | JUnit Jupiter (Spring Boot-managed), AssertJ, MockMvc, Testcontainers (PostgreSQL **and** Kafka `apache/kafka` image), WireMock, Awaitility (async assertions) |
 
 > Don't share Java code with `backend/` through a common module. Copy the small bits you need (e.g. `RequestIdFilter`) — **share contracts, not code**. A shared library couples the release cycles of two services.
 
@@ -1319,7 +1321,7 @@ CREATE INDEX idx_ledger_payment ON ledger_entry (payment_id);
 
 | Level | What | Tools |
 |---|---|---|
-| Unit | State machine (every allowed + forbidden transition), fee calculation & rounding, ledger balance invariants, fallback policy, request hashing | JUnit 5, AssertJ, parameterised tests |
+| Unit | State machine (every allowed + forbidden transition), fee calculation & rounding, ledger balance invariants, fallback policy, request hashing | JUnit Jupiter (Spring Boot-managed), AssertJ, parameterised tests |
 | Web slice | Validation, API-key filter (401/404 scoping), Problem Details codes | `@WebMvcTest`, MockMvc |
 | Integration | Create → capture → refund on real PostgreSQL; idempotency race (two threads, same key); optimistic locking | Testcontainers PostgreSQL |
 | Integration (events) | Outbox row → message on Kafka; duplicate `RiskAssessmentReviewed` processed once; poison message → DLT | Testcontainers Kafka, Awaitility |
@@ -1430,13 +1432,14 @@ COMMIT → ack
 ```yaml
 services:
   postgres:
-    image: postgres:17
+    image: postgres:18
     environment:
       POSTGRES_DB: sentinel
       POSTGRES_USER: sentinel
       POSTGRES_PASSWORD: sentinel          # local only — never reuse
     volumes:
-      - ./docker/postgres/init:/docker-entrypoint-initdb.d   # 01-create-gateway-db.sql: CREATE DATABASE gateway;
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+      - postgres-data:/var/lib/postgresql   # PostgreSQL 18: PGDATA=/var/lib/postgresql/18/docker
     ports: ["5432:5432"]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U sentinel"]
@@ -1540,7 +1543,7 @@ services:
       kafka: { condition: service_healthy }
 ```
 
-`docker/postgres/init/01-create-databases.sql` creates the `gateway` and `llm` databases. The `docker-compose.yml` committed today is a **skeleton** with PostgreSQL, Kafka and (profile `tools`) Kafka UI; each scaffold PR adds its own service. Unlike the listing above, the committed file reads the PostgreSQL credentials from `.env` rather than hard-coding them.
+`docker/postgres/init/01-create-databases.sql` creates the `gateway` and `llm` databases. The committed `docker-compose.yml` contains PostgreSQL 18, Kafka, the Risk Engine M0 health service and (profile `tools`) Kafka UI; later scaffold PRs add their services. At M0, Risk Engine has no database/Kafka/ML dependency; the listing above remains the full integration target. Unlike the listing above, the committed file reads the PostgreSQL credentials from `.env` rather than hard-coding them.
 
 ### 12.2 Environment variables
 
@@ -1923,9 +1926,9 @@ Due dates are tracked in `docs/ROADMAP.md`. Q1–Q9 are carried over from design
 | Q13 | Does Zheng own `llm-insights`? Does its Kafka consumer stay inside the web process or get its own container? | Zheng + Jiawei |
 | Q14 | LLM persistence details: separate `risk_insight` table or latest successful invocation; is a budget skip stored as a row? | Zheng |
 | Q15 | *Closed 14 Nov 2026:* the frontend uses Tailwind CSS + shadcn/ui with our own design tokens; MUI is not used (ADR-0010) | — |
-| Q16 | Who writes `openapi-ml-scorer-v1.yaml`, and by when? It is referenced since v1.0 but is not in the repository | Zheng |
+| Q16 | *Closed 13 Nov 2026:* Zheng wrote `openapi-ml-scorer-v1.yaml` (RISK-140); it freezes at H1 | — |
 | Q17 | *Closed 11 Nov 2026:* the repository is MIT-licensed (`LICENSE`) | — |
-| Q18 | Spring Boot line: 4.0.x as designed, or the current 4.1.x? | Jiawei |
+| Q18 | *Closed 16 Nov 2026:* Java 21 + Spring Boot 4.1.2 selected for the backend scaffold (ADR-0008); gateway follows the same line | — |
 | Q19 | Bedrock model ID and whether new-account AWS credits are available | Jiawei |
 | Q20 | ADR numbering: design v2.0 used 0001 for "tech stack"; 0001 is now "record architecture decisions" and the stack decision moves to 0008 — accept? | Jiawei |
 | Q21 | The repository is private: which GitHub plan features do we rely on (rulesets, required code-owner review, environment reviewers, code scanning), and are they available? | Jiawei |
@@ -1966,7 +1969,7 @@ Managed services: ECR · Cognito · Bedrock · SSM Parameter Store · CloudWatch
 | Container orchestration | **ECS on EC2**, one ECS service per component, **bridge** network mode with static host ports | `minimumHealthyPercent = 0`, `maximumPercent = 100` (one host + static ports means a short restart per deploy — accepted, documented). Deployment circuit breaker with rollback enabled |
 | Service-to-service calls | Via the host: services call each other at `http://<docker0 gateway>:<port>` (e.g. `172.17.0.1:8000`) set through env vars | Service Connect is the cleaner option but its Envoy sidecars cost ~50 MB each; revisit if memory allows |
 | Images | **ARM64 only** (`linux/arm64`), built on GitHub-hosted ARM runners or with `docker buildx`; stored in **ECR** with scan-on-push and a lifecycle policy (keep last 10) | Verify every base image (Kafka, Postgres, Python, JRE) publishes `linux/arm64` |
-| Database | **PostgreSQL 17 container** on the data volume | Nightly `pg_dump` to a private S3 bucket (7-day lifecycle) + daily EBS snapshots via **Data Lifecycle Manager** (keep 7). Upgrade path: RDS |
+| Database | **PostgreSQL 18 container** on the data volume | Nightly `pg_dump` to a private S3 bucket (7-day lifecycle) + daily EBS snapshots via **Data Lifecycle Manager** (keep 7). Upgrade path: RDS |
 | Kafka | **Single-broker KRaft container** on the data volume | MSK is too costly; outbox tables remain the source of truth |
 | Ingress | **CloudFront** for HTTPS on the default `*.cloudfront.net` domain; nginx on the instance as reverse proxy | CloudFront → origin is HTTP, locked to the CloudFront prefix list + secret header (stored in SSM). Upgrade path: own domain + TLS to origin. No ALB (saves ~$18/month) |
 | Static IP | One **Elastic IP** so the CloudFront origin hostname survives stop/start | Billed hourly whether the instance runs or not (~$3.6/month) |

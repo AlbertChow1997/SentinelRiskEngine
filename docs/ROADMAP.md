@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Status** | **Proposed.** Milestones, dates and owners below are a proposal for team sign-off (open question Q10 in `DESIGN.md` §18). Nothing here is agreed until the sign-off issue is closed |
-| **Last updated** | 11 Nov 2026 |
+| **Last updated** | 16 Nov 2026 |
 | **Owner** | Jiawei Zhou (tech lead). Updated at every sprint planning, at least weekly, and whenever scope or dates move |
 | **Related** | `docs/DESIGN.md` (what we build) · `docs/TECH_DECISIONS.md` (with what) · GitHub Project "Sentinel Pay" (backlog and sprints) |
 
@@ -86,6 +86,7 @@ IDs from 100 upwards cover the new scope. A new item takes the next free number.
 | RISK-103 | `ecs-ec2-host`, `ecs-service`, `scheduler`; `aws-wake` / `aws-sleep` / `aws-status` scripts | M0 | To do |
 | RISK-104 | `cdn` module (S3 + CloudFront + origin rules), nginx reverse proxy with the secret header | M0 | To do |
 | RISK-105 | `deploy-staging.yml`: OIDC, ARM64 build, Trivy, ECR, approval gate, ECS deploy, S3 sync, smoke test | M0 | To do |
+| RISK-11 (M0 subset) | Health-only backend scaffold, request IDs, JSON logs, tests and ARM64 container (#6) | M0 | In review |
 | RISK-11 … RISK-21 | Risk Engine backlog (`DESIGN.md` §7.11) | M1 | To do |
 | RISK-70 … RISK-84 | Gateway and event backlog (`DESIGN.md` §10.11) | M2 | To do |
 | RISK-110 | `cognito` module: user pool, groups, app client, Hosted UI domain, test users | M3 | To do |
@@ -119,7 +120,7 @@ IDs from 100 upwards cover the new scope. A new item takes the next free number.
 
 | Key | Summary | Milestone | Status |
 |---|---|---|---|
-| RISK-140 | Write `openapi-ml-scorer-v1.yaml` | Bootstrap | To do |
+| RISK-140 | Write `openapi-ml-scorer-v1.yaml` | Bootstrap | In review |
 | RISK-50 … RISK-57 | ML scorer backlog (`DESIGN.md` §9.9) | M1 | To do |
 | RISK-95 … RISK-98 | ML feedback loop (`DESIGN.md` §9.10) | M2 | To do |
 | RISK-141 | `llm-insights` FastAPI scaffold, settings, health, Alembic baseline, `ci-llm.yml` | M4 | To do |
@@ -164,6 +165,8 @@ RISK-144 ← RISK-82; RISK-128/129 ← RISK-145.
 | 11 Nov 2026 | Repository made private; Jiajun (`@jiajunxiao-work`) and Zheng (`@zliu-59`) invited as collaborators and added to CODEOWNERS. `codeql.yml` skips itself while the repository is private. |
 | 11 Nov 2026 | Tracking moved from Jira to GitHub Issues and a GitHub Project; `RISK-<n>` stays as the backlog ID (Section 8). MIT licence added. |
 | 11 Nov 2026 | Schedule re-planned into milestones M0–M5 (this document). Old dates (29 Nov, 13 Dec) withdrawn. Awaiting team sign-off. |
+| 13 Nov 2026 | `contracts/openapi-ml-scorer-v1.yaml` written (RISK-140): `POST /v1/score`, `GET /v1/model-info`, `GET /health`. Q16 closed. Freezes at H1 (Tue 1 Dec). |
+| 16 Nov 2026 | Owner confirmed PostgreSQL 18 across environments; corrected Compose volume layout and major-version policy. RISK-11 M0 backend scaffold implemented and validated (9 tests, Java 21 ARM64 image); awaiting teammate review. Spring Boot 4.1.2 / Java 21 recorded in ADR-0008; Q18 closed. RISK-12 remains the follow-up CI ticket. |
 
 ## 7. Risks to the schedule
 

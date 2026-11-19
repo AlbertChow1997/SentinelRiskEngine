@@ -8,7 +8,7 @@ API and event contracts are the only thing services share. Code follows the cont
 | `openapi-risk-engine-v1.yaml` | OpenAPI 3.1 (API 1.1.0) | risk-engine | frontend, payment-gateway, llm-insights | Imported from design v2.0. Not frozen. JWT security pending |
 | `openapi-payment-gateway-v1.yaml` | OpenAPI 3.1 (API 1.0.0) | payment-gateway | merchants, frontend | Imported from design v2.0. Not frozen. JWT on ops endpoints and `POST /api/v1/merchants/me` pending |
 | `asyncapi-events-v1.yaml` | AsyncAPI 3.0 | payment-gateway, risk-engine | all services | Imported from design v2.0. Not frozen. `risk.insights.v1` pending |
-| `openapi-ml-scorer-v1.yaml` | OpenAPI 3.1 | ml-scorer | risk-engine | **Missing** — to be written by the ML owner |
+| `openapi-ml-scorer-v1.yaml` | OpenAPI 3.1 (API 1.0.0) | ml-scorer | risk-engine | Written in RISK-140. Not frozen (freeze point H1, Tue 1 Dec 2026). Internal only, no authentication |
 | `openapi-llm-insights-v1.yaml` | OpenAPI 3.1 | llm-insights | frontend | **Missing** — bootstrap item 4 |
 
 The three imported files are byte-for-byte copies of the design v2.0 contracts, so the next contract PR shows

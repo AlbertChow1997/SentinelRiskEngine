@@ -9,7 +9,7 @@ Not scaffolded yet. The commands below are the target once RISK-70 lands; until 
 
 ## Stack
 
-- Java 21, Spring Boot 4 (same line as `backend/` — Q18), Maven wrapper.
+- Java 21, Spring Boot 4.1.x (same line as `backend/`; ADR-0008 closes Q18), Maven wrapper; PostgreSQL 18.
 - Spring Web, Validation, Spring Data JPA, PostgreSQL driver, Flyway, **Spring for Apache Kafka**, Actuator, Spring Security OAuth2 Resource Server.
 - `resilience4j-circuitbreaker` (core), `ulid-creator`, springdoc-openapi; WireMock, Testcontainers (PostgreSQL and Kafka) and Awaitility for tests.
 - **Check Spring Boot 4 and Spring Kafka APIs against official docs or the `pom.xml`.**

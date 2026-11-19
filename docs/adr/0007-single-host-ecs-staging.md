@@ -30,6 +30,8 @@ Constraints:
 
 ## Decision
 
+Database baseline updated to PostgreSQL 18 on 16 Nov 2026 at the owner's request; see ADR-0008.
+
 Run all backend containers with **ECS on one EC2 `t4g.medium` (ARM64) instance** in eu-west-1, and start and stop that instance
 on a schedule. Specifically:
 
@@ -37,7 +39,7 @@ on a schedule. Specifically:
 - **Orchestration:** one ECS service per component, bridge networking with static host ports, `minimumHealthyPercent = 0` and `maximumPercent = 100`, deployment circuit breaker with rollback. Services reach each other through the Docker bridge gateway address.
 - **Ingress:** CloudFront serves the React build from a private S3 bucket (Origin Access Control) and forwards `/api/*` to the instance over HTTP. The security group admits port 80 only from the CloudFront origin-facing prefix list, and nginx rejects requests without a secret header that only CloudFront sends.
 - **Network:** public subnet with an Elastic IP; no NAT Gateway and no ALB. No SSH: access is through SSM Session Manager.
-- **Data:** PostgreSQL 17 and a single-broker KRaft Kafka as containers; nightly `pg_dump` to S3 and daily EBS snapshots through Data Lifecycle Manager.
+- **Data:** PostgreSQL 18 and a single-broker KRaft Kafka as containers; nightly `pg_dump` to S3 and daily EBS snapshots through Data Lifecycle Manager.
 - **Schedule:** EventBridge Scheduler starts the instance at 09:00 and stops it at 23:00, Monday to Friday, Europe/Dublin time. `make aws-wake` and `make aws-sleep` override it by hand.
 - **Managed services kept:** S3, CloudFront, Cognito, Bedrock, ECR, SSM Parameter Store, CloudWatch, AWS Budgets.
 - **Everything is Terraform**, applied only after explicit approval; images are ARM64 only.
