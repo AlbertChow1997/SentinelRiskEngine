@@ -17,7 +17,7 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 border-b border-line bg-surface/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4 sm:px-6">
         <Link to="/" className="flex items-center gap-2 font-semibold text-ink" onClick={closeMenu}>
-          <img src="/favicon.svg" alt="" className="size-7" />
+          <img src="/logo.png" alt="" width={163} height={96} className="h-7 w-auto" />
           Sentinel Pay
         </Link>
 
