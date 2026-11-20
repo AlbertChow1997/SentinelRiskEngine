@@ -1,4 +1,7 @@
-mock_provider "aws" {}
+mock_provider "aws" {
+  mock_data "aws_partition" { defaults = { partition = "aws" } }
+  mock_data "aws_ssm_parameter" { defaults = { value = "ami-0123456789abcdef0" } }
+}
 variables {
   owner             = "test-owner"
   state_bucket_name = "sentinel-test-state"

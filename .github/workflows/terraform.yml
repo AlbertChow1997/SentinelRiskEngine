@@ -1,10 +1,10 @@
 name: terraform
 on:
   pull_request:
-    paths: ['infra/terraform/**', '.github/workflows/terraform.yml', '.terraform-version']
+    paths: ['infra/**', '.github/workflows/terraform.yml', '.terraform-version']
   push:
     branches: [main]
-    paths: ['infra/terraform/**', '.github/workflows/terraform.yml', '.terraform-version']
+    paths: ['infra/**', '.github/workflows/terraform.yml', '.terraform-version']
   workflow_dispatch:
 permissions:
   contents: read
@@ -39,6 +39,8 @@ jobs:
           docker run --rm -v "$PWD":/work -w /work -e TF_ROOT --entrypoint sh ghcr.io/terraform-linters/tflint:v0.66.0 -c 'tflint --init --config /work/infra/terraform/.tflint.hcl && for dir in "$TF_ROOT" infra/terraform/modules/*; do test -d "$dir" || continue; tflint --chdir "$dir" --config /work/infra/terraform/.tflint.hcl || exit 1; done'
       - name: Trivy configuration scan
         run: docker run --rm -v "$PWD":/work aquasec/trivy:0.76.2 config --exit-code 1 --severity HIGH,CRITICAL /work/infra/terraform
+      - name: Operations confirmation tests (fake AWS CLI only)
+        run: python3 -m unittest discover -s infra/scripts/tests -v
   plan:
     # No credentials on forks, push events, or before approved bootstrap/configuration.
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && vars.TF_PLAN_ENABLED == 'true'
