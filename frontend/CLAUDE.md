@@ -30,7 +30,8 @@ npm run typecheck
 npm test -- --run            # Vitest
 npm run build
 npm run generate:api         # regenerate types from ../contracts/*.yaml
-npx playwright test          # UI smoke tests against the preview build
+npm run test:e2e             # Playwright: smoke + real-browser axe on the preview build and every story
+                             # (run `npm run build && npm run build-storybook` first)
 npm run storybook            # component catalogue on :6006 (axe a11y panel)
 ```
 

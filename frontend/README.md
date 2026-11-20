@@ -22,6 +22,7 @@ npm run dev          # http://localhost:5173, proxies /api to the risk engine on
 npm test -- --run    # Vitest + React Testing Library
 npm run build        # type-check and production build into dist/
 npm run storybook    # component catalogue with the a11y panel, http://localhost:6006
+npm run test:e2e     # Playwright + axe on the built site and every story (build both first)
 ```
 
 Working conventions for this folder are in [`CLAUDE.md`](CLAUDE.md).
