@@ -1,44 +1,54 @@
-# Terraform — staging
+# Terraform staging
 
-Nothing in this folder has been written or applied yet. This file records the plan so the first infrastructure PR (RISK-102) has
-a fixed starting point.
+RISK-102 implements bootstrap, network, ECR and GitHub OIDC. AWS bootstrap/apply
+and a live plan still require account configuration/approval. Pin Terraform
+1.17.2 and AWS provider ~> 6.71.0 with committed provider lockfiles; ADR-0011.
 
-## Module plan
+| Root/module | Responsibility |
+|---|---|
+| bootstrap | Private/versioned/TLS-only state bucket; $15 forecast/$25 actual budget alerts in the very first apply |
+| envs/staging | Remote-state root; eu-west-1; default project/owner/env tags |
+| network | One public subnet; no NAT/ALB/SSH; HTTP only from CloudFront prefix list |
+| ecr | Six immutable encrypted scan-on-push repositories; ten-image retention |
+| github-oidc | Exact repo subjects; separate plan and deployment roles; optional existing provider |
 
-| Module | Creates | Order |
-|---|---|---|
-| `network` | VPC, one public subnet, internet gateway, routes, security group (port 80 from the CloudFront prefix list only) | 1 |
-| `github-oidc` | GitHub OIDC provider and the deploy role, limited to this repository | 1 |
-| `ecr` | One repository per image, scan on push, lifecycle policy (keep last 10) | 1 |
-| `ecs-ec2-host` | ECS cluster, the `t4g.medium` instance, instance role, Elastic IP, data volume, user data | 2 |
-| `scheduler` | EventBridge Scheduler start/stop schedules (Europe/Dublin) | 2 |
-| `ecs-service` | Task definition + service for one component (reused per component) | 2 |
-| `cdn` | S3 bucket, CloudFront distribution, Origin Access Control, `/api/*` origin with the secret header | 2 |
-| `cognito` | User pool, groups, app client, Hosted UI domain | 3 (M3) |
-| `observability` | Log groups, metric filters, alarms, dashboard, backup schedules | 3 (M4) |
-
-AWS Budgets alerts ($15 forecast, $25 actual) are part of the **first** apply.
-
-## Remote state bootstrap (one-off, by hand, after approval)
-
-Terraform keeps its state in S3 so that the pipeline and people share it. The state bucket cannot be created by the
-configuration that stores its state in it, so it is created once, by hand or from a tiny separate `bootstrap` configuration
-with local state:
-
-1. Choose a globally unique bucket name. Keep the AWS account ID out of Git: pass the name through a git-ignored
-   `backend.hcl` (commit a `backend.hcl.example` with placeholders).
-2. Create the bucket in `eu-west-1` with versioning, default encryption and all public access blocked.
-3. State locking: use S3 native locking if the Terraform CLI version in use supports it, otherwise a DynamoDB lock table.
-   **Check the Terraform S3 backend documentation for the version we pin** before choosing.
-4. In `envs/staging`, declare an empty `backend "s3" {}` block and run `terraform init -backend-config=backend.hcl`.
-5. Record the outcome (bucket naming rule, locking method) in `docs/TECH_DECISIONS.md` D06.
-
-These steps create AWS resources and therefore need explicit approval before they are run.
-
-## Day-to-day
+## Validate without AWS
 
 ```bash
-terraform -chdir=infra/terraform/envs/staging init -backend-config=backend.hcl
-terraform -chdir=infra/terraform/envs/staging plan      # always allowed; also posted on PRs by terraform.yml
-# terraform apply — only after explicit approval
+terraform -chdir=infra/terraform fmt -check -recursive
+terraform -chdir=infra/terraform/bootstrap init -backend=false
+terraform -chdir=infra/terraform/bootstrap validate
+terraform -chdir=infra/terraform/bootstrap test
+terraform -chdir=infra/terraform/envs/staging init -backend=false
+terraform -chdir=infra/terraform/envs/staging validate
+terraform -chdir=infra/terraform/envs/staging test
 ```
+
+Tests use mock providers and plan only: they create no AWS resources and cannot
+prove live IAM, quotas, DNS or deployment health. CI adds TFLint and Trivy.
+
+## Bootstrap, only after approval
+
+1. Check billing access/notification address, eu-west-1 quota and current pricing.
+   Inspect for an existing GitHub OIDC provider; supply its reference privately.
+2. Copy bootstrap example variables to ignored terraform.tfvars. Plan, review
+   costs and get explicit approval before applying a saved plan. Alerts are not
+   a spending cap. Back up bootstrap state privately; never commit state/email.
+3. Copy staging backend.hcl.example and terraform.tfvars.example to their ignored
+   counterparts. Never commit account identifiers, state or saved plans.
+4. Run staging init -backend-config=backend.hcl. Native S3 locking uses
+   use_lockfile=true; there is no DynamoDB table. D06 records the choice.
+5. Review staging plan and obtain separate approval for that apply.
+
+## GitHub setup after approved bootstrap
+
+Set TF_STATE_BUCKET, INFRA_OWNER, TF_PLAN_ROLE_ARN and, only when ready,
+TF_PLAN_ENABLED=true as repository variables. The plan role cannot apply.
+Fork PRs never receive AWS credentials. PR comments contain counts only; no
+resource identifiers, secrets or plan JSON. Bootstrap cannot use the role/bucket
+before creating them: its plan stays a private local operation. Review code
+before enabling credentialed plans. Never grant Actions administrator access.
+
+Deploy trust uses environment:staging. Verify its main-only restriction and real
+reviewer gate before enabling deployment (RISK-101/Q21 entitlement blocker).
+ECS/scheduler, CDN/nginx and deployment follow as RISK-103/104/105.

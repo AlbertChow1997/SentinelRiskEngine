@@ -1,0 +1,79 @@
+name: terraform
+on:
+  pull_request:
+    paths: ['infra/terraform/**', '.github/workflows/terraform.yml', '.terraform-version']
+  push:
+    branches: [main]
+    paths: ['infra/terraform/**', '.github/workflows/terraform.yml', '.terraform-version']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: terraform-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        root: [bootstrap, envs/staging]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: 1.17.2
+          terraform_wrapper: false
+      - name: Format, initialise without backend, validate and mock-plan tests
+        env:
+          TF_ROOT: infra/terraform/${{ matrix.root }}
+        run: |
+          terraform -chdir=infra/terraform fmt -check -recursive
+          terraform -chdir="$TF_ROOT" init -backend=false -input=false -lockfile=readonly
+          terraform -chdir="$TF_ROOT" validate
+          terraform -chdir="$TF_ROOT" test
+      - name: TFLint (pinned official image)
+        env:
+          TF_ROOT: infra/terraform/${{ matrix.root }}
+        run: |
+          docker run --rm -v "$PWD":/work -w /work -e TF_ROOT --entrypoint sh ghcr.io/terraform-linters/tflint:v0.66.0 -c 'tflint --init --config /work/infra/terraform/.tflint.hcl && for dir in "$TF_ROOT" infra/terraform/modules/*; do test -d "$dir" || continue; tflint --chdir "$dir" --config /work/infra/terraform/.tflint.hcl || exit 1; done'
+      - name: Trivy configuration scan
+        run: docker run --rm -v "$PWD":/work aquasec/trivy:0.76.2 config --exit-code 1 --severity HIGH,CRITICAL /work/infra/terraform
+  plan:
+    # No credentials on forks, push events, or before approved bootstrap/configuration.
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && vars.TF_PLAN_ENABLED == 'true'
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: 1.17.2
+          terraform_wrapper: false
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.TF_PLAN_ROLE_ARN }}
+          aws-region: eu-west-1
+          mask-aws-account-id: true
+      - name: Plan staging (never apply)
+        env:
+          STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+          TF_VAR_state_bucket_name: ${{ vars.TF_STATE_BUCKET }}
+          TF_VAR_owner: ${{ vars.INFRA_OWNER }}
+        run: |
+          cd infra/terraform/envs/staging
+          terraform init -input=false -lockfile=readonly -backend-config="bucket=$STATE_BUCKET" -backend-config=key=staging/terraform.tfstate -backend-config=region=eu-west-1 -backend-config=use_lockfile=true -backend-config=encrypt=true > /tmp/tf-init.log 2>&1
+          terraform plan -input=false -out=tfplan > /tmp/tf-plan.log 2>&1
+          terraform show -json tfplan | python ../../../scripts/summarize-plan.py > /tmp/plan-summary.md
+          cat /tmp/plan-summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Post resource-count summary only (no state, IDs, secrets or plan artifacts)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.number }}
+          GH_REPO: ${{ github.repository }}
+        run: gh pr comment "$PR" --body-file /tmp/plan-summary.md

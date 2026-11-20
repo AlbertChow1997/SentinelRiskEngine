@@ -13,7 +13,9 @@ Owner: Jiawei Zhou. Design: `docs/DESIGN.md` §19. Decision record: `docs/adr/00
 
 ## Status
 
-Layout only. Terraform is not installed on every machine yet; `make tf-plan` prints "skipped" until `envs/staging` exists.
+RISK-102 provides bootstrap/staging roots, network/ECR/OIDC modules, mock-plan tests and
+terraform CI. These configurations have not been applied. Pin Terraform using
+`.terraform-version`; use `init -backend=false` for credential-free validation.
 
 ## Commands
 

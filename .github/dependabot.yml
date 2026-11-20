@@ -41,7 +41,7 @@ updates:
   #   schedule: { interval: weekly }
   #   commit-message: { prefix: "chore(deps)" }
 
-  # - package-ecosystem: terraform
-  #   directories: ["/infra/terraform/envs/staging", "/infra/terraform/modules/*"]
-  #   schedule: { interval: weekly }
-  #   commit-message: { prefix: "chore(deps)" }
+  - package-ecosystem: terraform
+    directories: ["/infra/terraform/bootstrap", "/infra/terraform/envs/staging", "/infra/terraform/modules/*"]
+    schedule: { interval: weekly }
+    commit-message: { prefix: "chore(deps)" }
