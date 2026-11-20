@@ -57,3 +57,31 @@ configuration and automation criteria still prevent closing the issue.
 Request teammate review of this audit before accepting the recorded exceptions. Do not close #4/#5 merely because this
 audit PR merges. Backend CI (RISK-12 / #7) is a dependency-ready next task because #6 is already merged; it can proceed
 without credentials, AWS deployment or resolving the future authenticated API contracts.
+
+## Follow-up — 20 November 2026
+
+The tables above preserve the 19 November baseline, not current configuration.
+Since that audit, squash-only merging was configured/read back; closed Project
+cards were manually reconciled and all eleven open issues are represented.
+Built-in Project automation is still unverified: the available browser inventory
+is empty and the in-app browser is unavailable. Manual reconciliation is not
+proof that the built-in workflows are enabled.
+
+Required-reviewer creation was attempted with self-review prohibited and returned
+HTTP 422 explicitly requiring billing-plan support. The API partially created
+staging without that rule. It has since been restricted/read back to exactly
+one deployment branch policy, main (branch type), with no required reviewer.
+The earlier self-review-allowed proposal was rejected by automatic approval
+review and was not executed; it was replaced by the stricter request above.
+No branch protection, paid plan or repository visibility change was made.
+
+PR #32 fails preflight unless a real non-self reviewer and exact-main gate exists;
+the deploy role defaults off. It never treats a typed input, empty environment
+or team convention as the gate. No AWS profile is configured; the owner requested
+code/local validation only. No AWS resource or deployment was created/executed.
+
+RISK-100's full draft is now PR #26 (contracts/frontend CI green). Backend CI
+PR #24 and infrastructure PRs #29/#30/#31 have passed their relevant CI; the
+prepared deployment is #32. These are review-ready implementations, not merged
+features or live AWS acceptance. Requested non-author reviews remain pending.
+Keep #4/#5 open; follow each infrastructure issue for apply/live prerequisites.
