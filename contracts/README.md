@@ -1,5 +1,12 @@
 # Contracts
 
+RISK-100 now drafts all five LLM operations, the insights event, Gateway/Risk
+Cognito bearer authentication and `POST /api/v1/merchants/me` in PR #26.
+These are contracts awaiting producer/consumer approval, not runtime features.
+Q12 service authentication is explicitly deferred to RISK-111. ADR-0012 records
+the intentional pre-freeze removal of anonymous access; `check-breaking.sh`
+allows only its exact findings against byte-specific imported baselines.
+
 API and event contracts are the only thing services share. Code follows the contract, never the other way round
 (golden rule 2 in the root `CLAUDE.md`).
 

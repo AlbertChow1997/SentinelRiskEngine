@@ -500,7 +500,7 @@ AI tools (Claude, Copilot, etc.) are encouraged for scaffolding, boilerplate, te
 
 ## 6. Interface contracts (summary)
 
-Full definitions are in `contracts/`. OpenAPI files target OpenAPI 3.1; the event file targets AsyncAPI 3.0. The Risk Engine and Gateway contracts were imported from design v2.0. The ML contract was added in RISK-140. RISK-100 now drafts the LLM Insights contract (Section 6.6) and an additive insights event for producer/consumer review. Gateway/risk authentication and merchant provisioning remain to be written (Section 6.7).
+Full definitions are in `contracts/`. OpenAPI files target OpenAPI 3.1; the event file targets AsyncAPI 3.0. The Risk Engine and Gateway contracts were imported from design v2.0. The ML contract was added in RISK-140. RISK-100 now drafts the LLM Insights contract (Section 6.6) and an additive insights event for producer/consumer review. Gateway/risk JWT and merchant provisioning are now drafted in RISK-100 (Section 6.7); all drafts await producer/consumer approval.
 
 ### 6.1 Risk Engine API (1.1.0) — producer Risk Engine, consumers Frontend & Gateway
 
@@ -563,7 +563,7 @@ Envelope: `eventId`, `eventType`, `eventVersion`, `occurredAt`, `source`, `corre
 
 Drafted in `contracts/openapi-llm-insights-v1.yaml` under RISK-100 **before** implementation: producer/consumer review
 is required. It defines the five operations below, role metadata, Problem Details and invocation/feedback/statistics shapes.
-`risk.insights.v1` now has an additive identifier-only `RiskInsightGenerated` contract. Q12 (Risk Engine service access),
+`risk.insights.v1` now has an additive identifier-only `RiskInsightGenerated` contract. Q12 (Risk Engine service access, explicitly deferred to RISK-111),
 Q13 (LLM ownership/process) and Q14 (persistence/budget-skip storage) remain open; no implementation is implied.
 
 | Method | Path | Auth | Purpose | Priority |
@@ -579,7 +579,7 @@ Q13 (LLM ownership/process) and Q14 (persistence/budget-skip storage) remain ope
 | Contract | Change | Kind |
 |---|---|---|
 | `openapi-payment-gateway-v1.yaml` | Bearer JWT security scheme; `/api/v1/ops/**` requires `analyst` / `admin`; add `POST /api/v1/merchants/me` | Security change on endpoints that were documented as "local/demo only" + additive endpoint |
-| `openapi-risk-engine-v1.yaml` | Bearer JWT security scheme on analyst, stats and blocklist endpoints; service-to-service access for the gateway and `llm-insights` (Q12) | Security change |
+| `openapi-risk-engine-v1.yaml` | Bearer JWT on browser endpoints; health stays anonymous. Gateway/LLM service access is explicitly deferred to RISK-111 (Q12), with no anonymous bypass | Security change before freeze; ADR-0012 |
 | `asyncapi-events-v1.yaml` | Drafted `risk.insights.v1` and identifier-only `RiskInsightGenerated`; producer review pending | Additive |
 | `openapi-llm-insights-v1.yaml` | Drafted five operations (Section 6.6); producer/consumer review pending | New |
 | `openapi-ml-scorer-v1.yaml` | Added and reviewed in RISK-140 / #18 (Section 6.2) | New; available |

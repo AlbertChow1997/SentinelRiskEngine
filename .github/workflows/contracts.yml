@@ -52,17 +52,4 @@ jobs:
         env:
           BASE_REF: origin/${{ github.base_ref }}
         run: |
-          mkdir -p .contracts-base
-          status=0
-          for f in contracts/openapi-*.yaml; do
-            if git cat-file -e "$BASE_REF:$f" 2>/dev/null; then
-              git show "$BASE_REF:$f" > ".contracts-base/$(basename "$f")"
-              echo "::group::oasdiff breaking $f"
-              docker run --rm -v "$PWD":/work -w /work tufin/oasdiff \
-                breaking ".contracts-base/$(basename "$f")" "$f" --fail-on ERR || status=1
-              echo "::endgroup::"
-            else
-              echo "$f is a new contract; nothing to compare."
-            fi
-          done
-          exit $status
+          bash contracts/check-breaking.sh
