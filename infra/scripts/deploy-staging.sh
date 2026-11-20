@@ -34,6 +34,9 @@ for component in risk-engine nginx; do
   revision=$(aws ecs register-task-definition --cli-input-json "file://$work/register.json" --tags key=project,value=sentinel-pay key=env,value=staging "key=owner,value=$INFRA_OWNER" --query 'taskDefinition.taskDefinitionArn' --output text)
   aws ecs update-service --cluster sentinel-staging --service "$service" --task-definition "$revision" --desired-count 1 > "$work/service.json"
   aws ecs wait services-stable --cluster sentinel-staging --services "$service"
+  deployed=$(aws ecs describe-services --cluster sentinel-staging --services "$service" --query 'services[0].deployments[?status==`PRIMARY`].[taskDefinition,rolloutState] | [0]' --output text)
+  read -r actual rollout <<< "$deployed"
+  [[ "$actual" == "$revision" && "$rollout" == COMPLETED ]] || { echo 'ECS stabilised on a different revision or did not complete; refusing a false success after rollback.' >&2; exit 1; }
 done
 # Hashed assets remain available for older open pages/rollback. Index is published last.
 aws s3 sync .staging-artifact/frontend/ "s3://$STAGING_WEBSITE_BUCKET/" --exclude index.html --cache-control 'public,max-age=300' --only-show-errors

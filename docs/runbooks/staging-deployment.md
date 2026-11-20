@@ -52,6 +52,9 @@ definitions. On rerun, an existing SHA is pulled/scanned and reused; it is never
 overwritten. IAM/network lookup errors fail instead of being treated as missing
 images. Wake requires the same confirmation mechanism, waits for EC2 and the ECS
 agent, then replaces risk-engine and nginx sequentially and waits for stability.
+It also verifies the PRIMARY revision and COMPLETED rollout state: a stable
+service after circuit-breaker rollback must fail the new deployment, not report
+an old healthy revision as success.
 The --agent-only wake option avoids waiting for an unhealthy old deployment
 before replacing it; it never bypasses the start confirmation.
 

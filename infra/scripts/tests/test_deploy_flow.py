@@ -47,6 +47,7 @@ elif args[:2]==['ecs','describe-task-definition']:
     name=args[args.index('--task-definition')+1]
     print(json.dumps({'taskDefinition':{'family':name,'runtimePlatform':{'cpuArchitecture':'ARM64'},'containerDefinitions':[{'name':name,'image':'unpublished','healthCheck':{'command':['CMD','true']}}]}}))
 elif args[:2]==['ecs','register-task-definition']: print('task-test')
+elif args[:2]==['ecs','describe-services']: print(('old-task' if os.environ.get('ROLLBACK') else 'task-test')+'\\tCOMPLETED')
 elif args[:2]==['cloudfront','create-invalidation']: print('invalidation-test')
 '''
         for name in ["aws", "docker", "python3"]:
@@ -92,6 +93,13 @@ elif args[:2]==['cloudfront','create-invalidation']: print('invalidation-test')
         self.assertNotIn("docker push", calls)
         self.assertEqual(calls.count("docker pull"), 2)
         self.assertEqual(calls.count("--scanners vuln"), 2)
+
+    def test_circuit_breaker_rollback_cannot_report_deployment_success(self):
+        self.env["ROLLBACK"] = "true"
+        result = self.deploy()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("false success after rollback", result.stderr)
+        self.assertNotIn("s3 sync", self.log.read_text())
 
 
 if __name__ == "__main__":
