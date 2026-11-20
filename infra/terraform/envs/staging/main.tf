@@ -20,4 +20,5 @@ module "github_oidc" {
   existing_provider_arn  = var.existing_github_oidc_provider_arn
   ecr_repositories       = [for repo in module.ecr.repositories : repo.arn]
   plan_secret_parameters = [module.cdn.secret_parameter_arn]
+  enable_deploy_role     = var.staging_deploy_gate_verified
 }

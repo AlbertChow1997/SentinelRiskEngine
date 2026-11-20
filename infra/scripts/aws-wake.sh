@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+case ${1:-} in ''|--agent-only) ;; *) echo 'Usage: aws-wake.sh [--agent-only]' >&2; exit 1;; esac
 source "$(dirname "${BASH_SOURCE[0]}")/aws-common.sh"
 confirm start
 state=$(aws ec2 describe-instances --instance-ids "$instance" --query 'Reservations[0].Instances[0].State.Name' --output text)
@@ -15,8 +16,12 @@ for attempt in {1..60}; do
 done
 [[ "$ready" == true ]] || { echo 'ECS agent did not connect in five minutes.' >&2; exit 1; }
 services=$(aws ecs list-services --cluster "$cluster" --query 'serviceArns[]' --output text)
-if [[ -n "$services" && "$services" != None ]]; then
+if [[ ${1:-} != --agent-only && -n "$services" && "$services" != None ]]; then
   read -r -a service_ids <<< "$services"
   aws ecs wait services-stable --cluster "$cluster" --services "${service_ids[@]}"
 fi
-echo 'Staging host and configured ECS services are ready; verify the CDN smoke endpoint.'
+if [[ ${1:-} == --agent-only ]]; then
+  echo 'EC2 and ECS agent are ready; deployment will establish service health next.'
+else
+  echo 'Staging host and configured ECS services are ready; verify the CDN smoke endpoint.'
+fi

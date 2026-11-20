@@ -444,7 +444,7 @@ Each component workflow runs only when its folder (or `contracts/`) changes (`on
 | `contracts.yml` | changes in `contracts/` | Validate OpenAPI (Redocly) and AsyncAPI (AsyncAPI CLI); detect breaking changes (`oasdiff`) | **Exists** |
 | `codeql.yml` | PR + weekly | CodeQL for Java, Python, JavaScript/TypeScript and workflow files; a language starts analysing when its first source file lands | **Exists**, but skipped while the repository is private: code scanning there needs GitHub Advanced Security |
 | `terraform.yml` | changes in `infra/` | `terraform fmt -check`, `validate`, `tflint`, `checkov`/`trivy config`, `plan` posted as a PR comment | M0 |
-| `deploy-staging.yml` | push to `main` (after CI) or manual | AWS credentials through **GitHub OIDC** → build **ARM64** images → Trivy scan → push to ECR (tag = git SHA) → **approval gate** (GitHub Environment `staging`, required reviewer) → start the EC2 host if stopped and wait for ECS → register task definitions and update services (circuit-breaker rollback) → frontend build → S3 sync → CloudFront invalidation → smoke test through the CloudFront URL | M0 |
+| `deploy-staging.yml` | Manual on main, explicit DEPLOY_STAGING, enabled only after real reviewer/main-only gate exists | Build/test **ARM64** images and frontend → Trivy scan → **approval gate** (GitHub Environment `staging`, required non-self reviewer) → AWS credentials through **GitHub OIDC** → ECR publication (immutable git SHA; tasks use digest) → start the EC2 host if stopped and wait for ECS → register task definitions and update services (circuit-breaker rollback) → frontend build → S3 sync → CloudFront invalidation → smoke test through the CloudFront URL | M0 |
 
 - **CI never calls paid external APIs.** LLM tests use `StubProvider`; AWS calls are stubbed (moto or a stubbed boto3 client).
 - **Dependabot** covers GitHub Actions and docker-compose now; Maven, uv, npm, Docker and Terraform are enabled as each manifest appears.
@@ -1931,7 +1931,7 @@ Due dates are tracked in `docs/ROADMAP.md`. Q1–Q9 are carried over from design
 | Q18 | *Closed 16 Nov 2026:* Java 21 + Spring Boot 4.1.2 selected for the backend scaffold (ADR-0008); gateway follows the same line | — |
 | Q19 | Bedrock model ID and whether new-account AWS credits are available | Jiawei |
 | Q20 | ADR numbering: design v2.0 used 0001 for "tech stack"; 0001 is now "record architecture decisions" and the stack decision moves to 0008 — accept? | Jiawei |
-| Q21 | The repository is private: which GitHub plan features do we rely on (rulesets, required code-owner review, environment reviewers, code scanning), and are they available? | Jiawei |
+| Q21 | Private-plan enforcement limitation: ruleset/protection APIs returned plan-entitlement 403; on 20 Nov required-reviewer creation returned 422 explicitly requiring billing-plan support. Staging exists with exact-main branch policy but no required reviewer. Squash-only is configured; deployment stays disabled and the deploy role defaults off until a real gate is verified. Project built-in automation remains unverified | Jiawei |
 
 ---
 

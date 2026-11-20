@@ -81,3 +81,4 @@ desktop.ini
 logs/
 tmp/
 .contracts-base/
+.staging-artifact/

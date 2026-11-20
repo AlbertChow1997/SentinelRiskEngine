@@ -6,7 +6,7 @@ resource "aws_iam_openid_connect_provider" "github" {
 }
 locals {
   provider_arn = var.existing_provider_arn != null ? var.existing_provider_arn : aws_iam_openid_connect_provider.github[0].arn
-  subjects     = { plan = "repo:${var.repository}:pull_request", deploy = "repo:${var.repository}:environment:staging" }
+  subjects     = merge({ plan = "repo:${var.repository}:pull_request" }, var.enable_deploy_role ? { deploy = "repo:${var.repository}:environment:staging" } : {})
   bucket_arn   = "arn:${data.aws_partition.current.partition}:s3:::${var.state_bucket_name}"
 }
 resource "aws_iam_role" "github" {
@@ -34,10 +34,11 @@ resource "aws_iam_role_policy" "plan" {
   ], length(var.plan_secret_parameters) == 0 ? [] : [{ Effect = "Allow", Action = ["ssm:GetParameter"], Resource = var.plan_secret_parameters }]) })
 }
 resource "aws_iam_role_policy" "deploy" {
-  name = "publish-staging-images"
-  role = aws_iam_role.github["deploy"].id
+  count = var.enable_deploy_role ? 1 : 0
+  name  = "publish-staging-images"
+  role  = aws_iam_role.github["deploy"].id
   policy = jsonencode({ Version = "2012-10-17", Statement = [
     { Effect = "Allow", Action = ["ecr:GetAuthorizationToken"], Resource = "*" },
-    { Effect = "Allow", Action = ["ecr:BatchCheckLayerAvailability", "ecr:InitiateLayerUpload", "ecr:UploadLayerPart", "ecr:CompleteLayerUpload", "ecr:PutImage", "ecr:BatchGetImage", "ecr:GetDownloadUrlForLayer"], Resource = var.ecr_repositories }
+    { Effect = "Allow", Action = ["ecr:DescribeImages", "ecr:BatchCheckLayerAvailability", "ecr:InitiateLayerUpload", "ecr:UploadLayerPart", "ecr:CompleteLayerUpload", "ecr:PutImage", "ecr:BatchGetImage", "ecr:GetDownloadUrlForLayer"], Resource = var.ecr_repositories }
   ] })
 }
