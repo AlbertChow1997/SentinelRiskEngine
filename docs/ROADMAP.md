@@ -81,7 +81,7 @@ IDs from 100 upwards cover the new scope. A new item takes the next free number.
 |---|---|---|---|
 | RISK-10 | Monorepo scaffold, CODEOWNERS, PR and issue templates, living docs, contracts import, `contracts.yml`, `codeql.yml` | Bootstrap | In review |
 | RISK-100 | Contracts: `openapi-llm-insights-v1.yaml`, `risk.insights.v1`, JWT security on gateway and risk contracts, `POST /api/v1/merchants/me` | Bootstrap | To do |
-| RISK-101 | GitHub Project, milestones, labels and backlog issues (Section 8); branch ruleset on `main`; GitHub Environment `staging` with required reviewer; squash merge only | Bootstrap | To do |
+| RISK-101 | GitHub Project, milestones, labels and backlog issues (Section 8); branch ruleset on `main`; GitHub Environment `staging` with required reviewer; squash merge only | Bootstrap | In progress; partial (audit 19 Nov) |
 | RISK-102 | Terraform remote state, `network`, `ecr`, `github-oidc`, AWS Budgets alerts; `terraform.yml` | M0 | In progress; configuration and mock validation, no AWS apply |
 | RISK-103 | `ecs-ec2-host`, `ecs-service`, `scheduler`; `aws-wake` / `aws-sleep` / `aws-status` scripts | M0 | In progress; mock-validated configuration, live boot/apply pending |
 | RISK-104 | `cdn` module (S3 + CloudFront + origin rules), nginx reverse proxy with the secret header | M0 | To do |
@@ -169,6 +169,9 @@ RISK-144 ← RISK-82; RISK-128/129 ← RISK-145.
 | 16 Nov 2026 | Owner confirmed PostgreSQL 18 across environments; corrected Compose volume layout and major-version policy. RISK-11 M0 backend scaffold implemented and validated (9 tests, Java 21 ARM64 image); awaiting teammate review. Spring Boot 4.1.2 / Java 21 recorded in ADR-0008; Q18 closed. RISK-12 remains the follow-up CI ticket. |
 
 ## 7. Risks to the schedule
+
+Readiness audit (19 Nov 2026): RISK-100 contracts remain incomplete; RISK-101 has partial setup and unverified automation.
+See [the acceptance-criteria audit](reviews/2026-11-19-bootstrap-readiness.md). Neither issue is ready to close.
 
 | Risk | Likelihood | Effect on dates | Mitigation |
 |---|---|---|---|
