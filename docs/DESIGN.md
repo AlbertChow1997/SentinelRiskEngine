@@ -1934,7 +1934,7 @@ Due dates are tracked in `docs/ROADMAP.md`. Q1–Q9 are carried over from design
 | Q18 | *Closed 16 Nov 2026:* Java 21 + Spring Boot 4.1.2 selected for the backend scaffold (ADR-0008); gateway follows the same line | — |
 | Q19 | Bedrock model ID and whether new-account AWS credits are available | Jiawei |
 | Q20 | ADR numbering: design v2.0 used 0001 for "tech stack"; 0001 is now "record architecture decisions" and the stack decision moves to 0008 — accept? | Jiawei |
-| Q21 | The repository is private: which GitHub plan features do we rely on (rulesets, required code-owner review, environment reviewers, code scanning), and are they available? | Jiawei |
+| Q21 | *Audited 19 Nov 2026:* ruleset and branch-protection APIs return 403 requiring Pro/public-repo entitlement; no staging environment exists. These gates are not enforced. See `reviews/2026-11-19-bootstrap-readiness.md`; required environment reviewers need a separate entitlement check. Keep RISK-101 open for remaining controls | Jiawei |
 
 ---
 
