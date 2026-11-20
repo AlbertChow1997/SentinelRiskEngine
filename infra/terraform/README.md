@@ -43,7 +43,8 @@ prove live IAM, quotas, DNS or deployment health. CI adds TFLint and Trivy.
 ## GitHub setup after approved bootstrap
 
 Set TF_STATE_BUCKET, INFRA_OWNER, TF_PLAN_ROLE_ARN and, only when ready,
-TF_PLAN_ENABLED=true as repository variables. The plan role cannot apply.
+TF_PLAN_ENABLED=true as repository variables. Set STAGING_WEBSITE_BUCKET too
+when planning the CDN root; create the origin SecureString privately first. The plan role cannot apply.
 Fork PRs never receive AWS credentials. PR comments contain counts only; no
 resource identifiers, secrets or plan JSON. Bootstrap cannot use the role/bucket
 before creating them: its plan stays a private local operation. Review code
@@ -52,5 +53,5 @@ before enabling credentialed plans. Never grant Actions administrator access.
 Deploy trust uses environment:staging. Verify its main-only restriction and real
 reviewer gate before enabling deployment (RISK-101/Q21 entitlement blocker).
 RISK-103 adds ecs-ec2-host, ecs-service and scheduler modules plus safely confirmed
-operations scripts; see docs/runbooks/staging-platform.md. CDN/nginx and
-deployment follow as RISK-104/105. All configurations remain unapplied.
+operations scripts; see docs/runbooks/staging-platform.md. RISK-104 adds the private CDN/OAC and non-root nginx image with synthetic proxy
+integration tests. RISK-105 adds deployment next. All configurations remain unapplied.

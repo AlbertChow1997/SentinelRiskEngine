@@ -41,6 +41,13 @@ jobs:
         run: docker run --rm -v "$PWD":/work aquasec/trivy:0.76.2 config --exit-code 1 --severity HIGH,CRITICAL /work/infra/terraform
       - name: Operations confirmation tests (fake AWS CLI only)
         run: python3 -m unittest discover -s infra/scripts/tests -v
+      - name: nginx proxy integration tests (local stubs, no AWS)
+        if: matrix.root == 'envs/staging'
+        run: |
+          docker build -t sentinel-nginx:test infra/nginx
+          docker build -t sentinel-nginx:tests infra/nginx/tests
+          docker run --rm -v "$PWD/infra/nginx/tests":/tests:ro sentinel-nginx:tests
+          node --test infra/terraform/modules/cdn/spa.test.cjs
   plan:
     # No credentials on forks, push events, or before approved bootstrap/configuration.
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && vars.TF_PLAN_ENABLED == 'true'
@@ -67,6 +74,7 @@ jobs:
           STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
           TF_VAR_state_bucket_name: ${{ vars.TF_STATE_BUCKET }}
           TF_VAR_owner: ${{ vars.INFRA_OWNER }}
+          TF_VAR_website_bucket_name: ${{ vars.STAGING_WEBSITE_BUCKET }}
         run: |
           cd infra/terraform/envs/staging
           terraform init -input=false -lockfile=readonly -backend-config="bucket=$STATE_BUCKET" -backend-config=key=staging/terraform.tfstate -backend-config=region=eu-west-1 -backend-config=use_lockfile=true -backend-config=encrypt=true > /tmp/tf-init.log 2>&1

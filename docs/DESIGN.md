@@ -1980,6 +1980,16 @@ Managed services: ECR · Cognito · Bedrock · SSM Parameter Store · CloudWatch
 | Observability | `awslogs` driver → CloudWatch Logs (**7-day retention**); alarms on EC2 status check, container restarts, nginx 5xx (from a logs metric filter), LLM error rate and daily cost; one CloudWatch dashboard | Alarms use `treat_missing_data = notBreaching` so scheduled downtime does not page anyone |
 | Memory budget (4 GB) | gateway 512 MB · risk-engine 512 MB · kafka 768 MB (heap 512 MB) · postgres 384 MB · ml-scorer 256 MB · llm-insights 256 MB · ml-feedback 128 MB · nginx 32 MB · OS + ECS agent ~400 MB ≈ **3.3 GB** | Set container memory limits and JVM `-XX:MaxRAMPercentage=75`; if OOMs appear, move to t4g.large (record in ROADMAP). |
 
+RISK-104 implements the private S3/OAC distribution and nginx ingress configuration;
+no live endpoint is deployed yet. Static routes use a viewer-request SPA rewrite
+only on the S3 behaviour; API errors are never rewritten into HTML/200. API caching
+is disabled and Authorization/cookies/query strings are forwarded. The origin
+header is stripped before upstream calls. The default CloudFront certificate
+forces the AWS TLSv1 security policy; a stricter minimum requires an own domain
+and ACM certificate. WAF is deferred for this budgeted portfolio environment,
+not included or claimed as protection. Resource-local scan exceptions for SSE-S3
+and no WAF expire 31 Jan 2027. Review these tradeoffs before public deployment.
+
 ### 19.3 Scheduled start/stop
 
 | Item | Setting |

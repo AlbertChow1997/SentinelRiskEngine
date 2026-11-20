@@ -84,7 +84,7 @@ IDs from 100 upwards cover the new scope. A new item takes the next free number.
 | RISK-101 | GitHub Project, milestones, labels and backlog issues (Section 8); branch ruleset on `main`; GitHub Environment `staging` with required reviewer; squash merge only | Bootstrap | To do |
 | RISK-102 | Terraform remote state, `network`, `ecr`, `github-oidc`, AWS Budgets alerts; `terraform.yml` | M0 | In progress; configuration and mock validation, no AWS apply |
 | RISK-103 | `ecs-ec2-host`, `ecs-service`, `scheduler`; `aws-wake` / `aws-sleep` / `aws-status` scripts | M0 | In progress; mock-validated configuration, live boot/apply pending |
-| RISK-104 | `cdn` module (S3 + CloudFront + origin rules), nginx reverse proxy with the secret header | M0 | To do |
+| RISK-104 | `cdn` module (S3 + CloudFront + origin rules), nginx reverse proxy with the secret header | M0 | In progress; configuration/proxy tests, live CDN pending |
 | RISK-105 | `deploy-staging.yml`: OIDC, ARM64 build, Trivy, ECR, approval gate, ECS deploy, S3 sync, smoke test | M0 | To do |
 | RISK-11 (M0 subset) | Health-only backend scaffold, request IDs, JSON logs, tests and ARM64 container (#6) | M0 | In review |
 | RISK-11 … RISK-21 | Risk Engine backlog (`DESIGN.md` §7.11) | M1 | To do |

@@ -6,3 +6,7 @@ variable "existing_provider_arn" {
   type    = string
   default = null
 }
+variable "plan_secret_parameters" {
+  type    = set(string)
+  default = []
+}
