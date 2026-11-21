@@ -1,0 +1,31 @@
+import { Meta, ColorPalette, ColorItem } from '@storybook/addon-docs/blocks'
+
+<Meta title="Foundations/Design tokens" />
+
+# Design tokens
+
+Components use the semantic tokens below, never raw colour values. The raw palette lives in
+`src/styles/index.css` (ADR-0010).
+
+<ColorPalette>
+  <ColorItem
+    title="Surface"
+    subtitle="background · muted · border"
+    colors={{ background: 'var(--background)', muted: 'var(--muted)', border: 'var(--border)' }}
+  />
+  <ColorItem
+    title="Text"
+    subtitle="foreground · muted-foreground"
+    colors={{ foreground: 'var(--foreground)', 'muted-foreground': 'var(--muted-foreground)' }}
+  />
+  <ColorItem
+    title="Action"
+    subtitle="primary (ink) · brand (indigo) · highlight (teal)"
+    colors={{ primary: 'var(--primary)', brand: 'var(--brand)', highlight: 'var(--highlight)' }}
+  />
+  <ColorItem
+    title="Risk bands"
+    subtitle="Always paired with an icon and a text label"
+    colors={{ low: 'var(--risk-low)', medium: 'var(--risk-medium)', high: 'var(--risk-high)' }}
+  />
+</ColorPalette>
