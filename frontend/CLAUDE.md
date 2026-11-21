@@ -7,7 +7,7 @@ Owner: Jiajun Xiao. Design: `docs/DESIGN.md` §8 (§8.8 takes precedence for rou
 
 ## Status
 
-Not scaffolded yet. The UI kit is decided in ADR-0010. The commands below are the target once RISK-30 lands.
+Scaffolded (RISK-30). The UI kit is decided in ADR-0010: design tokens live in `src/styles/index.css`, shadcn/ui components in `src/components/ui/`, and every component has a Storybook story.
 
 ## Stack
 
@@ -30,7 +30,9 @@ npm run typecheck
 npm test -- --run            # Vitest
 npm run build
 npm run generate:api         # regenerate types from ../contracts/*.yaml
-npx playwright test          # UI smoke tests against the preview build
+npm run test:e2e             # Playwright: smoke + real-browser axe on the preview build and every story
+                             # (run `npm run build && npm run build-storybook` first)
+npm run storybook            # component catalogue on :6006 (axe a11y panel)
 ```
 
 ## Conventions

@@ -42,3 +42,18 @@ jobs:
       - run: npm run typecheck
       - run: npm test -- --run
       - run: npm run build
+      - run: npm run build-storybook -- --quiet
+
+      # Real-browser accessibility (axe, WCAG 2.0/2.1 A + AA incl. colour contrast) on the
+      # preview build and on every Storybook story, plus smoke tests.
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: frontend/playwright-report
+          retention-days: 7

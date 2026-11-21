@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { Link, NavLink } from 'react-router'
+import { Button } from '@/components/ui/button'
 import { primaryNav } from '@/lib/navigation'
 
 function navLinkClass({ isActive }: { isActive: boolean }): string {
   return [
     'rounded-md px-3 py-2 text-sm font-medium transition-colors',
-    isActive ? 'text-brand-700' : 'text-ink-muted hover:text-ink',
+    isActive ? 'text-brand' : 'text-muted-foreground hover:text-foreground',
   ].join(' ')
 }
 
@@ -14,9 +15,13 @@ export function SiteHeader() {
   const closeMenu = () => setMenuOpen(false)
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-surface/90 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4 sm:px-6">
-        <Link to="/" className="flex items-center gap-2 font-semibold text-ink" onClick={closeMenu}>
+        <Link
+          to="/"
+          className="flex items-center gap-2 font-semibold text-foreground"
+          onClick={closeMenu}
+        >
           <img src="/logo.png" alt="" width={163} height={96} className="h-7 w-auto" />
           Sentinel Pay
         </Link>
@@ -34,20 +39,17 @@ export function SiteHeader() {
         </nav>
 
         <div className="ml-auto hidden items-center gap-2 md:flex">
-          <Link to="/login" className="px-3 py-2 text-sm font-medium text-ink-muted hover:text-ink">
-            Log in
-          </Link>
-          <Link
-            to="/signup"
-            className="rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
-          >
-            Sign up
-          </Link>
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/login">Log in</Link>
+          </Button>
+          <Button asChild size="sm">
+            <Link to="/signup">Sign up</Link>
+          </Button>
         </div>
 
         <button
           type="button"
-          className="ml-auto rounded-md px-3 py-2 text-sm font-medium text-ink md:hidden"
+          className="ml-auto rounded-md px-3 py-2 text-sm font-medium text-foreground md:hidden"
           aria-expanded={menuOpen}
           aria-controls="mobile-menu"
           onClick={() => setMenuOpen((open) => !open)}
@@ -57,7 +59,7 @@ export function SiteHeader() {
       </div>
 
       {menuOpen && (
-        <nav id="mobile-menu" aria-label="Mobile" className="border-t border-line md:hidden">
+        <nav id="mobile-menu" aria-label="Mobile" className="border-t border-border md:hidden">
           <ul className="flex flex-col gap-1 px-4 py-3">
             {[
               ...primaryNav,

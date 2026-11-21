@@ -80,3 +80,4 @@ desktop.ini
 logs/
 tmp/
 .contracts-base/
+frontend/storybook-static/
