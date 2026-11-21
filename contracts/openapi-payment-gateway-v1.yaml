@@ -1,13 +1,15 @@
 openapi: 3.1.0
 info:
   title: Sentinel Pay — Payment Gateway API
-  version: 1.0.0
+  version: 1.1.0
   summary: Merchant-facing card payment API with built-in real-time risk screening.
   description: |
     Producer: **Payment Gateway (Jiawei Zhou)** · Consumers: merchants (Postman / demo checkout), **Frontend (Jiajun Xiao)** for ops views.
 
     - Merchant endpoints (`/api/v1/payments…`) require `X-API-Key`.
-    - Ops endpoints (`/api/v1/ops/…`) are read-only, unauthenticated, **local/demo only** (OAuth2 in a later version).
+    - Ops endpoints require Cognito access JWTs with the analyst or admin group.
+    - Merchant provisioning uses a merchant JWT; programmatic payment calls keep API keys.
+    - Cross-tenant access returns 404. JWT authentication is specified here, not implemented by this contract.
     - `POST` endpoints that move money require an `Idempotency-Key` header (Stripe-style).
     - Amounts are decimal numbers in major units (e.g. 49.99), max 2 decimals. Currency is ISO 4217.
     - **No card numbers (PAN) are accepted.** Cards are represented by test tokens (see `PaymentMethodToken`).
@@ -18,6 +20,7 @@ servers:
 tags:
   - name: Payments
   - name: Refunds
+  - name: Merchants
   - name: Ops
     description: Read-only views for the analyst/ops UI
   - name: Operations
@@ -26,6 +29,35 @@ security:
   - ApiKeyAuth: []
 
 paths:
+  /api/v1/merchants/me:
+    post:
+      tags: [Merchants]
+      operationId: provisionCurrentMerchant
+      summary: Create or return the caller's merchant
+      description: >-
+        Idempotent on the verified JWT sub, including concurrent calls. No request body:
+        identity and tenant are derived on the server. Return 201 on creation, 200 on
+        an existing link. Never return an API key, accept a caller-supplied subject,
+        or provision a merchant for a token without the merchant group.
+      security:
+        - BearerAuth: []
+      x-required-roles: [merchant]
+      responses:
+        '200':
+          description: Existing merchant linked to this subject.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CurrentMerchant' }
+        '201':
+          description: Merchant created and linked atomically.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CurrentMerchant' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
   /api/v1/payments:
     post:
       tags: [Payments]
@@ -203,7 +235,9 @@ paths:
       tags: [Ops]
       operationId: opsListPayments
       summary: Search all payments across merchants (ops UI)
-      security: []
+      security:
+        - BearerAuth: []
+      x-required-roles: [analyst, admin]
       parameters:
         - name: status
           in: query
@@ -226,6 +260,10 @@ paths:
           in: query
           schema: { type: string, default: 'createdAt,desc' }
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '200':
           description: One page.
           content:
@@ -237,10 +275,16 @@ paths:
       tags: [Ops]
       operationId: opsGetPayment
       summary: Payment detail incl. status history and ledger entries (ops UI)
-      security: []
+      security:
+        - BearerAuth: []
+      x-required-roles: [analyst, admin]
       parameters:
         - $ref: '#/components/parameters/PaymentId'
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '200':
           description: Payment with history.
           content:
@@ -254,7 +298,9 @@ paths:
       tags: [Ops]
       operationId: opsPaymentStats
       summary: Payment KPIs for the dashboard
-      security: []
+      security:
+        - BearerAuth: []
+      x-required-roles: [analyst, admin]
       parameters:
         - name: from
           in: query
@@ -263,6 +309,10 @@ paths:
           in: query
           schema: { type: string, format: date-time }
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '200':
           description: KPIs.
           content:
@@ -287,6 +337,14 @@ paths:
 
 components:
   securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >-
+        Cognito access token, never an ID token. Validate JWKS signature, issuer,
+        expiry, token_use=access, configured client_id and resource audience when configured.
+        Map cognito:groups to x-required-roles; roles are not OAuth scopes.
     ApiKeyAuth:
       type: apiKey
       in: header
@@ -320,6 +378,16 @@ components:
       schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
 
   schemas:
+    CurrentMerchant:
+      type: object
+      additionalProperties: false
+      required: [merchantId, createdAt]
+      properties:
+        merchantId: { type: string, minLength: 1, maxLength: 64 }
+        createdAt: { type: string, format: date-time }
+      example:
+        merchantId: merch-demo
+        createdAt: '2026-11-20T10:00:00Z'
     PaymentStatus:
       type: string
       enum:
@@ -511,13 +579,18 @@ components:
           additionalProperties: { type: string }
 
   responses:
+    Forbidden:
+      description: Authenticated caller lacks a required group.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetail' }
     ValidationError:
       description: Validation failure (or missing Idempotency-Key).
       content:
         application/problem+json:
           schema: { $ref: '#/components/schemas/ProblemDetail' }
     Unauthorized:
-      description: Missing or invalid API key.
+      description: Missing or invalid API key or Cognito access token.
       content:
         application/problem+json:
           schema: { $ref: '#/components/schemas/ProblemDetail' }
