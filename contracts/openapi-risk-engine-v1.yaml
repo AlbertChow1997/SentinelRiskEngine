@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Sentinel Risk Engine — Public API
-  version: 1.1.0
+  version: 1.2.0
   summary: Real-time transaction risk assessment and analyst review.
   description: |
     Producer: **Backend (Jiawei Zhou)** · Consumers: **Frontend (Jiajun Xiao)**, Payment Gateway (Phase 2).
@@ -24,13 +24,20 @@ tags:
     description: Should-have for v1.0
   - name: Operations
 
+security:
+  - BearerAuth: []
+
 paths:
   /api/v1/risk-assessments:
     post:
       tags: [Assessments]
+      x-required-roles: [analyst, admin]
       operationId: createRiskAssessment
       summary: Assess the risk of a transaction
       description: |
+        Browser access requires analyst/admin. Gateway creation and LLM detail reads need
+        service authentication; Q12 is deferred until RISK-111. They must not use user
+        tokens, bypass JWT validation or expose anonymous access to compensate.
         Runs Java rules and the ML scorer, combines the scores and returns a decision.
         **Idempotent on `transactionId`:** re-sending the same payload returns the original
         assessment (200). Same `transactionId` with a different payload returns 409.
@@ -54,6 +61,10 @@ paths:
                   countryCode: IE
                   transactionTime: '2026-11-18T09:59:00Z'
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '200':
           description: Assessment completed (or idempotent replay).
           headers:
@@ -71,6 +82,7 @@ paths:
           $ref: '#/components/responses/Problem'
     get:
       tags: [Assessments]
+      x-required-roles: [analyst, admin]
       operationId: listRiskAssessments
       summary: Search assessments (paged)
       parameters:
@@ -105,6 +117,10 @@ paths:
           description: 'Field and direction. Allowed fields: assessedAt, riskScore, amount.'
           schema: { type: string, default: 'assessedAt,desc', example: 'riskScore,desc' }
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '200':
           description: One page of results.
           content:
@@ -117,11 +133,16 @@ paths:
   /api/v1/risk-assessments/{assessmentId}:
     get:
       tags: [Assessments]
+      x-required-roles: [analyst, admin]
       operationId: getRiskAssessment
       summary: Get one assessment
       parameters:
         - $ref: '#/components/parameters/AssessmentId'
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '200':
           description: The assessment.
           content:
@@ -134,6 +155,7 @@ paths:
   /api/v1/risk-assessments/{assessmentId}/review:
     post:
       tags: [Review]
+      x-required-roles: [analyst, admin]
       operationId: reviewRiskAssessment
       summary: Record an analyst decision on a REVIEW case
       description: Only allowed when `status = PENDING_REVIEW`. Moves status to `REVIEWED`.
@@ -146,6 +168,10 @@ paths:
             schema:
               $ref: '#/components/schemas/ReviewRequest'
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '200':
           description: Updated assessment.
           content:
@@ -162,11 +188,16 @@ paths:
   /api/v1/risk-assessments/{assessmentId}/audit-events:
     get:
       tags: [Assessments]
+      x-required-roles: [analyst, admin]
       operationId: listAuditEvents
       summary: Audit trail of one assessment (oldest first)
       parameters:
         - $ref: '#/components/parameters/AssessmentId'
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '200':
           description: Audit events.
           content:
@@ -181,6 +212,7 @@ paths:
   /api/v1/stats/summary:
     get:
       tags: [Stats]
+      x-required-roles: [analyst, admin]
       operationId: getStatsSummary
       summary: KPI summary for the dashboard
       parameters:
@@ -193,6 +225,10 @@ paths:
           description: Defaults to now.
           schema: { type: string, format: date-time }
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '200':
           description: Summary.
           content:
@@ -203,6 +239,7 @@ paths:
   /api/v1/blocklist:
     get:
       tags: [Blocklist]
+      x-required-roles: [analyst, admin]
       operationId: listBlocklistEntries
       summary: List blocklist entries (Should-have)
       parameters:
@@ -210,6 +247,10 @@ paths:
           in: query
           schema: { $ref: '#/components/schemas/BlocklistType' }
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '200':
           description: All matching entries.
           content:
@@ -220,6 +261,7 @@ paths:
                   $ref: '#/components/schemas/BlocklistEntry'
     post:
       tags: [Blocklist]
+      x-required-roles: [analyst, admin]
       operationId: createBlocklistEntry
       summary: Add a customer or merchant to the blocklist (Should-have)
       requestBody:
@@ -229,6 +271,10 @@ paths:
             schema:
               $ref: '#/components/schemas/BlocklistEntryRequest'
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '201':
           description: Created.
           headers:
@@ -246,6 +292,7 @@ paths:
   /api/v1/blocklist/{entryId}:
     delete:
       tags: [Blocklist]
+      x-required-roles: [analyst, admin]
       operationId: deleteBlocklistEntry
       summary: Remove a blocklist entry (Should-have)
       parameters:
@@ -254,6 +301,10 @@ paths:
           required: true
           schema: { type: string, format: uuid }
       responses:
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '204':
           description: Deleted.
         '404':
@@ -263,6 +314,7 @@ paths:
     get:
       tags: [Operations]
       operationId: getHealth
+      security: []
       summary: Health check
       responses:
         '200':
@@ -275,6 +327,15 @@ paths:
                   status: { type: string, enum: [UP, DOWN, OUT_OF_SERVICE, UNKNOWN] }
 
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >-
+        Cognito access token, never an ID token. Validate JWKS signature, issuer,
+        expiry, token_use=access, configured client_id and resource audience when configured.
+        Map cognito:groups to x-required-roles; roles are not OAuth scopes.
   parameters:
     AssessmentId:
       name: assessmentId
@@ -530,6 +591,16 @@ components:
               additionalProperties: { type: string }
 
   responses:
+    Unauthorized:
+      description: Missing or invalid Cognito access token.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetail' }
+    Forbidden:
+      description: Authenticated caller lacks a required group.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetail' }
     Problem:
       description: Error.
       content:
