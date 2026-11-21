@@ -50,6 +50,7 @@ Costs are indicative for eu-west-1 and must be re-checked with the AWS Pricing C
 | 0009 | FastAPI for the Python services (Django considered and rejected) | Accepted | [adr/0009-fastapi-for-python-services.md](adr/0009-fastapi-for-python-services.md) |
 | 0010 | Tailwind CSS and shadcn/ui with our own design tokens for the frontend | Accepted | [adr/0010-frontend-ui-kit.md](adr/0010-frontend-ui-kit.md) |
 | 0011 | Terraform for infrastructure as code | Accepted | to be written with the first infra PR |
+| [0012](adr/0012-pre-freeze-jwt-contracts.md) | Pre-freeze JWT contract transition | Proposed | RISK-100; producer/consumer review in PR #26 |
 | 0012 | Amazon Cognito as identity provider | Accepted | to be written at M3 |
 | 0013 | Amazon Bedrock for LLM access | Accepted | to be written at M4 |
 

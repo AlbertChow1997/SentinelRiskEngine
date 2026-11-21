@@ -80,7 +80,7 @@ IDs from 100 upwards cover the new scope. A new item takes the next free number.
 | Key | Summary | Milestone | Status |
 |---|---|---|---|
 | RISK-10 | Monorepo scaffold, CODEOWNERS, PR and issue templates, living docs, contracts import, `contracts.yml`, `codeql.yml` | Bootstrap | In review |
-| RISK-100 | Contracts: `openapi-llm-insights-v1.yaml`, `risk.insights.v1`, JWT security on gateway and risk contracts, `POST /api/v1/merchants/me` | Bootstrap | To do |
+| RISK-100 | Contracts: `openapi-llm-insights-v1.yaml`, `risk.insights.v1`, JWT security on gateway and risk contracts, `POST /api/v1/merchants/me` | Bootstrap | In review; all contract drafts in PR #26; runtime auth remains RISK-111 |
 | RISK-101 | GitHub Project, milestones, labels and backlog issues (Section 8); branch ruleset on `main`; GitHub Environment `staging` with required reviewer; squash merge only | Bootstrap | In progress; partial (audit 19 Nov) |
 | RISK-102 | Terraform remote state, `network`, `ecr`, `github-oidc`, AWS Budgets alerts; `terraform.yml` | M0 | To do |
 | RISK-103 | `ecs-ec2-host`, `ecs-service`, `scheduler`; `aws-wake` / `aws-sleep` / `aws-status` scripts | M0 | To do |

@@ -1,0 +1,3 @@
+GET /api/v1/ops/payments the endpoint no longer allows anonymous access and now only accepts `BearerAuth`
+GET /api/v1/ops/payments/{paymentId} the endpoint no longer allows anonymous access and now only accepts `BearerAuth`
+GET /api/v1/ops/stats/summary the endpoint no longer allows anonymous access and now only accepts `BearerAuth`
