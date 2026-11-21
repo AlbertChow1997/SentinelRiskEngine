@@ -1,16 +1,17 @@
 asyncapi: 3.0.0
 info:
   title: Sentinel Pay — Domain Events
-  version: 1.0.0
+  version: 1.1.0
   description: |
-    Kafka events exchanged between the Payment Gateway, Risk Engine and ML Scorer.
+    Kafka events exchanged between the Payment Gateway, Risk Engine, ML Scorer and LLM Insights.
 
     - Delivery: **at-least-once**. Producers publish through a transactional **outbox**; consumers are
       **idempotent** (dedupe on `eventId` via a `processed_event` table).
     - Message key: `paymentId` (payment events) / `transactionId` (risk events). In this system
       `transactionId == paymentId`, so all events for one payment land on the same partition, in order.
     - Format: JSON, camelCase, envelope below. Breaking changes → new topic suffix (`.v2`).
-    - Topic owners: `payments.events.v1` → Payment Gateway (Jiawei); `risk.assessments.v1` → Risk Engine (Jiawei).
+    - Topic owners: `payments.events.v1` → Payment Gateway (Jiawei); `risk.assessments.v1` → Risk Engine (Jiawei);
+      `risk.insights.v1` → LLM Insights (Zheng, ownership confirmation remains Q13).
 
 servers:
   local:
@@ -38,8 +39,23 @@ channels:
     messages:
       RiskAssessmentCreated: { $ref: '#/components/messages/RiskAssessmentCreated' }
       RiskAssessmentReviewed: { $ref: '#/components/messages/RiskAssessmentReviewed' }
+  riskInsightEvents:
+    address: risk.insights.v1
+    description: Advisory insight availability; 3 partitions, retention 7 days, key transactionId. No payment decision is changed.
+    messages:
+      RiskInsightGenerated: { $ref: '#/components/messages/RiskInsightGenerated' }
 
 operations:
+  publishRiskInsights:
+    action: send
+    channel: { $ref: '#/channels/riskInsightEvents' }
+    summary: LLM Insights publishes through its transactional outbox only after validated SUCCESS output is committed.
+  consumeRiskAssessmentsByLlm:
+    action: receive
+    channel: { $ref: '#/channels/riskAssessmentEvents' }
+    summary: LLM Insights consumes RiskAssessmentCreated; generates REVIEW insights and configured samples; dedupes by assessmentId.
+    messages:
+      - $ref: '#/channels/riskAssessmentEvents/messages/RiskAssessmentCreated'
   publishPaymentEvents:
     action: send
     channel: { $ref: '#/channels/paymentEvents' }
@@ -65,6 +81,25 @@ operations:
 
 components:
   schemas:
+    InsightEnvelope:
+      type: object
+      description: Same envelope fields as other topics; separate schema preserves all existing message schemas unchanged.
+      required: [eventId, eventType, eventVersion, occurredAt, source, data]
+      properties:
+        eventId: { type: string, format: uuid }
+        eventType: { type: string, enum: [RiskInsightGenerated] }
+        eventVersion: { type: integer, enum: [1] }
+        occurredAt: { type: string, format: date-time }
+        source: { type: string, enum: [llm-insights] }
+        correlationId: { type: string }
+        data:
+          type: object
+          required: [assessmentId, transactionId, invocationId, generatedAt]
+          properties:
+            assessmentId: { type: string, format: uuid }
+            transactionId: { type: string, description: Kafka message key; equals paymentId for gateway assessments. }
+            invocationId: { type: string, format: uuid }
+            generatedAt: { type: string, format: date-time }
     Envelope:
       type: object
       required: [eventId, eventType, eventVersion, occurredAt, source, data]
@@ -89,6 +124,25 @@ components:
         riskAssessmentId: { type: [string, 'null'], format: uuid }
 
   messages:
+    RiskInsightGenerated:
+      name: RiskInsightGenerated
+      contentType: application/json
+      summary: A valid advisory insight can now be fetched; contains identifiers only, never prompts or raw model output.
+      payload: { $ref: '#/components/schemas/InsightEnvelope' }
+      examples:
+        - name: advisoryInsightAvailable
+          payload:
+            eventId: 33333333-3333-4333-8333-333333333333
+            eventType: RiskInsightGenerated
+            eventVersion: 1
+            occurredAt: '2026-11-19T12:00:00Z'
+            source: llm-insights
+            correlationId: request-001
+            data:
+              assessmentId: 11111111-1111-4111-8111-111111111111
+              transactionId: tx-001
+              invocationId: 22222222-2222-4222-8222-222222222222
+              generatedAt: '2026-11-19T12:00:00Z'
     PaymentAuthorized:
       name: PaymentAuthorized
       contentType: application/json
