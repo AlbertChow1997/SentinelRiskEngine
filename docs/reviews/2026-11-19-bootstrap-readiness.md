@@ -8,7 +8,7 @@ Related issues: [RISK-100 / #4](https://github.com/AlbertChow1997/SentinelRiskEn
 
 Neither issue is complete. Keep both open. A reviewed ML contract (#18), backend scaffold (#19), frontend scaffold (#20)
 and UI-kit ADR (#21) do not satisfy the separate RISK-100 contracts or all RISK-101 repository controls.
-This audit changes documentation and issue checklists only; it does not configure repository settings or deploy resources.
+The 19 Nov baseline audit changed only documentation and issue checklists. Subsequent 20 Nov settings changes are a separate dated operational follow-up below; this documentation PR itself does not configure settings or deploy resources.
 
 ## RISK-100: contracts
 
@@ -63,25 +63,46 @@ without credentials, AWS deployment or resolving the future authenticated API co
 The tables above preserve the 19 November baseline, not current configuration.
 Since that audit, squash-only merging was configured/read back; closed Project
 cards were manually reconciled and all eleven open issues are represented.
-Built-in Project automation is still unverified: the available browser inventory
-is empty and the in-app browser is unavailable. Manual reconciliation is not
-proof that the built-in workflows are enabled.
+Built-in Project automation is not verified. Verification owner: Jiawei; requested checkpoint: 22 Nov 2026 18:00 Europe/Dublin, before the M0 readiness decision. Record actual toggle evidence in #5. Manual reconciliation does not prove the workflows are enabled; the target is not evidence of completion.
 
 Required-reviewer creation was attempted with self-review prohibited and returned
 HTTP 422 explicitly requiring billing-plan support. The API partially created
 staging without that rule. It has since been restricted/read back to exactly
 one deployment branch policy, main (branch type), with no required reviewer.
-The earlier self-review-allowed proposal was rejected by automatic approval
-review and was not executed; it was replaced by the stricter request above.
+The self-review-allowed option was not applied. The stricter request above did not create a required-reviewer rule.
 No branch protection, paid plan or repository visibility change was made.
 
-PR #32 fails preflight unless a real non-self reviewer and exact-main gate exists;
-the deploy role defaults off. It never treats a typed input, empty environment
-or team convention as the gate. No AWS profile is configured; the owner requested
-code/local validation only. No AWS resource or deployment was created/executed.
+Unmerged PR #32 proposes a preflight requiring a real non-self reviewer and exact-main gate, plus default-off deploy IAM. These are not controls already present on main, nor protection against an arbitrary future workflow that merely names environment: staging. No merged deploy workflow exists on main at this check; the owner last requested code/local validation only. No AWS apply/start/stop/deployment was performed in this work.
 
-RISK-100's full draft is now PR #26 (contracts/frontend CI green). Backend CI
-PR #24 and infrastructure PRs #29/#30/#31 have passed their relevant CI; the
-prepared deployment is #32. These are review-ready implementations, not merged
-features or live AWS acceptance. Requested non-author reviews remain pending.
-Keep #4/#5 open; follow each infrastructure issue for apply/live prerequisites.
+As of 21 Nov, #26's original contract scope is merged; #4 tracks consumer follow-ups. #25 is also merged after review and CI. Backend CI #24 is fixed after a changes request and awaits re-review; infrastructure #29–#32 is unmerged and unapplied. Keep #5 open and distinguish code/CI from actual gate enforcement and live AWS acceptance.
+
+## Open risk and required decision — 21 November 2026
+
+**Risk owner: Jiawei (tech lead). Tracking: RISK-101 / #5, Q21.** The live staging
+environment has no required reviewer. A main-branch workflow naming it could
+receive any future environment secrets or matching OIDC trust without human
+approval. Exact-main branch selection is not an approval gate. Do not add
+deployment credentials/trust or enable a workflow on the assumption this gate
+exists. This risk remains open while the partial environment is retained.
+
+Read-only checks on 21 Nov: staging has only its branch_policy rule, exactly main;
+environment secret count=0, variable count=0; main has no deploy-staging.yml.
+Those observations do not prove the absence of AWS-side roles or future changes.
+No environment deletion or protection weakening is performed in this docs fix.
+
+The repository owner requested completion of assigned RISK-101 work on 20 Nov;
+the routine squash/main-only settings were made within that task authorisation.
+No separate approval for a paid-plan change, public visibility, branch-protection
+change or AWS mutation was given or used. The failed reviewer request is not
+recorded as an approval or as an enforced control.
+
+Jiawei owns the unresolved decision in #5: retain private visibility and obtain
+the necessary gate entitlement, or propose a separately specified, enforceable
+approval/credential control. Any alternative needs a concrete ADR, non-author
+review and recorded owner/team acceptance before changing the M0 requirement.
+It must reject deployment before approval, bind approval to the intended SHA and
+main-only source, protect credential issuance, and include a negative test that
+unauthorised execution cannot obtain AWS access. A comment, typed input, empty
+environment or team convention is not an equivalent. No alternative is accepted
+by this document; the current M0 approval-gate exit criterion remains blocked.
+The proposed 29 Nov milestone may slip; resolve and validate before release.

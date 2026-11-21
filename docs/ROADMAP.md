@@ -21,7 +21,7 @@ the real CI/CD path, so every later milestone is delivered the same way it will 
 | # | Milestone | Outcome (definition of reached) | Target date | Owner | Status |
 |---|---|---|---|---|---|
 | — | Bootstrap | Repository skeleton, living documents, contracts imported, contract and CodeQL workflows | Sun 15 Nov 2026 | Jiawei | In review |
-| **M0** | Walking skeleton | One hello-world service and the frontend shell deployed to AWS staging through the full pipeline: Terraform, GitHub OIDC, ARM64 images in ECR, approval gate, ECS deploy, S3 + CloudFront, smoke test. Budgets alerts live | **Sun 29 Nov 2026** | Jiawei | Proposed |
+| **M0** | Walking skeleton | One hello-world service and the frontend shell deployed to AWS staging through the full pipeline: Terraform, GitHub OIDC, ARM64 images in ECR, approval gate, ECS deploy, S3 + CloudFront, smoke test. Budgets alerts live. Release blocked until Q21 / #5 gate decision and validation are complete | **Sun 29 Nov 2026** | Jiawei | Proposed |
 | **M1** | Risk engine + ML | Risk Engine scope of `DESIGN.md` §7 and ML scorer scope of §9; analyst app pages on mocks then on the real API; scenarios E1–E9 pass | **Sun 10 Jan 2027** | Jiawei, Zheng, Jiajun | Proposed |
 | **M2** | Gateway + Kafka | Payment Gateway scope of §10, events and outbox of §11, risk-engine event changes of §7.12; scenarios P1–P14 pass | **Sun 7 Feb 2027** | Jiawei | Proposed |
 | **M3** | Website, auth and dashboards | Public site (`/`, `/sample`, `/pricing`, `/about`), Cognito login and roles, `/product`, role-based `/dashboard`, JWT on ops and analytics endpoints, merchant provisioning | **Sun 21 Feb 2027** | Jiajun, Jiawei | Proposed |
@@ -81,12 +81,12 @@ IDs from 100 upwards cover the new scope. A new item takes the next free number.
 |---|---|---|---|
 | RISK-10 | Monorepo scaffold, CODEOWNERS, PR and issue templates, living docs, contracts import, `contracts.yml`, `codeql.yml` | Bootstrap | In review |
 | RISK-100 | Contracts: `openapi-llm-insights-v1.yaml`, `risk.insights.v1`, JWT security on gateway and risk contracts, `POST /api/v1/merchants/me` | Bootstrap | Original contract scope merged in PR #26; consumer follow-ups tracked in #4; runtime auth remains RISK-111 |
-| RISK-101 | GitHub Project, milestones, labels and backlog issues (Section 8); branch ruleset on `main`; GitHub Environment `staging` with required reviewer; squash merge only | Bootstrap | In progress; squash-only/main-only staging configured, reviewer entitlement and Project automation pending (20 Nov) |
+| RISK-101 | GitHub Project, milestones, labels and backlog issues (Section 8); branch ruleset on `main`; GitHub Environment `staging` with required reviewer; squash merge only | Bootstrap | Squash-only configured; required reviewer blocked by plan (Q21 / #5, decision needed); Project automation unverified |
 | RISK-102 | Terraform remote state, `network`, `ecr`, `github-oidc`, AWS Budgets alerts; `terraform.yml` | M0 | To do |
 | RISK-103 | `ecs-ec2-host`, `ecs-service`, `scheduler`; `aws-wake` / `aws-sleep` / `aws-status` scripts | M0 | To do |
 | RISK-104 | `cdn` module (S3 + CloudFront + origin rules), nginx reverse proxy with the secret header | M0 | To do |
 | RISK-105 | `deploy-staging.yml`: OIDC, ARM64 build, Trivy, ECR, approval gate, ECS deploy, S3 sync, smoke test | M0 | To do |
-| RISK-11 (M0 subset) | Health-only backend scaffold, request IDs, JSON logs, tests and ARM64 container (#6) | M0 | In review |
+| RISK-11 (M0 subset) | Health-only backend scaffold, request IDs, JSON logs, tests and ARM64 container (#6) | M0 | Merged (#19) |
 | RISK-11 … RISK-21 | Risk Engine backlog (`DESIGN.md` §7.11) | M1 | To do |
 | RISK-70 … RISK-84 | Gateway and event backlog (`DESIGN.md` §10.11) | M2 | To do |
 | RISK-110 | `cognito` module: user pool, groups, app client, Hosted UI domain, test users | M3 | To do |
@@ -103,7 +103,7 @@ IDs from 100 upwards cover the new scope. A new item takes the next free number.
 |---|---|---|---|
 | RISK-120 | ADR: UI kit (Tailwind CSS + shadcn/ui + Framer Motion vs MUI) | Bootstrap | Done (ADR-0010) |
 | RISK-30 | Vite + React + TypeScript scaffold, lint, theme, router, app shell, `ci-frontend.yml` | M0 | Done |
-| RISK-130 | Design tokens, shadcn/ui base components, ScoreBadge, Storybook with axe | M0 | In review |
+| RISK-130 | Design tokens, shadcn/ui base components, ScoreBadge, Storybook with axe | M0 | Merged (#25, 21 Nov) |
 | RISK-121 | Homepage: hero, product showcase, how-it-works, KPI strip, API snippet, footer disclaimer | M0–M3 | To do |
 | RISK-122 | `/sample`: scenario player on a bundled mock dataset | M3 | To do |
 | RISK-31 … RISK-38 | Analyst app pages (`DESIGN.md` §8.6), mapped onto the new routes | M1 | To do |
@@ -168,11 +168,13 @@ RISK-144 ← RISK-82; RISK-128/129 ← RISK-145.
 | 11 Nov 2026 | Schedule re-planned into milestones M0–M5 (this document). Old dates (29 Nov, 13 Dec) withdrawn. Awaiting team sign-off. |
 | 13 Nov 2026 | `contracts/openapi-ml-scorer-v1.yaml` written (RISK-140): `POST /v1/score`, `GET /v1/model-info`, `GET /health`. Q16 closed. Freezes at H1 (Tue 1 Dec). |
 | 16 Nov 2026 | Owner confirmed PostgreSQL 18 across environments; corrected Compose volume layout and major-version policy. RISK-11 M0 backend scaffold implemented and validated (9 tests, Java 21 ARM64 image); awaiting teammate review. Spring Boot 4.1.2 / Java 21 recorded in ADR-0008; Q18 closed. RISK-12 remains the follow-up CI ticket. |
+| 20 Nov 2026 | Squash-only merge settings verified. Staging was partially created when the required-reviewer rule returned billing-plan 422, then restricted to exact main only. It is not an approval gate. Q21 / #5 remains an owned decision; M0 gate acceptance is blocked. |
+| 21 Nov 2026 | #26 original contract scope merged by Zheng; consumer follow-ups remain in #4. Frontend #25 reviewed and merged after same-SHA local/CI verification. Backend CI #24 and settings audit #33 received changes requests; fixes require re-review. Infrastructure #29–#32 remains unmerged/unapplied. |
 
 ## 7. Risks to the schedule
 
-Readiness audit (19 Nov 2026): RISK-100 contracts remain incomplete; RISK-101 has partial setup and unverified automation.
-See [the acceptance-criteria audit](reviews/2026-11-19-bootstrap-readiness.md). Neither issue is ready to close.
+Readiness update (21 Nov 2026): the original RISK-100 scope merged in #26, with consumer follow-ups tracked in #4. RISK-101 remains incomplete: reviewer protection is blocked by the plan and Project automation is unverified.
+The M0 approval-gate exit criterion is still required and cannot currently be met. The proposed 29 Nov checkpoint is at risk; it has not been declared achieved or silently redefined. See [the dated audit](reviews/2026-11-19-bootstrap-readiness.md) and decision owner in #5.
 
 | Risk | Likelihood | Effect on dates | Mitigation |
 |---|---|---|---|
@@ -182,7 +184,7 @@ See [the acceptance-criteria audit](reviews/2026-11-19-bootstrap-readiness.md). 
 | First Terraform apply reveals cost or quota surprises | Low | M0 slips by days | Budgets alerts in the first apply; `terraform plan` reviewed in PR |
 | 4 GB host cannot hold all containers | Medium | M4 or M5 work to resize | Memory limits from day one; move to t4g.large and record it here |
 | Frontend scope (website + app + console ≈ 100 h) exceeds one person's capacity | Medium | M3 or M4 slips | `/docs` and prompt comparison are Could; `/pricing` and `/about` are small and can move after M3 |
-| Private repository on a plan without rulesets, required code-owner review or environment reviewers | Medium | No date impact, but the review and approval gates become convention rather than enforcement | Check Q21; deployment fails closed and deploy credentials default off until a real gate or separately approved equivalent exists |
+| Private plan cannot enforce the required staging reviewer; current staging is not an approval gate | Confirmed | M0 release blocked; proposed 29 Nov checkpoint may slip until Q21 is resolved and validated | Jiawei owns decision #5. Require an enforceable gate and reviewed ADR before enabling credentials/deployment; PR #32 is only a proposal. A typed input, empty environment or team convention does not qualify |
 | Contract changes after a freeze | Medium | Rework in two components | Freeze points H1, H6, H11; additive-only rule; `oasdiff` in CI |
 
 ## 8. Tracking setup: GitHub Issues + GitHub Project (tech lead)

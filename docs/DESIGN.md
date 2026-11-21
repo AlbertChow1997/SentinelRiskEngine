@@ -118,7 +118,7 @@ A merchant wants to take card payments without building payment processing or fr
 
 | Priority | LLM Insights (Zheng, proposed) | Website & web app (Jiajun) | Authentication (Jiawei, Jiajun) | AWS & CI/CD (Jiawei) |
 |---|---|---|---|---|
-| **Must** | Consume `RiskAssessmentCreated`; insight for every REVIEW; `StubProvider` + `BedrockProvider`; output validation; timeout, retries, token limits, daily budget; idempotent on `assessmentId`; insight and invocation read APIs | Homepage, `/sample`, `/product`, role-based `/dashboard`, login redirect, "environment is sleeping" banner, footer disclaimer | Cognito user pool and groups; Authorization Code + PKCE login; JWT validation in every backend; merchant provisioning; tenant scoping (404) | Terraform staging; single ECS host; ECR; CloudFront + S3; deploy pipeline with approval gate; AWS Budgets alerts; scheduled start/stop |
+| **Must** | Consume `RiskAssessmentCreated`; insight for every REVIEW; `StubProvider` + `BedrockProvider`; output validation; timeout, retries, token limits, daily budget; idempotent on `assessmentId`; insight and invocation read APIs | Homepage, `/sample`, `/product`, role-based `/dashboard`, login redirect, "environment is sleeping" banner, footer disclaimer | Cognito user pool and groups; Authorization Code + PKCE login; JWT validation in every backend; merchant provisioning; tenant scoping (404) | Terraform staging; single ECS host; ECR; CloudFront + S3; deploy pipeline with approval gate (M0 release blocked pending Q21 / #5); AWS Budgets alerts; scheduled start/stop |
 | **Should** | Sampling of APPROVE/DECLINE cases; feedback endpoint; stats endpoint; `RiskInsightGenerated` event | `/pricing`, `/about`, LLM Console (overview, table, detail), AI summary on the assessment detail | — | CloudWatch alarms and dashboard; nightly `pg_dump`; DLM snapshots |
 | **Could** | Prompt comparison metrics | `/docs` rendered from OpenAPI; prompt comparison view | — | ECS Service Connect |
 | **Won't** | LLM-made decisions, fine-tuning, retrieval (RAG) | Copies of any third-party brand assets | A local identity provider | Production environment, custom domain, Multi-AZ |
@@ -444,7 +444,7 @@ Each component workflow runs only when its folder (or `contracts/`) changes (`on
 | `contracts.yml` | changes in `contracts/` | Validate OpenAPI (Redocly) and AsyncAPI (AsyncAPI CLI); detect breaking changes (`oasdiff`) | **Exists** |
 | `codeql.yml` | PR + weekly | CodeQL for Java, Python, JavaScript/TypeScript and workflow files; a language starts analysing when its first source file lands | **Exists**, but skipped while the repository is private: code scanning there needs GitHub Advanced Security |
 | `terraform.yml` | changes in `infra/` | `terraform fmt -check`, `validate`, `tflint`, `checkov`/`trivy config`, `plan` posted as a PR comment | M0 |
-| `deploy-staging.yml` | push to `main` (after CI) or manual | AWS credentials through **GitHub OIDC** → build **ARM64** images → Trivy scan → push to ECR (tag = git SHA) → **approval gate** (GitHub Environment `staging`, required reviewer) → start the EC2 host if stopped and wait for ECS → register task definitions and update services (circuit-breaker rollback) → frontend build → S3 sync → CloudFront invalidation → smoke test through the CloudFront URL | M0 |
+| `deploy-staging.yml` | Proposed in unmerged PR #32; blocked on Q21 / #5 | Proposed: build/test ARM64 images and frontend, scan, verify an actual non-self reviewer and exact-main gate, obtain approval before OIDC AWS access, then ECR/EC2/ECS/S3/CloudFront/smoke. No deployed or merged gate is claimed | M0 release blocked until the required gate exists |
 
 - **CI never calls paid external APIs.** LLM tests use `StubProvider`; AWS calls are stubbed (moto or a stubbed boto3 client).
 - **Dependabot** covers GitHub Actions and docker-compose now; Maven, uv, npm, Docker and Terraform are enabled as each manifest appears.
@@ -1934,7 +1934,7 @@ Due dates are tracked in `docs/ROADMAP.md`. Q1–Q9 are carried over from design
 | Q18 | *Closed 16 Nov 2026:* Java 21 + Spring Boot 4.1.2 selected for the backend scaffold (ADR-0008); gateway follows the same line | — |
 | Q19 | Bedrock model ID and whether new-account AWS credits are available | Jiawei |
 | Q20 | ADR numbering: design v2.0 used 0001 for "tech stack"; 0001 is now "record architecture decisions" and the stack decision moves to 0008 — accept? | Jiawei |
-| Q21 | Private-plan enforcement limitation: ruleset/protection APIs returned plan-entitlement 403; on 20 Nov required-reviewer creation returned 422 explicitly requiring billing-plan support. Staging exists with exact-main branch policy but no required reviewer. Squash-only is configured; deployment stays disabled and the deploy role defaults off until a real gate is verified. Project built-in automation remains unverified | Jiawei |
+| Q21 | Unresolved private-plan decision (#5), owner Jiawei. Ruleset APIs returned 403; required-reviewer creation returned 422. Live staging has exact-main policy but no reviewer and is an open risk, not a gate. PR #32 only proposes fail-closed checks/default-off deploy IAM; those controls are not merged. Keep RISK-101 open. See [dated audit](reviews/2026-11-19-bootstrap-readiness.md) and ROADMAP schedule risk | Jiawei |
 
 ---
 
