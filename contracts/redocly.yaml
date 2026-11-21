@@ -4,9 +4,8 @@ extends:
   - recommended
 
 rules:
-  # TODO(bootstrap item 4): the risk-engine contract has no security scheme yet. Set this back
-  # to `error` in the PR that adds Cognito JWT security to the risk and gateway contracts.
-  security-defined: warn
+  # Every operation declares or inherits authentication; public health is explicit.
+  security-defined: error
   # Local-only server URLs are deliberate until the staging URL exists.
   no-server-example.com: off
   # Re-enable once the team has chosen a licence.
