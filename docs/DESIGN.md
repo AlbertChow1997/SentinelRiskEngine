@@ -434,12 +434,14 @@ Each component folder has a `README.md` and its own `CLAUDE.md` with stack-speci
 
 ### 5.5 CI/CD (GitHub Actions)
 
-Each component workflow runs only when its folder (or `contracts/`) changes (`on.pull_request.paths`).
+Backend CI always reports its stable check, then uses internal path detection to run Maven only for relevant changes.
+Other component workflows currently use workflow-level path filters. Do not make a path-filtered check required until
+an always-reporting gate exists, or unrelated PRs will wait indefinitely for a check that never starts.
 
 | Workflow | Trigger | Steps | Status |
 |---|---|---|---|
-| `ci-backend.yml` | PR / main push touching `backend/`, `contracts/` or the workflow; manual | Java 21, `./mvnw -B -ntp verify`, JaCoCo and test-result artifacts (14 days) | Added in RISK-12; current M0 tests need no Docker |
-| `ci-gateway.yml` | PR / push touching the folder or `contracts/` | `./mvnw -B verify`, JaCoCo coverage report | With the gateway scaffold |
+| `ci-backend.yml` | Every PR/main push; internal backend/contracts/CI path gate; manual always verifies | Stable check, change-detection tests, Java 21 Maven verify when relevant; dependency/Wrapper caches, reports (14 days); main runs preserved | RISK-12; current M0 tests need no Docker |
+| `ci-gateway.yml` | PR / push touching the folder or `contracts/` | `./mvnw -B verify` (unit + PostgreSQL 18/Kafka Testcontainers), JaCoCo coverage report | With the gateway scaffold |
 | `ci-ml.yml`, `ci-llm.yml` | same | `uv sync`, `ruff check`, `ruff format --check`, `mypy`, `pytest` (`StubProvider` only, no cloud calls) | With each scaffold PR |
 | `ci-frontend.yml` | same | `npm ci`, lint, typecheck, unit tests, build, Playwright smoke against the preview build | With the scaffold PR |
 | `contracts.yml` | changes in `contracts/` | Validate OpenAPI (Redocly) and AsyncAPI (AsyncAPI CLI); detect breaking changes (`oasdiff`) | **Exists** |

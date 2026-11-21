@@ -88,7 +88,8 @@ IDs from 100 upwards cover the new scope. A new item takes the next free number.
 | RISK-105 | `deploy-staging.yml`: OIDC, ARM64 build, Trivy, ECR, approval gate, ECS deploy, S3 sync, smoke test | M0 | To do |
 | RISK-11 (M0 subset) | Health-only backend scaffold, request IDs, JSON logs, tests and ARM64 container (#6) | M0 | In review |
 | RISK-12 | Backend CI: Java 21 verify, coverage/test artifacts and Maven Dependabot (#7) | M0 | In review |
-| RISK-11 … RISK-21 | Risk Engine backlog (`DESIGN.md` §7.11) | M1 | To do |
+| RISK-11 (M1 remainder) | Validation, Problem Details and persistence groundwork beyond the merged M0 health scaffold | M1 | To do |
+| RISK-13 … RISK-21 | Remaining Risk Engine backlog (`DESIGN.md` §7.11); M0 CI is listed separately above | M1 | To do |
 | RISK-70 … RISK-84 | Gateway and event backlog (`DESIGN.md` §10.11) | M2 | To do |
 | RISK-110 | `cognito` module: user pool, groups, app client, Hosted UI domain, test users | M3 | To do |
 | RISK-111 | Resource-server JWT validation and role mapping in gateway and risk engine; role and tenant tests | M3 | To do |
