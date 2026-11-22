@@ -21,7 +21,7 @@ export function WaveBackdrop() {
         xmlns="http://www.w3.org/2000/svg"
       >
         <defs>
-          <radialGradient id={sky} cx="85%" cy="15%" r="70%">
+          <radialGradient id={sky} cx="50%" cy="0%" r="80%">
             <stop offset="0%" style={{ stopColor: 'var(--hero-glow-4)' }} />
             <stop offset="45%" style={{ stopColor: 'var(--hero-glow-1)' }} />
             <stop offset="100%" style={{ stopColor: 'var(--hero)', stopOpacity: 0 }} />
@@ -40,7 +40,7 @@ export function WaveBackdrop() {
         <path
           filter={`url(#${blur})`}
           fill={`url(#${fill})`}
-          d="M-100 1000 L-100 980 C 300 990 640 940 860 700 C 1040 500 1180 330 1320 330 C 1420 330 1500 380 1560 420 L1560 1000 Z"
+          d="M-100 1000 L-100 760 C 220 700 520 660 780 640 C 1040 620 1280 560 1560 440 L1560 1000 Z"
         />
       </svg>
     </div>

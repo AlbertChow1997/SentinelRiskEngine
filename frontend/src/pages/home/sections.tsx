@@ -9,6 +9,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
+import { HeroDecisionFeed } from './HeroDecisionFeed'
 import { Reveal } from '@/components/motion/Reveal'
 
 interface Product {
@@ -39,45 +40,33 @@ const products: Product[] = [
   },
 ]
 
-const breakdown = [
-  { label: 'Rules', score: 35, band: 'bg-risk-medium' },
-  { label: 'ML score', score: 58, band: 'bg-risk-medium' },
-  { label: 'Combined', score: 47, band: 'bg-risk-medium' },
+// Illustrative decision mix for the sample data, not live measurements.
+const decisionMix = [
+  { label: 'Approved', value: 82, bar: 'bg-risk-low' },
+  { label: 'Held for review', value: 12, bar: 'bg-risk-medium' },
+  { label: 'Declined', value: 6, bar: 'bg-risk-high' },
 ]
 
-/** Illustrative score breakdown for one held payment (the burst scenario in /sample). */
-function BreakdownPanel() {
+/** Platform panel: a decision mix over the live decision feed, both on sample data. */
+function PlatformPanel() {
   return (
-    <div
-      aria-hidden="true"
-      className="rounded-2xl bg-gradient-to-br from-accent via-secondary to-hero-accent/40 p-6 sm:p-10"
-    >
-      <div className="grid grid-cols-3 gap-3">
-        {breakdown.map((item) => (
+    <div className="rounded-2xl bg-gradient-to-br from-accent via-secondary to-hero-accent/40 p-6 sm:p-10">
+      <div aria-hidden="true" className="grid grid-cols-3 gap-3">
+        {decisionMix.map((item) => (
           <div key={item.label} className="rounded-xl border bg-card p-4 shadow-sm">
-            <p className="text-xs font-medium text-muted-foreground">{item.label}</p>
-            <p className="mt-2 text-3xl font-semibold tracking-tight tabular-nums">{item.score}</p>
+            <p className="truncate text-xs font-medium text-muted-foreground">{item.label}</p>
+            <p className="mt-2 text-3xl font-semibold tracking-tight tabular-nums">{item.value}%</p>
             <div className="mt-3 h-1.5 rounded-full bg-border">
               <div
-                className={`h-full rounded-full ${item.band}`}
-                style={{ width: `${item.score}%` }}
+                className={`h-full rounded-full ${item.bar}`}
+                style={{ width: `${item.value}%` }}
               />
             </div>
           </div>
         ))}
       </div>
-      <div className="mt-3 rounded-xl border bg-card p-4 shadow-sm">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-semibold">Pixel Games Store · €25.00</p>
-          <span className="rounded-full bg-risk-medium-surface px-2.5 py-0.5 text-xs font-medium text-risk-medium">
-            Held for review
-          </span>
-        </div>
-        <p className="mt-3 text-xs font-medium text-brand">AI summary · advisory</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Six small payments in ten minutes can be card testing, but the amounts are normal for
-          digital goods.
-        </p>
+      <div className="mt-3">
+        <HeroDecisionFeed />
       </div>
     </div>
   )
@@ -111,7 +100,7 @@ export function ProductShowcase() {
           </ul>
         </Reveal>
         <Reveal delay={0.1}>
-          <BreakdownPanel />
+          <PlatformPanel />
         </Reveal>
       </div>
     </section>
