@@ -21,6 +21,7 @@
   --sp-navy-950: #0d0a4a;
   --sp-midnight-950: #0c0b24;
   --sp-sky-200: #bcd7f0;
+  --sp-steel-500: #4f7fa8;
 
   /* Neutral functional spectrum. 600 is a touch darker than #777 so body text meets 4.5:1. */
   --sp-neutral-50: #f9f9f9;
@@ -60,12 +61,13 @@
   --ring: var(--sp-lavender-400);
 
   /* Dark bands (hero, developer section, closing call to action). */
-  --hero: var(--sp-midnight-950);
+  --hero: var(--sp-black);
   --hero-foreground: var(--sp-white);
   --hero-muted: var(--sp-neutral-200);
   --hero-glow-1: var(--sp-navy-950);
-  --hero-glow-2: var(--sp-lavender-400);
+  --hero-glow-2: var(--sp-steel-500);
   --hero-glow-3: var(--sp-sky-200);
+  --hero-glow-4: var(--sp-purple-900);
   --hero-accent: var(--sp-sky-200);
   --hero-cta: var(--sp-lavender-400);
   --hero-cta-foreground: var(--sp-black);
@@ -108,6 +110,7 @@
   --color-hero-glow-1: var(--hero-glow-1);
   --color-hero-glow-2: var(--hero-glow-2);
   --color-hero-glow-3: var(--hero-glow-3);
+  --color-hero-glow-4: var(--hero-glow-4);
   --color-hero-accent: var(--hero-accent);
   --color-hero-cta: var(--hero-cta);
   --color-hero-cta-foreground: var(--hero-cta-foreground);
