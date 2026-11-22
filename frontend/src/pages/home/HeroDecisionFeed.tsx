@@ -30,7 +30,7 @@ export function HeroDecisionFeed() {
   }, [running])
 
   return (
-    <figure className="w-full max-w-md rounded-2xl border bg-card/80 p-4 shadow-xl backdrop-blur">
+    <figure className="w-full max-w-md rounded-2xl border bg-card/95 p-4 text-card-foreground shadow-2xl backdrop-blur">
       <figcaption className="mb-3 flex items-center justify-between px-1 text-xs font-medium text-muted-foreground">
         <span>Live decisions · sample data</span>
         {!reduceMotion && (

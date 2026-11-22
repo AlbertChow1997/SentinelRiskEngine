@@ -1,4 +1,14 @@
-import { BrainCircuit, CreditCard, ShieldCheck, type LucideIcon } from 'lucide-react'
+import {
+  Activity,
+  BrainCircuit,
+  CreditCard,
+  ListChecks,
+  Scale,
+  ShieldCheck,
+  Sparkles,
+  type LucideIcon,
+} from 'lucide-react'
+import { motion, useReducedMotion } from 'motion/react'
 import { Reveal } from '@/components/motion/Reveal'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -68,36 +78,85 @@ export function ProductShowcase() {
   )
 }
 
-const steps = [
-  { title: 'Gateway', detail: 'The merchant creates a payment with an idempotency key.' },
-  { title: 'Rules', detail: 'Velocity, amount, country and blocklist rules add to the score.' },
-  { title: 'ML score', detail: 'A fraud model adds its probability and top factors.' },
-  { title: 'Decision', detail: 'Approve, hold for review or decline, with every reason listed.' },
-  { title: 'AI summary', detail: 'Held cases get an advisory summary for the analyst.' },
+const steps: { icon: LucideIcon; title: string; detail: string }[] = [
+  {
+    icon: CreditCard,
+    title: 'Gateway',
+    detail: 'The merchant creates a payment with an idempotency key.',
+  },
+  {
+    icon: ListChecks,
+    title: 'Rules',
+    detail: 'Velocity, amount, country and blocklist rules add to the score.',
+  },
+  {
+    icon: Activity,
+    title: 'ML score',
+    detail: 'A fraud model adds its probability and top factors.',
+  },
+  {
+    icon: Scale,
+    title: 'Decision',
+    detail: 'Approve, hold for review or decline, with every reason listed.',
+  },
+  {
+    icon: Sparkles,
+    title: 'AI summary',
+    detail: 'Held cases get an advisory summary for the analyst.',
+  },
 ]
 
 export function HowItWorks() {
+  const reduceMotion = useReducedMotion()
+
   return (
     <section aria-labelledby="how-heading" className="border-y bg-muted">
       <div className="mx-auto max-w-6xl px-4 py-24 sm:px-6">
         <Reveal>
-          <h2 id="how-heading" className="text-3xl font-bold tracking-tight sm:text-4xl">
+          <p className="text-sm font-semibold text-brand">How it works</p>
+          <h2 id="how-heading" className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
             How a payment is decided
           </h2>
         </Reveal>
-        <ol aria-labelledby="how-heading" className="mt-12 grid gap-6 md:grid-cols-5">
-          {steps.map((step, index) => (
-            <li key={step.title}>
-              <Reveal delay={index * 0.08} className="flex flex-col gap-2">
-                <span className="flex size-8 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-                  {index + 1}
-                </span>
-                <h3 className="font-semibold">{step.title}</h3>
-                <p className="text-sm text-muted-foreground">{step.detail}</p>
-              </Reveal>
-            </li>
-          ))}
-        </ol>
+        <div className="relative mt-14">
+          {/* The connecting track: vertical on small screens, horizontal from md up. */}
+          <div
+            aria-hidden="true"
+            className="absolute top-0 bottom-0 left-6 w-px bg-border md:top-6 md:right-[10%] md:bottom-auto md:left-[10%] md:h-px md:w-auto"
+          >
+            <motion.div
+              className="size-full origin-top bg-gradient-to-b from-brand to-highlight md:origin-left md:bg-gradient-to-r"
+              initial={reduceMotion ? false : { scale: 0 }}
+              whileInView={{ scale: 1 }}
+              viewport={{ once: true, margin: '-120px' }}
+              transition={{ duration: 1.2, ease: 'easeInOut' }}
+            />
+          </div>
+          <ol
+            aria-labelledby="how-heading"
+            className="relative grid gap-10 md:grid-cols-5 md:gap-6"
+          >
+            {steps.map((step, index) => (
+              <li key={step.title}>
+                <Reveal
+                  delay={0.15 + index * 0.2}
+                  className="flex gap-5 md:flex-col md:items-center md:text-center"
+                >
+                  <span className="relative flex size-12 shrink-0 items-center justify-center rounded-2xl border bg-card text-brand shadow-sm">
+                    <step.icon aria-hidden="true" className="size-5" />
+                    <span className="absolute -top-2 -right-2 flex size-5 items-center justify-center rounded-full bg-primary text-[0.65rem] font-semibold text-primary-foreground">
+                      {index + 1}
+                    </span>
+                  </span>
+                  <div>
+                    <h3 className="font-semibold">{step.title}</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">{step.detail}</p>
+                  </div>
+                </Reveal>
+              </li>
+            ))}
+          </ol>
+        </div>
       </div>
     </section>
   )

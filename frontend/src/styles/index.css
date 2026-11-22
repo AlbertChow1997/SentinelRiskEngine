@@ -23,6 +23,8 @@
   --sp-indigo-500: oklch(0.56 0.22 280);
   --sp-indigo-600: oklch(0.5 0.22 280);
   --sp-teal-400: oklch(0.8 0.13 180);
+  --sp-violet-400: oklch(0.68 0.2 310);
+  --sp-indigo-300: oklch(0.78 0.11 280);
 
   --sp-green-600: oklch(0.52 0.13 150);
   --sp-green-50: oklch(0.96 0.03 150);
@@ -48,6 +50,15 @@
   --brand: var(--sp-indigo-600);
   --brand-foreground: var(--sp-white);
   --highlight: var(--sp-teal-400);
+
+  /* Dark hero band on the homepage: ink background with our indigo/teal/violet glow. */
+  --hero: var(--sp-ink-950);
+  --hero-foreground: var(--sp-white);
+  --hero-muted: oklch(0.8 0.015 270);
+  --hero-glow-1: var(--sp-indigo-500);
+  --hero-glow-2: var(--sp-teal-400);
+  --hero-glow-3: var(--sp-violet-400);
+  --hero-accent: var(--sp-indigo-300);
   --destructive: var(--sp-red-600);
   --border: var(--sp-ink-200);
   --input: var(--sp-ink-200);
@@ -85,6 +96,13 @@
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
   --color-highlight: var(--highlight);
+  --color-hero: var(--hero);
+  --color-hero-foreground: var(--hero-foreground);
+  --color-hero-muted: var(--hero-muted);
+  --color-hero-glow-1: var(--hero-glow-1);
+  --color-hero-glow-2: var(--hero-glow-2);
+  --color-hero-glow-3: var(--hero-glow-3);
+  --color-hero-accent: var(--hero-accent);
   --color-destructive: var(--destructive);
   --color-border: var(--border);
   --color-input: var(--input);
@@ -100,6 +118,23 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+}
+
+@theme {
+  --animate-drift: sp-drift 18s ease-in-out infinite alternate;
+  --animate-drift-slow: sp-drift 26s ease-in-out infinite alternate-reverse;
+
+  @keyframes sp-drift {
+    0% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    50% {
+      transform: translate3d(4%, -6%, 0) scale(1.08);
+    }
+    100% {
+      transform: translate3d(-5%, 4%, 0) scale(0.96);
+    }
+  }
 }
 
 @layer base {
