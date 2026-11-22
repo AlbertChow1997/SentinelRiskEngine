@@ -19,6 +19,7 @@
   --sp-lavender-400: #8288bd;
   --sp-lavender-200: #c9cce6;
   --sp-navy-950: #0d0a4a;
+  --sp-midnight-950: #0c0b24;
   --sp-sky-200: #bcd7f0;
 
   /* Neutral functional spectrum. 600 is a touch darker than #777 so body text meets 4.5:1. */
@@ -59,7 +60,7 @@
   --ring: var(--sp-lavender-400);
 
   /* Dark bands (hero, developer section, closing call to action). */
-  --hero: var(--sp-neutral-950);
+  --hero: var(--sp-midnight-950);
   --hero-foreground: var(--sp-white);
   --hero-muted: var(--sp-neutral-200);
   --hero-glow-1: var(--sp-navy-950);

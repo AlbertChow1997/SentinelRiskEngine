@@ -21,8 +21,10 @@ const stack = [
 function HorizonBackdrop() {
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
-      <div className="absolute inset-x-[-20%] bottom-[-35%] h-[90%] rounded-[100%] bg-[radial-gradient(ellipse_at_center,var(--hero-glow-3)_0%,var(--hero-glow-2)_28%,var(--hero-glow-1)_58%,transparent_72%)] opacity-70 blur-2xl" />
-      <div className="absolute -top-40 left-1/2 h-[28rem] w-[60rem] -translate-x-1/2 rounded-full bg-hero-glow-1 opacity-80 blur-[120px]" />
+      <div className="absolute inset-x-[-20%] bottom-[-30%] h-[95%] rounded-[100%] bg-[radial-gradient(ellipse_at_center,var(--hero-glow-3)_0%,var(--hero-glow-2)_30%,var(--hero-glow-1)_60%,transparent_74%)] opacity-95 blur-2xl" />
+      <div className="absolute -top-40 left-1/2 h-[28rem] w-[60rem] -translate-x-1/2 rounded-full bg-hero-glow-2 opacity-40 blur-[120px]" />
+      <div className="absolute top-1/4 -left-40 size-[26rem] rounded-full bg-hero-glow-3 opacity-25 blur-[120px]" />
+      <div className="absolute top-10 -right-40 size-[26rem] rounded-full bg-brand opacity-60 blur-[120px]" />
       <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--hero-foreground)_1px,transparent_1px),linear-gradient(to_bottom,var(--hero-foreground)_1px,transparent_1px)] [mask-image:radial-gradient(ellipse_at_top,black_20%,transparent_70%)] bg-[size:64px_64px] opacity-[0.05]" />
     </div>
   )

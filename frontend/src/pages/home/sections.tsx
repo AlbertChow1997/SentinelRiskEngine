@@ -48,7 +48,10 @@ const breakdown = [
 /** Illustrative score breakdown for one held payment (the burst scenario in /sample). */
 function BreakdownPanel() {
   return (
-    <div aria-hidden="true" className="rounded-2xl bg-secondary p-6 sm:p-10">
+    <div
+      aria-hidden="true"
+      className="rounded-2xl bg-gradient-to-br from-accent via-secondary to-hero-accent/40 p-6 sm:p-10"
+    >
       <div className="grid grid-cols-3 gap-3">
         {breakdown.map((item) => (
           <div key={item.label} className="rounded-xl border bg-card p-4 shadow-sm">
@@ -179,7 +182,7 @@ export function HowItWorks() {
                   delay={0.15 + index * 0.2}
                   className="flex gap-5 md:flex-col md:items-center md:text-center"
                 >
-                  <span className="relative flex size-12 shrink-0 items-center justify-center rounded-2xl border bg-card text-brand shadow-sm">
+                  <span className="relative flex size-12 shrink-0 items-center justify-center rounded-2xl border border-highlight/40 bg-accent text-brand shadow-sm">
                     <step.icon aria-hidden="true" className="size-5" />
                     <span className="absolute -top-2 -right-2 flex size-5 items-center justify-center rounded-full bg-primary text-[0.65rem] font-semibold text-primary-foreground">
                       {index + 1}
@@ -232,7 +235,7 @@ export function KpiStrip() {
                 <dt className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
                   {kpi.label}
                 </dt>
-                <dd className="text-5xl font-semibold tracking-tighter tabular-nums">
+                <dd className="bg-gradient-to-r from-brand to-highlight bg-clip-text text-5xl font-semibold tracking-tighter text-transparent tabular-nums">
                   {kpi.value}
                 </dd>
               </div>

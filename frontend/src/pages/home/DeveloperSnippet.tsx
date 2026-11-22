@@ -27,7 +27,7 @@ const response = `{
 
 export function DeveloperSnippet() {
   return (
-    <section aria-labelledby="dev-heading" className="bg-primary text-primary-foreground">
+    <section aria-labelledby="dev-heading" className="bg-hero text-hero-foreground">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-24 sm:px-6 lg:grid-cols-[1fr_1.4fr]">
         <Reveal>
           <p className="text-sm font-semibold text-highlight">For developers</p>
