@@ -500,7 +500,7 @@ AI tools (Claude, Copilot, etc.) are encouraged for scaffolding, boilerplate, te
 
 ## 6. Interface contracts (summary)
 
-Full definitions are in `contracts/`. OpenAPI files target OpenAPI 3.1; the event file targets AsyncAPI 3.0. As of 11 Nov 2026 the repository holds the Risk Engine, Payment Gateway and events contracts imported unchanged from design v2.0. `openapi-ml-scorer-v1.yaml` (Section 6.2) was added in RISK-140. Still to be written, contract first: `openapi-llm-insights-v1.yaml` (Section 6.6), and the authentication changes listed in Section 6.7.
+Full definitions are in `contracts/`. OpenAPI files target OpenAPI 3.1; the event file targets AsyncAPI 3.0. The Risk Engine and Gateway contracts were imported from design v2.0. The ML contract was added in RISK-140. RISK-100 now drafts the LLM Insights contract (Section 6.6) and an additive insights event for producer/consumer review. Gateway/risk JWT and merchant provisioning are now drafted in RISK-100 (Section 6.7); all drafts await producer/consumer approval.
 
 ### 6.1 Risk Engine API (1.1.0) — producer Risk Engine, consumers Frontend & Gateway
 
@@ -561,7 +561,10 @@ Envelope: `eventId`, `eventType`, `eventVersion`, `occurredAt`, `source`, `corre
 
 ### 6.6 LLM Insights API — producer LLM Insights, consumer Frontend (v3.0)
 
-To be defined in a new `contracts/openapi-llm-insights-v1.yaml` **before** any code depends on it.
+Drafted in `contracts/openapi-llm-insights-v1.yaml` under RISK-100 **before** implementation: producer/consumer review
+is required. It defines the five operations below, role metadata, Problem Details and invocation/feedback/statistics shapes.
+`risk.insights.v1` now has an additive identifier-only `RiskInsightGenerated` contract. Q12 (Risk Engine service access, explicitly deferred to RISK-111),
+Q13 (LLM ownership/process) and Q14 (persistence/budget-skip storage) remain open; no implementation is implied.
 
 | Method | Path | Auth | Purpose | Priority |
 |---|---|---|---|---|
@@ -571,15 +574,15 @@ To be defined in a new `contracts/openapi-llm-insights-v1.yaml` **before** any c
 | GET | `/api/v1/llm/stats` | JWT (`developer` / `admin`) | Calls, success / invalid / error rates, latency percentiles, tokens, cost, feedback ratio | Should |
 | POST | `/api/v1/llm/invocations/{id}/feedback` | JWT (`analyst` / `admin`) | Thumbs up/down and an optional comment on an insight | Should |
 
-### 6.7 Contract changes required by v3.0 (not yet made)
+### 6.7 Contract changes required by v3.0 (drafts and remaining work)
 
 | Contract | Change | Kind |
 |---|---|---|
 | `openapi-payment-gateway-v1.yaml` | Bearer JWT security scheme; `/api/v1/ops/**` requires `analyst` / `admin`; add `POST /api/v1/merchants/me` | Security change on endpoints that were documented as "local/demo only" + additive endpoint |
-| `openapi-risk-engine-v1.yaml` | Bearer JWT security scheme on analyst, stats and blocklist endpoints; service-to-service access for the gateway and `llm-insights` (Q12) | Security change |
-| `asyncapi-events-v1.yaml` | New channel `risk.insights.v1` with `RiskInsightGenerated` | Additive |
-| `openapi-llm-insights-v1.yaml` | New file (Section 6.6) | New |
-| `openapi-ml-scorer-v1.yaml` | New file (Section 6.2); referenced by design v2.0 but never written | New |
+| `openapi-risk-engine-v1.yaml` | Bearer JWT on browser endpoints; health stays anonymous. Gateway/LLM service access is explicitly deferred to RISK-111 (Q12), with no anonymous bypass | Security change before freeze; ADR-0012 |
+| `asyncapi-events-v1.yaml` | Drafted `risk.insights.v1` and identifier-only `RiskInsightGenerated`; producer review pending | Additive |
+| `openapi-llm-insights-v1.yaml` | Drafted five operations (Section 6.6); producer/consumer review pending | New |
+| `openapi-ml-scorer-v1.yaml` | Added and reviewed in RISK-140 / #18 (Section 6.2) | New; available |
 
 None of the imported contracts has been frozen yet (freeze points H1, H6, H11), so these changes do not break a frozen contract.
 
@@ -1931,7 +1934,7 @@ Due dates are tracked in `docs/ROADMAP.md`. Q1–Q9 are carried over from design
 | Q18 | *Closed 16 Nov 2026:* Java 21 + Spring Boot 4.1.2 selected for the backend scaffold (ADR-0008); gateway follows the same line | — |
 | Q19 | Bedrock model ID and whether new-account AWS credits are available | Jiawei |
 | Q20 | ADR numbering: design v2.0 used 0001 for "tech stack"; 0001 is now "record architecture decisions" and the stack decision moves to 0008 — accept? | Jiawei |
-| Q21 | The repository is private: which GitHub plan features do we rely on (rulesets, required code-owner review, environment reviewers, code scanning), and are they available? | Jiawei |
+| Q21 | *Audited 19 Nov 2026:* ruleset and branch-protection APIs return 403 requiring Pro/public-repo entitlement; no staging environment exists. These gates are not enforced. See `reviews/2026-11-19-bootstrap-readiness.md`; required environment reviewers need a separate entitlement check. Keep RISK-101 open for remaining controls | Jiawei |
 
 ---
 

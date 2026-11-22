@@ -69,15 +69,7 @@ lint: ## All linters/formatters in check mode
 contracts: ## Validate OpenAPI/AsyncAPI and check for breaking changes against BASE_REF
 	$(REDOCLY) lint --config contracts/redocly.yaml $(OPENAPI_FILES)
 	@for f in $(ASYNCAPI_FILES); do $(ASYNCAPI) validate $$f || exit 1; done
-	@mkdir -p .contracts-base
-	@for f in $(OPENAPI_FILES); do \
-	  if git cat-file -e $(BASE_REF):$$f 2>/dev/null; then \
-	    git show $(BASE_REF):$$f > .contracts-base/$$(basename $$f); \
-	    echo "oasdiff breaking: $$f vs $(BASE_REF)"; \
-	    $(OASDIFF) breaking .contracts-base/$$(basename $$f) $$f --fail-on ERR || { rm -rf .contracts-base; exit 1; }; \
-	  else echo "$$f: new contract, no base to compare"; fi; \
-	done
-	@rm -rf .contracts-base
+	@BASE_REF=$(BASE_REF) bash contracts/check-breaking.sh
 
 # ------------------------------------------------------------------------ e2e
 
