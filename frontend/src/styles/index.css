@@ -5,26 +5,29 @@
  * Sentinel Pay design tokens (ADR-0010).
  *
  * Two layers:
- * 1. Raw tokens on :root (--sp-*). Our own palette: monochrome ink to match the Re5 logo,
- *    one electric-indigo accent for highlights and gradients, and the risk score bands.
+ * 1. Raw tokens on :root (--sp-*). A strict high-contrast palette: black and white plates,
+ *    a deep purple core brand, muted lavender and navy secondaries, a sky-blue bright accent,
+ *    a neutral functional spectrum, and the risk score bands.
  * 2. Semantic tokens (--background, --primary, ...) that shadcn/ui components consume.
  *    Components use only semantic names, never raw values.
  */
 :root {
-  --sp-ink-950: oklch(0.15 0.01 270);
-  --sp-ink-800: oklch(0.3 0.015 270);
-  --sp-ink-600: oklch(0.45 0.02 270);
-  --sp-ink-200: oklch(0.9 0.008 270);
-  --sp-ink-100: oklch(0.955 0.005 270);
-  --sp-ink-50: oklch(0.985 0.003 270);
-  --sp-white: oklch(1 0 0);
+  --sp-black: #000000;
+  --sp-white: #ffffff;
+  --sp-purple-900: #2a1d4d;
+  --sp-purple-50: #f1eff7;
+  --sp-lavender-400: #8288bd;
+  --sp-lavender-200: #c9cce6;
+  --sp-navy-950: #0d0a4a;
+  --sp-sky-200: #bcd7f0;
 
-  --sp-indigo-50: oklch(0.965 0.02 280);
-  --sp-indigo-500: oklch(0.56 0.22 280);
-  --sp-indigo-600: oklch(0.5 0.22 280);
-  --sp-teal-400: oklch(0.8 0.13 180);
-  --sp-violet-400: oklch(0.68 0.2 310);
-  --sp-indigo-300: oklch(0.78 0.11 280);
+  /* Neutral functional spectrum. 600 is a touch darker than #777 so body text meets 4.5:1. */
+  --sp-neutral-50: #f9f9f9;
+  --sp-neutral-100: #f0f0f2;
+  --sp-neutral-200: #dadada;
+  --sp-neutral-600: #6b6b6b;
+  --sp-neutral-900: #161616;
+  --sp-neutral-950: #101010;
 
   --sp-green-600: oklch(0.52 0.13 150);
   --sp-green-50: oklch(0.96 0.03 150);
@@ -34,35 +37,37 @@
   --sp-red-50: oklch(0.96 0.025 27);
 
   --background: var(--sp-white);
-  --foreground: var(--sp-ink-950);
+  --foreground: var(--sp-black);
   --card: var(--sp-white);
-  --card-foreground: var(--sp-ink-950);
+  --card-foreground: var(--sp-black);
   --popover: var(--sp-white);
-  --popover-foreground: var(--sp-ink-950);
-  --primary: var(--sp-ink-950);
+  --popover-foreground: var(--sp-black);
+  --primary: var(--sp-black);
   --primary-foreground: var(--sp-white);
-  --secondary: var(--sp-ink-100);
-  --secondary-foreground: var(--sp-ink-950);
-  --muted: var(--sp-ink-50);
-  --muted-foreground: var(--sp-ink-600);
-  --accent: var(--sp-indigo-50);
-  --accent-foreground: var(--sp-indigo-600);
-  --brand: var(--sp-indigo-600);
+  --secondary: var(--sp-neutral-100);
+  --secondary-foreground: var(--sp-black);
+  --muted: var(--sp-neutral-50);
+  --muted-foreground: var(--sp-neutral-600);
+  --accent: var(--sp-purple-50);
+  --accent-foreground: var(--sp-purple-900);
+  --brand: var(--sp-purple-900);
   --brand-foreground: var(--sp-white);
-  --highlight: var(--sp-teal-400);
-
-  /* Dark hero band on the homepage: ink background with our indigo/teal/violet glow. */
-  --hero: var(--sp-ink-950);
-  --hero-foreground: var(--sp-white);
-  --hero-muted: oklch(0.8 0.015 270);
-  --hero-glow-1: var(--sp-indigo-500);
-  --hero-glow-2: var(--sp-teal-400);
-  --hero-glow-3: var(--sp-violet-400);
-  --hero-accent: var(--sp-indigo-300);
+  --highlight: var(--sp-lavender-400);
   --destructive: var(--sp-red-600);
-  --border: var(--sp-ink-200);
-  --input: var(--sp-ink-200);
-  --ring: var(--sp-indigo-500);
+  --border: var(--sp-neutral-200);
+  --input: var(--sp-neutral-200);
+  --ring: var(--sp-lavender-400);
+
+  /* Dark bands (hero, developer section, closing call to action). */
+  --hero: var(--sp-neutral-950);
+  --hero-foreground: var(--sp-white);
+  --hero-muted: var(--sp-neutral-200);
+  --hero-glow-1: var(--sp-navy-950);
+  --hero-glow-2: var(--sp-lavender-400);
+  --hero-glow-3: var(--sp-sky-200);
+  --hero-accent: var(--sp-sky-200);
+  --hero-cta: var(--sp-lavender-400);
+  --hero-cta-foreground: var(--sp-black);
 
   /* Risk score bands (DESIGN.md §8.3). Always paired with an icon and a text label. */
   --risk-low: var(--sp-green-600);
@@ -103,6 +108,8 @@
   --color-hero-glow-2: var(--hero-glow-2);
   --color-hero-glow-3: var(--hero-glow-3);
   --color-hero-accent: var(--hero-accent);
+  --color-hero-cta: var(--hero-cta);
+  --color-hero-cta-foreground: var(--hero-cta-foreground);
   --color-destructive: var(--destructive);
   --color-border: var(--border);
   --color-input: var(--input);

@@ -10,7 +10,6 @@ import {
 } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
 import { Reveal } from '@/components/motion/Reveal'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface Product {
   icon: LucideIcon
@@ -40,39 +39,77 @@ const products: Product[] = [
   },
 ]
 
+const breakdown = [
+  { label: 'Rules', score: 35, band: 'bg-risk-medium' },
+  { label: 'ML score', score: 58, band: 'bg-risk-medium' },
+  { label: 'Combined', score: 47, band: 'bg-risk-medium' },
+]
+
+/** Illustrative score breakdown for one held payment (the burst scenario in /sample). */
+function BreakdownPanel() {
+  return (
+    <div aria-hidden="true" className="rounded-2xl bg-secondary p-6 sm:p-10">
+      <div className="grid grid-cols-3 gap-3">
+        {breakdown.map((item) => (
+          <div key={item.label} className="rounded-xl border bg-card p-4 shadow-sm">
+            <p className="text-xs font-medium text-muted-foreground">{item.label}</p>
+            <p className="mt-2 text-3xl font-semibold tracking-tight tabular-nums">{item.score}</p>
+            <div className="mt-3 h-1.5 rounded-full bg-border">
+              <div
+                className={`h-full rounded-full ${item.band}`}
+                style={{ width: `${item.score}%` }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 rounded-xl border bg-card p-4 shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm font-semibold">Pixel Games Store · €25.00</p>
+          <span className="rounded-full bg-risk-medium-surface px-2.5 py-0.5 text-xs font-medium text-risk-medium">
+            Held for review
+          </span>
+        </div>
+        <p className="mt-3 text-xs font-medium text-brand">AI summary · advisory</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Six small payments in ten minutes can be card testing, but the amounts are normal for
+          digital goods.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 export function ProductShowcase() {
   return (
-    <section aria-labelledby="products-heading" className="mx-auto max-w-6xl px-4 py-24 sm:px-6">
-      <Reveal>
-        <p className="text-sm font-semibold text-brand">The platform</p>
-        <h2 id="products-heading" className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-          One flow from checkout to decision
-        </h2>
-      </Reveal>
-      <div className="mt-12 grid gap-6 md:grid-cols-3">
-        {products.map((product, index) => (
-          <Reveal key={product.title} delay={index * 0.1}>
-            <Card className="h-full transition-shadow hover:shadow-md">
-              <CardHeader>
-                <product.icon aria-hidden="true" className="mb-2 size-8 text-brand" />
-                <CardTitle>{product.title}</CardTitle>
-                <CardDescription>{product.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="flex flex-col gap-2 text-sm">
-                  {product.points.map((point) => (
-                    <li key={point} className="flex gap-2">
-                      <span aria-hidden="true" className="text-highlight">
-                        ✓
-                      </span>
-                      {point}
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          </Reveal>
-        ))}
+    <section aria-labelledby="products-heading" className="bg-muted">
+      <div className="mx-auto grid max-w-6xl gap-12 border-x px-4 py-24 sm:px-8 lg:grid-cols-[1fr_1.15fr] lg:items-center">
+        <Reveal>
+          <p className="flex items-center gap-2 text-sm font-medium">
+            <span aria-hidden="true" className="size-2 rounded-full bg-highlight" />
+            The platform
+          </p>
+          <h2
+            id="products-heading"
+            className="mt-4 text-4xl font-bold tracking-tighter text-balance sm:text-5xl"
+          >
+            One flow from checkout to decision
+          </h2>
+          <ul className="mt-10">
+            {products.map((product) => (
+              <li key={product.title} className="flex gap-4 border-t py-5">
+                <product.icon aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-brand" />
+                <div>
+                  <h3 className="font-semibold">{product.title}</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">{product.description}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Reveal>
+        <Reveal delay={0.1}>
+          <BreakdownPanel />
+        </Reveal>
       </div>
     </section>
   )
@@ -110,7 +147,7 @@ export function HowItWorks() {
   const reduceMotion = useReducedMotion()
 
   return (
-    <section aria-labelledby="how-heading" className="border-y bg-muted">
+    <section aria-labelledby="how-heading" className="bg-background">
       <div className="mx-auto max-w-6xl px-4 py-24 sm:px-6">
         <Reveal>
           <p className="text-sm font-semibold text-brand">How it works</p>
@@ -164,29 +201,45 @@ export function HowItWorks() {
 
 // Design targets from DESIGN.md (G1 and the golden rules), not live measurements.
 const kpis = [
-  { value: '< 250 ms', label: 'p95 risk decision target' },
-  { value: '3', label: 'signals per decision: rules, ML, analyst' },
-  { value: '100%', label: 'of decisions list their reasons' },
-  { value: '0', label: 'card numbers stored' },
+  { value: '<250ms', label: 'p95 decision' },
+  { value: '100%', label: 'Decisions with reasons' },
+  { value: '0', label: 'Card numbers stored' },
 ]
 
 export function KpiStrip() {
   return (
-    <section aria-labelledby="kpi-heading" className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
-      <h2 id="kpi-heading" className="text-sm font-semibold text-muted-foreground">
-        Design targets
-      </h2>
-      <dl className="mt-6 grid grid-cols-2 gap-8 md:grid-cols-4">
-        {kpis.map((kpi) => (
-          <div
-            key={kpi.label}
-            className="flex flex-col-reverse gap-1 border-l-2 border-l-highlight pl-4"
-          >
-            <dt className="text-sm text-muted-foreground">{kpi.label}</dt>
-            <dd className="text-3xl font-bold tracking-tight">{kpi.value}</dd>
+    <section aria-labelledby="kpi-heading" className="border-b bg-muted">
+      <div className="mx-auto max-w-6xl border-x">
+        <div aria-hidden="true" className="h-16 border-b" />
+        <div className="grid md:grid-cols-[1.6fr_repeat(3,1fr)]">
+          <div className="p-8 md:border-r">
+            <h2
+              id="kpi-heading"
+              className="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+            >
+              Design targets
+            </h2>
+            <p className="mt-4 max-w-sm text-xl leading-snug">
+              Sentinel Pay turns every payment into a decision you can read, defend and tune.
+            </p>
           </div>
-        ))}
-      </dl>
+          <dl className="contents">
+            {kpis.map((kpi) => (
+              <div
+                key={kpi.label}
+                className="flex flex-col-reverse justify-end gap-3 border-t p-8 md:border-t-0 md:border-r md:last:border-r-0"
+              >
+                <dt className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+                  {kpi.label}
+                </dt>
+                <dd className="text-5xl font-semibold tracking-tighter tabular-nums">
+                  {kpi.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </div>
     </section>
   )
 }
