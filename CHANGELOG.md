@@ -7,6 +7,7 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- RISK-115: AWS Agent Toolkit starter rules in `CLAUDE.md` and `AGENTS.md` (project decisions take precedence; help level HIGH).
 - RISK-12 backend CI: Java 21 Maven verification, coverage/test artifacts and weekly Maven dependency updates.
 
 - RISK-11 backend M0 skeleton: Java 21 / Spring Boot 4.1.2, health, JSON logs, request correlation, tests and container.
