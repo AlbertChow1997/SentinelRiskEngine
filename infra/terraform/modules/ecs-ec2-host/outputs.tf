@@ -5,3 +5,5 @@ output "cluster_arn" { value = aws_ecs_cluster.this.arn }
 output "public_ip" { value = aws_eip.this.public_ip }
 output "data_volume_id" { value = aws_ebs_volume.data.id }
 output "ami_parameter_name" { value = var.ami_parameter_name }
+# CloudFront needs a DNS name for a custom origin; the EIP keeps it stable across stop/start.
+output "public_dns" { value = aws_eip.this.public_dns }

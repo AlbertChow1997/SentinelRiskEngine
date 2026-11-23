@@ -83,8 +83,8 @@ IDs from 100 upwards cover the new scope. A new item takes the next free number.
 | RISK-100 | Contracts: `openapi-llm-insights-v1.yaml`, `risk.insights.v1`, JWT security on gateway and risk contracts, `POST /api/v1/merchants/me` | Bootstrap | In review; all contract drafts in PR #26; runtime auth remains RISK-111 |
 | RISK-101 | GitHub Project, milestones, labels and backlog issues (Section 8); branch ruleset on `main`; GitHub Environment `staging` with required reviewer; squash merge only | Bootstrap | In progress; partial (audit 19 Nov) |
 | RISK-102 | Terraform remote state, `network`, `ecr`, `github-oidc`, AWS Budgets alerts; `terraform.yml` | M0 | In progress; configuration and mock validation, no AWS apply |
-| RISK-103 | `ecs-ec2-host`, `ecs-service`, `scheduler`; `aws-wake` / `aws-sleep` / `aws-status` scripts | M0 | To do |
-| RISK-104 | `cdn` module (S3 + CloudFront + origin rules), nginx reverse proxy with the secret header | M0 | To do |
+| RISK-103 | `ecs-ec2-host`, `ecs-service`, `scheduler`; `aws-wake` / `aws-sleep` / `aws-status` scripts | M0 | Re-landed on `main` by RISK-106 (#83) |
+| RISK-104 | `cdn` module (S3 + CloudFront + origin rules), nginx reverse proxy with the secret header | M0 | In progress; configuration and proxy tests, live CDN pending |
 | RISK-105 | `deploy-staging.yml`: OIDC, ARM64 build, Trivy, ECR, approval gate, ECS deploy, S3 sync, smoke test | M0 | To do |
 | RISK-11 (M0 subset) | Health-only backend scaffold, request IDs, JSON logs, tests and ARM64 container (#6) | M0 | In review |
 | RISK-12 | Backend CI: Java 21 verify, coverage/test artifacts and Maven Dependabot (#7) | M0 | In review |

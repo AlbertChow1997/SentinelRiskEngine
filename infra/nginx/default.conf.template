@@ -1,0 +1,32 @@
+map $http_x_sentinel_origin $origin_allowed {
+  default 0;
+  "${ORIGIN_SECRET}" 1;
+}
+server {
+  listen 8080;
+  location = /internal-health {
+    if ($remote_addr != 127.0.0.1) { return 403; }
+    access_log off;
+    return 200 'ok';
+  }
+  location = /api/health {
+    include /etc/nginx/proxy-headers.conf;
+    proxy_pass http://${RISK_UPSTREAM}/actuator/health;
+  }
+  location ~ ^/api/v1/(risk-assessments|stats|blocklist)(/|$) {
+    include /etc/nginx/proxy-headers.conf;
+    proxy_pass http://${RISK_UPSTREAM};
+  }
+  location ~ ^/api/v1/(payments|ops|merchants)(/|$) {
+    include /etc/nginx/proxy-headers.conf;
+    proxy_pass http://${GATEWAY_UPSTREAM};
+  }
+  location ~ ^/api/v1/(insights|llm)(/|$) {
+    include /etc/nginx/proxy-headers.conf;
+    proxy_pass http://${LLM_UPSTREAM};
+  }
+  location / {
+    if ($origin_allowed = 0) { return 403; }
+    return 404;
+  }
+}

@@ -15,7 +15,7 @@ env:
 # Read-only jobs cancel superseded PR runs; the plan job never cancels.
 jobs:
   checks:
-    name: Repository-wide checks (fmt, TFLint, Trivy, operations scripts)
+    name: Repository-wide checks (fmt, TFLint, Trivy, scripts, nginx)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     concurrency:
@@ -38,6 +38,12 @@ jobs:
         run: docker run --rm -v "$PWD":/work aquasec/trivy:0.76.2 config --exit-code 1 --severity HIGH,CRITICAL /work/infra/terraform
       - name: Operations script tests (fake AWS CLI only)
         run: python3 -m unittest discover -s infra/scripts/tests -v
+      - name: nginx proxy integration tests and CDN SPA rewrite test (local stubs, no AWS)
+        run: |
+          docker build -t sentinel-nginx:test infra/nginx
+          docker build -t sentinel-nginx:tests infra/nginx/tests
+          docker run --rm -v "$PWD/infra/nginx/tests":/tests:ro sentinel-nginx:tests
+          node --test infra/terraform/modules/cdn/spa.test.cjs
 
   validate:
     runs-on: ubuntu-latest
@@ -102,6 +108,7 @@ jobs:
           TF_VAR_owner: ${{ vars.INFRA_OWNER }}
           # Unset repository variable -> "" -> the module creates the provider.
           TF_VAR_existing_github_oidc_provider_arn: ${{ vars.TF_OIDC_PROVIDER_ARN }}
+          TF_VAR_website_bucket_name: ${{ vars.STAGING_WEBSITE_BUCKET }}
         run: |
           # Full logs stay on the runner; on failure print only the error blocks.
           fail() { grep -E -A6 '^(│ )?Error' "$1" || tail -n 5 "$1"; exit 1; }
