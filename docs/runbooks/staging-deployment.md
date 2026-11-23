@@ -1,9 +1,10 @@
-# Staging deployment (prepared, disabled)
+# Staging deployment
 
 RISK-105 implements a manual pipeline for M0's existing risk-engine health
 service, nginx and frontend shell. Gateway/ML/LLM/database workloads are not
-invented or deployed. No AWS deployment has occurred. Required reviewer support
-is currently unavailable on this private repository's plan (Q21).
+invented or deployed. **Live since 23 Nov 2026** (first successful run 45254610739):
+https://d3aso5251rtpo6.cloudfront.net. The repository is public so the `staging`
+environment can require a non-self reviewer (Zheng or Jiajun); Q21 is resolved.
 
 ## Enable only after prerequisites are real
 
