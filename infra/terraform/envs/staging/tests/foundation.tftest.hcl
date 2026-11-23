@@ -24,6 +24,10 @@ run "foundation_plan" {
     error_message = "Development window is every day 19:00-02:00 Europe/Dublin until RISK-117 switches it."
   }
   assert {
+    condition     = var.github_oidc_subject_prefix == "repo:AlbertChow1997@48938877/SentinelRiskEngine@1453999663"
+    error_message = "Trust must use the repository's immutable OIDC subject, or GitHub tokens are refused."
+  }
+  assert {
     condition     = var.instance_type == "t4g.small"
     error_message = "The Free plan allows only Free-Tier-eligible types; t4g.small is the ARM64 default (ADR-0016)."
   }

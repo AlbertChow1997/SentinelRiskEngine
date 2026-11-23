@@ -43,3 +43,10 @@ variable "instance_type" {
   type    = string
   default = "t4g.small"
 }
+
+# The repository uses GitHub's immutable OIDC subject (owner and repository IDs are public,
+# not secrets). The first deploy failed with AccessDenied until the trust policy used it.
+variable "github_oidc_subject_prefix" {
+  type    = string
+  default = "repo:AlbertChow1997@48938877/SentinelRiskEngine@1453999663"
+}

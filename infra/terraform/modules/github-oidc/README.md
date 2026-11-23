@@ -8,7 +8,10 @@ publish only the supplied ECR repositories; it cannot apply Terraform. Later
 infrastructure PRs add scoped deployment operations. No administrator policy. Deploy role creation defaults off (enable_deploy_role=false).
 Enable it only after a real non-self/main-only environment gate is verified.
 
-Inputs: name, repository, state_bucket_name, ECR ARNs and optional existing provider.
+Inputs: name, repository, optional subject_prefix, state_bucket_name, ECR ARNs and optional
+existing provider. If the repository uses GitHub's immutable OIDC subject (check
+`GET /repos/{owner}/{repo}/actions/oidc/customization/sub`), pass its prefix, e.g.
+`repo:OWNER@OWNER_ID/REPO@REPO_ID`; otherwise every token is refused with AccessDenied.
 Outputs: plan_role_arn, deploy_role_arn (configure as GitHub variables, never copy
 literal account identifiers into Git). Trusting environment:staging requires the
 environment to restrict deployments to main and to have an actual reviewer gate;

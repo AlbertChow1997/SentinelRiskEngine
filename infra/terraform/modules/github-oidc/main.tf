@@ -11,8 +11,12 @@ resource "aws_iam_openid_connect_provider" "github" {
 }
 locals {
   provider_arn = local.existing_provider_arn != "" ? local.existing_provider_arn : aws_iam_openid_connect_provider.github[0].arn
-  subjects     = merge({ plan = "repo:${var.repository}:pull_request" }, var.enable_deploy_role ? { deploy = "repo:${var.repository}:environment:staging" } : {})
-  bucket_arn   = "arn:${data.aws_partition.current.partition}:s3:::${var.state_bucket_name}"
+  # GitHub's immutable subject format embeds owner/repository IDs, e.g.
+  # repo:OWNER@OWNER_ID/REPO@REPO_ID:environment:staging, so a renamed or re-created
+  # repository with the same name cannot assume these roles.
+  subject_prefix = var.subject_prefix == null ? "repo:${var.repository}" : var.subject_prefix
+  subjects       = merge({ plan = "${local.subject_prefix}:pull_request" }, var.enable_deploy_role ? { deploy = "${local.subject_prefix}:environment:staging" } : {})
+  bucket_arn     = "arn:${data.aws_partition.current.partition}:s3:::${var.state_bucket_name}"
 }
 resource "aws_iam_role" "github" {
   for_each             = local.subjects
