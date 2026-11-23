@@ -16,6 +16,7 @@ module "github_oidc" {
   source                 = "../../modules/github-oidc"
   name                   = "sentinel-staging"
   repository             = "AlbertChow1997/SentinelRiskEngine"
+  subject_prefix         = var.github_oidc_subject_prefix
   state_bucket_name      = var.state_bucket_name
   existing_provider_arn  = var.existing_github_oidc_provider_arn
   ecr_repositories       = [for repo in module.ecr.repositories : repo.arn]

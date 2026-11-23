@@ -22,6 +22,10 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - MIT licence.
 - Skeletons for runbooks, the ORR checklist, the threat model and post-incident reviews.
 
+### Fixed
+
+- RISK-105: GitHub OIDC trust uses the repository's immutable subject (`repo:OWNER@ID/REPO@ID`); the first deployment was refused with AccessDenied.
+
 ### Changed
 
 - RISK-108: staging host type is a validated ARM64 variable, default t4g.small while the AWS project is on the Free plan (ADR-0016).

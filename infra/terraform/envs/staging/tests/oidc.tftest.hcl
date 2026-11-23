@@ -69,3 +69,25 @@ run "plan_role_reads_only_the_host_ami_parameter" {
     error_message = "The SSM read must be built from the current Region and the host's parameter, not hard-coded."
   }
 }
+run "immutable_subject_prefix_is_used_for_both_roles" {
+  command = plan
+  module { source = "../../modules/github-oidc" }
+  variables {
+    name                  = "test-oidc"
+    repository            = "example/repository"
+    subject_prefix        = "repo:example@1/repository@2"
+    existing_provider_arn = "REPLACE_WITH_PROVIDER_REFERENCE"
+    state_bucket_name     = "sentinel-test-state"
+    ecr_repositories      = []
+    ami_parameter_name    = "/aws/service/ecs/optimized-ami/amazon-linux-2023/arm64/recommended/image_id"
+    enable_deploy_role    = true
+  }
+  assert {
+    condition     = jsondecode(aws_iam_role.github["deploy"].assume_role_policy).Statement[0].Condition.StringEquals["token.actions.githubusercontent.com:sub"] == "repo:example@1/repository@2:environment:staging"
+    error_message = "Deploy trust must match GitHub's immutable subject for the staging environment."
+  }
+  assert {
+    condition     = jsondecode(aws_iam_role.github["plan"].assume_role_policy).Statement[0].Condition.StringEquals["token.actions.githubusercontent.com:sub"] == "repo:example@1/repository@2:pull_request"
+    error_message = "Plan trust must match GitHub's immutable subject for pull requests."
+  }
+}
