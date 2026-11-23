@@ -1,6 +1,6 @@
 # Dependabot keeps dependencies current. Only ecosystems whose manifest already exists are enabled;
 # enabling one for a folder without a manifest only produces Dependabot errors.
-# The PR that scaffolds a component uncomments its block below.
+# Scaffold PRs add or enable a non-overlapping entry for the component's actual manifest.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -21,10 +21,16 @@ updates:
       - dependency-name: postgres
         update-types: ["version-update:semver-major"]
 
-  # - package-ecosystem: maven
-  #   directories: ["/backend", "/payment-gateway"]
-  #   schedule: { interval: weekly }
-  #   commit-message: { prefix: "chore(deps)" }
+  - package-ecosystem: maven
+    directory: /backend
+    schedule: { interval: weekly }
+    commit-message: { prefix: "chore(deps)" }
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  # Add a separate directory: /payment-gateway entry when its pom.xml exists;
+  # do not add /backend to a second Maven entry.
 
   # - package-ecosystem: uv
   #   directories: ["/ml-scorer", "/llm-insights"]

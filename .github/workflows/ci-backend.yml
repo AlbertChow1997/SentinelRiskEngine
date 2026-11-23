@@ -1,0 +1,87 @@
+name: ci-backend
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-backend-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  verify:
+    name: Verify backend (Java 21)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Test change detection
+        working-directory: .
+        run: python3 -m unittest discover -s .github/scripts/tests -v
+
+      - name: Detect backend inputs (the required check always reports)
+        id: changes
+        working-directory: .
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [[ "$EVENT_NAME" == workflow_dispatch ]]; then
+            echo 'backend=true' >> "$GITHUB_OUTPUT"
+          else
+            echo "backend=$(bash .github/scripts/backend-changes.sh "$BASE_SHA" HEAD)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: No backend changes
+        if: steps.changes.outputs.backend != 'true'
+        run: echo 'Backend verification is not needed for these paths; the required check is successful.'
+
+      - uses: actions/setup-java@v6
+        if: steps.changes.outputs.backend == 'true'
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: |
+            backend/pom.xml
+            backend/.mvn/wrapper/maven-wrapper.properties
+
+      - name: Cache Maven Wrapper distribution
+        if: steps.changes.outputs.backend == 'true'
+        uses: actions/cache@v6
+        with:
+          path: ~/.m2/wrapper
+          key: maven-wrapper-${{ runner.os }}-${{ hashFiles('backend/.mvn/wrapper/maven-wrapper.properties') }}
+
+      - name: Verify formatting, tests and package
+        if: steps.changes.outputs.backend == 'true'
+        run: ./mvnw -B -ntp verify
+
+      - name: Upload JaCoCo coverage report
+        if: steps.changes.outputs.backend == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: backend-jacoco
+          path: backend/target/site/jacoco/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload test results
+        if: ${{ !cancelled() && steps.changes.outputs.backend == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: backend-test-results
+          path: backend/target/surefire-reports/
+          if-no-files-found: warn
+          retention-days: 14

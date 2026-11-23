@@ -50,4 +50,12 @@ when its major version or volume layout changes. Never delete a volume to upgrad
 - Official Unix/Windows Maven wrappers, multi-stage Dockerfile and minimal build context.
 
 Entities/migrations, risk APIs, rules, scoring, ML calls, JWT and Kafka follow in their implementation tickets.
-RISK-12 (#7) adds backend CI and Maven Dependabot configuration. See [`CLAUDE.md`](CLAUDE.md) for conventions.
+`ci-backend.yml` always reports the stable `Verify backend (Java 21)` check on PRs and main pushes.
+Internal change detection runs Temurin 21 and `./mvnw -B -ntp verify` for backend/contracts/CI inputs;
+unrelated changes report success without Maven. Manual runs always verify. Missing git history runs verification safely.
+Maven dependencies and Wrapper distributions are cached separately. Coverage/test artifacts are retained for 14 days.
+Only superseded PR runs are cancelled; every main run has its own concurrency group.
+Maven Dependabot checks `backend/` weekly and ignores major updates pending a team decision;
+add a separate gateway entry only when its POM exists, without overlapping `/backend`.
+Container-build CI and core-package JaCoCo thresholds remain explicit follow-ups; the M0 scaffold has no rules/domain service yet.
+See [`CLAUDE.md`](CLAUDE.md) for conventions.

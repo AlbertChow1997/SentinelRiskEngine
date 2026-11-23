@@ -7,6 +7,8 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- RISK-12 backend CI: Java 21 Maven verification, coverage/test artifacts and weekly Maven dependency updates.
+
 - RISK-11 backend M0 skeleton: Java 21 / Spring Boot 4.1.2, health, JSON logs, request correlation, tests and container.
 - ADR-0008 records the Java/Maven/PostgreSQL baseline and resolves Q18.
 
