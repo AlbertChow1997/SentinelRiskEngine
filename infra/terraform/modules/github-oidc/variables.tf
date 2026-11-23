@@ -10,3 +10,7 @@ variable "ami_parameter_name" {
   description = "Public SSM parameter the host reads its AMI from; the plan role may read only this one."
   type        = string
 }
+variable "plan_secret_parameters" {
+  type    = set(string)
+  default = []
+}

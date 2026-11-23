@@ -28,3 +28,5 @@ variable "schedule_enabled" {
   type    = bool
   default = true
 }
+
+variable "website_bucket_name" { type = string }

@@ -51,7 +51,8 @@ Set TF_STATE_BUCKET, INFRA_OWNER, TF_PLAN_ROLE_ARN and, only when ready,
 TF_PLAN_ENABLED=true as repository variables. Set TF_OIDC_PROVIDER_ARN only if the
 account already had a GitHub OIDC provider before the first apply; leave it unset
 otherwise (unset or empty means "create it"). GitHub forbids variable names that
-start with GITHUB_. The plan role cannot apply.
+start with GITHUB_. Set STAGING_WEBSITE_BUCKET too when planning the CDN; create the
+origin SecureString privately first. The plan role cannot apply.
 
 Dependabot PRs never run the credentialed plan (they cannot request an OIDC token);
 plan their Terraform bumps manually. Modules declare minimum versions only; the
@@ -65,4 +66,5 @@ before enabling credentialed plans. Never grant Actions administrator access.
 
 Deploy trust uses environment:staging. Verify its main-only restriction and real
 reviewer gate before enabling deployment (RISK-101/Q21 entitlement blocker).
-CDN/nginx and deployment follow as RISK-104/105.
+RISK-104 adds the private CDN/OAC and the non-root nginx origin image with synthetic proxy
+integration tests. RISK-105 adds deployment. All configurations remain unapplied.

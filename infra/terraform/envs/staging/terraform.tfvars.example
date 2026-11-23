@@ -1,3 +1,4 @@
 owner = "REPLACE_WITH_OWNER_TAG"
 state_bucket_name = "REPLACE_WITH_UNIQUE_STATE_BUCKET"
 # existing_github_oidc_provider_arn = "REPLACE_IF_ALREADY_PRESENT"
+website_bucket_name = "REPLACE_WITH_UNIQUE_WEBSITE_BUCKET"

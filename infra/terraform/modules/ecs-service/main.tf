@@ -41,7 +41,7 @@ resource "aws_ecs_task_definition" "this" {
   }
   container_definitions = jsonencode([merge({
     name         = var.name, image = var.image, essential = true, memory = var.memory,
-    portMappings = [{ containerPort = var.port, hostPort = var.port, protocol = "tcp" }],
+    portMappings = [{ containerPort = coalesce(var.container_port, var.port), hostPort = var.port, protocol = "tcp" }],
     environment = [for k, v in var.environment : {
     name = k, value = v }],
     secrets = [for k, v in var.secrets : {

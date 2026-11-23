@@ -3,6 +3,10 @@ variable "cluster_arn" { type = string }
 variable "image" { type = string }
 variable "image_repository_arn" { type = string }
 variable "port" { type = number }
+variable "container_port" {
+  type    = number
+  default = null
+}
 variable "memory" { type = number }
 variable "environment" {
   type    = map(string)

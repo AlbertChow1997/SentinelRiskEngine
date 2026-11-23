@@ -220,6 +220,8 @@ Storybook is the component catalogue, with axe accessibility checks (ADR-0010, d
 | ALB + ACM | Managed TLS termination and health checks | Low | ~$18/month for the ALB; still needs a domain for a public certificate | Strong | Low |
 | Own domain + TLS to the origin | End-to-end encryption | Medium | Domain registration; certificate renewal on the host | Strong | Certificates on the instance |
 
+**Implementation note (20 Nov 2026, RISK-104):** default CloudFront certificates force TLSv1 policy; strict TLS needs a domain/ACM. WAF is deferred, not silently provisioned outside the budget. SSE-S3/no-WAF exceptions are scoped and expire 31 Jan 2027. The static-only SPA rewrite adds a CloudFront Function (request-based cost; confirm current free allowance/pricing before apply).
+
 **Chosen:** CloudFront with an HTTP origin. **Upgrade path:** own domain + TLS to the origin. **Review:** M5 (threat model).
 
 ## D15 — Running hours
