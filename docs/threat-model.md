@@ -32,7 +32,7 @@ llm-insights ──▶ [boundary: instance role] ──▶ Bedrock
 |---|---|---|---|
 | EP1 | `POST/GET /api/v1/payments/**` | `X-API-Key` | M2 |
 | EP2 | `/api/v1/ops/**`, analytics | JWT (`analyst` / `admin`) | M2, secured in M3 |
-| EP3 | Risk Engine analyst APIs | JWT (`analyst` / `admin`) | M1, secured in M3 |
+| EP3 | Risk Engine analyst APIs | JWT (`analyst` / `admin`); **none yet** for the RISK-116 stub (T18) | M1, secured in M3 |
 | EP4 | `POST /api/v1/merchants/me` | JWT (`merchant`) | M3 |
 | EP5 | `/api/v1/insights/**`, `/api/v1/llm/**` | JWT (`analyst` / `developer` / `admin`) | M4 |
 | EP6 | Kafka topics | Network-internal only | M2 |
@@ -65,6 +65,7 @@ Seed entries from the design. Each row needs an owner and a status once the comp
 | T15 | Elevation of privilege | A compromised workflow deploys to AWS | OIDC role limited to this repository and branch; environment approval gate; least-privilege IAM policy | Planned (M0) |
 | T16 | Information disclosure | Actuator leaks environment variables or configuration | Only health exposed; details disabled; HTTP test verifies `/actuator/env` is unavailable | Implemented (RISK-11) |
 | T17 | Tampering | Caller-controlled request IDs inject log content or leak into another request | Restrict to 1–64 safe ASCII characters; generate a UUID otherwise; restore MDC in `finally`; do not log payloads | Implemented (RISK-11) |
+| T18 | Elevation of privilege | The RISK-116 `POST /api/v1/risk-assessments` stub is reachable without a JWT through CloudFront until RISK-111 | Temporary, accepted for staging: the stub stores nothing, reads no data, calls nothing, returns a fixed APPROVE for the caller's own input, and validates every field (nginx caps the body at 1 MB). RISK-111 must add JWT validation before RISK-13/17 make the endpoint persist or read assessments | Accepted until RISK-111 |
 | T19 | Information disclosure / Tampering | Traffic between the three hosts (HTTP, Kafka `PLAINTEXT`, PostgreSQL without TLS) is read or altered | Confined to peered VPCs; security groups allow one port per flow from the peer `/32`; no internet path to hosts A and C; no real personal or card data. Mandatory TLS/`SASL_SSL` if the public fallback is used | Accepted for staging (ADR-0017) |
 | T20 | Elevation of privilege | A compromised teammate account or deploy role reaches another account | Peering admits only listed ports; each OIDC role can deploy only its own cluster; ECR policies grant pull, not push; database logins reach only their own database; no shared AWS credentials | Planned (RISK-165, RISK-167) |
 | T21 | Information disclosure | A database credential leaks while being handed to another account | Generated in the consuming account's SSM; handed over by a password manager's one-time share; never GitHub, chat or email; rotate after any doubt | Planned (RISK-170) |
@@ -73,6 +74,7 @@ Seed entries from the design. Each row needs an owner and a status once the comp
 
 | Date | Change | Reviewer |
 |---|---|---|
-| 23 Nov 2026 | ADR-0017: three hosts in three accounts; EP10, EP11, T19–T21 | Pending Jiajun and Zheng |
 | 11 Nov 2026 | Skeleton created with seed threats from `DESIGN.md` | — |
 | 16 Nov 2026 | RISK-11 adds health-only HTTP entry point and request-ID safeguards | Pending teammate review |
+| 23 Nov 2026 | RISK-116 adds the unauthenticated assessment stub (T18, accepted until RISK-111) | Pending teammate review |
+| 23 Nov 2026 | ADR-0017: three hosts in three accounts; EP10, EP11, T19–T21 | Pending Jiajun and Zheng |
