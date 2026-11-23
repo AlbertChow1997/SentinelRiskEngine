@@ -23,3 +23,7 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 
 - Standardised PostgreSQL 18 in documentation and future environment requirements; corrected the Compose volume mount and held Dependabot database upgrades within major 18.
+
+### Removed
+
+- RISK-109: obsolete contract compatibility exceptions (`contracts/compatibility/`) and the unused `OASDIFF` Makefile variable.

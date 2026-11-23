@@ -32,3 +32,8 @@ files in the next cleanup. No blanket severity override or endpoint exclusion.
 
 Rollback: revert contracts, compatibility metadata and documentation together
 before implementation; never deploy an anonymous rollback of a public service.
+
+Update, 23 November 2026 (RISK-109): main has contained the JWT contracts since
+PR #26, so the hash-matched exceptions could no longer apply. The
+`contracts/compatibility/` files and the exception branch of
+`check-breaking.sh` were removed; every breaking change now fails the check.
