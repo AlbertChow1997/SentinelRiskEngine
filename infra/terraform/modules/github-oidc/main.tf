@@ -1,4 +1,5 @@
 data "aws_partition" "current" {}
+data "aws_region" "current" {}
 locals {
   # CI passes an unset repository variable as "", which must mean "create the provider".
   existing_provider_arn = var.existing_provider_arn == null ? "" : trimspace(var.existing_provider_arn)
@@ -30,7 +31,8 @@ resource "aws_iam_role_policy" "plan" {
   name = "read-staging-plan"
   role = aws_iam_role.github["plan"].id
   policy = jsonencode({ Version = "2012-10-17", Statement = [
-    { Effect = "Allow", Action = ["ec2:Describe*", "ecr:Describe*", "ecr:GetLifecyclePolicy", "iam:GetRole", "iam:GetRolePolicy", "iam:ListRolePolicies", "iam:ListAttachedRolePolicies", "iam:GetOpenIDConnectProvider", "iam:ListOpenIDConnectProviders", "iam:ListRoleTags", "ec2:GetManagedPrefixListEntries", "ecr:ListTagsForResource"], Resource = "*" },
+    { Effect = "Allow", Action = ["ec2:Describe*", "ecr:Describe*", "ecr:GetLifecyclePolicy", "iam:GetRole", "iam:GetRolePolicy", "iam:ListRolePolicies", "iam:ListAttachedRolePolicies", "iam:GetOpenIDConnectProvider", "iam:ListOpenIDConnectProviders", "iam:ListRoleTags", "ec2:GetManagedPrefixListEntries", "ecr:ListTagsForResource", "iam:GetInstanceProfile", "ecs:DescribeClusters", "ecs:DescribeServices", "ecs:DescribeTaskDefinition", "ecs:ListTagsForResource", "logs:DescribeLogGroups", "logs:ListTagsForResource", "scheduler:GetSchedule", "scheduler:GetScheduleGroup", "scheduler:ListTagsForResource"], Resource = "*" },
+    { Effect = "Allow", Action = ["ssm:GetParameter"], Resource = "arn:${data.aws_partition.current.partition}:ssm:${data.aws_region.current.region}::parameter${var.ami_parameter_name}" },
     { Effect = "Allow", Action = ["s3:ListBucket"], Resource = local.bucket_arn },
     { Effect = "Allow", Action = ["s3:GetObject"], Resource = "${local.bucket_arn}/staging/terraform.tfstate" },
     { Effect = "Allow", Action = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"], Resource = "${local.bucket_arn}/staging/terraform.tfstate.tflock" }

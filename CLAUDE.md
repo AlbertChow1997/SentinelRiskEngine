@@ -248,11 +248,11 @@ Managed services: ECR · Cognito · Bedrock · SSM Parameter Store · CloudWatch
 | Item | Setting |
 |---|---|
 | Scheduler | **EventBridge Scheduler** (timezone `Europe/Dublin`) with two schedules calling EC2 `StartInstances` / `StopInstances` on the tagged instance |
-| Default window | **Mon–Fri 09:00–23:00**; off at weekends. Window values are Terraform variables |
+| Window | **Now (development): every day 19:00–02:00.** **Demo window (from M5, RISK-117): Mon–Fri 09:00–23:00**, off at weekends. Values are the Terraform variables `start_cron` / `stop_cron` |
 | Manual override | `make aws-wake` (start instance, wait until all ECS services are steady) and `make aws-sleep` (stop instance); both ask for confirmation. Use `aws-wake` before interviews/demos outside the window |
 | Boot behaviour | ECS agent re-registers the instance; services restart automatically (desired counts stay 1); postgres and kafka start first via container dependencies/health checks. Target: system usable **≤ 5 minutes** after start |
 | Deploys while stopped | `deploy-staging.yml` checks the instance state; if stopped it starts it, deploys, runs smoke tests, and leaves it running until the next scheduled stop |
-| Frontend | Always available (S3 + CloudFront). When the backend is asleep, the web app shows a friendly "Demo environment is sleeping — available Mon–Fri 09:00–23:00 Irish time" banner (frontend checks `/api/health` with a short timeout). `/sample` keeps working because it is fully client-side |
+| Frontend | Always available (S3 + CloudFront). When the backend is asleep, the web app shows a friendly "Demo environment is sleeping" banner with the scheduled hours (demo window: Mon–Fri 09:00–23:00 Irish time) (frontend checks `/api/health` with a short timeout). `/sample` keeps working because it is fully client-side |
 
 ### 7.4 Cost (indicative — re-check with the AWS Pricing Calculator and record in TECH_DECISIONS)
 
@@ -265,6 +265,7 @@ Managed services: ECR · Cognito · Bedrock · SSM Parameter Store · CloudWatch
 | CloudFront, S3 website, Cognito, CloudWatch (7-day logs) | ~$0–2 (mostly free tier) |
 | Bedrock tokens (demo volume, budget-capped) | ~$1–3 |
 | **Total** | **≈ $20–28/month**; the same setup running 24/7 ≈ $40–45 |
+| *Development window now:* 7 h × 30 days ≈ 210 h of t4g.medium | ~$7 compute instead of ~$11–12 |
 
 New-account AWS credits (if available) cover this for many months. **AWS Budgets** alerts at **$15 (forecast)** and **$25 (actual)**. Tag every resource `project=sentinel-pay`, `owner`, `env=staging`.
 
