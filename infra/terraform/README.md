@@ -43,7 +43,16 @@ prove live IAM, quotas, DNS or deployment health. CI adds TFLint and Trivy.
 ## GitHub setup after approved bootstrap
 
 Set TF_STATE_BUCKET, INFRA_OWNER, TF_PLAN_ROLE_ARN and, only when ready,
-TF_PLAN_ENABLED=true as repository variables. The plan role cannot apply.
+TF_PLAN_ENABLED=true as repository variables. Set TF_OIDC_PROVIDER_ARN only if the
+account already had a GitHub OIDC provider before the first apply; leave it unset
+otherwise (unset or empty means "create it"). GitHub forbids variable names that
+start with GITHUB_. The plan role cannot apply.
+
+Dependabot PRs never run the credentialed plan (they cannot request an OIDC token);
+plan their Terraform bumps manually. Modules declare minimum versions only; the
+roots and their lock files pin exact versions. The plan job does not cancel when a
+newer commit arrives, so it never leaves the S3 state lock behind, and it keeps
+one summary comment per PR up to date instead of adding a new one each push.
 Fork PRs never receive AWS credentials. PR comments contain counts only; no
 resource identifiers, secrets or plan JSON. Bootstrap cannot use the role/bucket
 before creating them: its plan stays a private local operation. Review code
