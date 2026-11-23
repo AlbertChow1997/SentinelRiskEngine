@@ -13,7 +13,7 @@ Main runs are never replaced by a newer run; dependency and Wrapper caches are s
 
 ## Stack
 
-- Java 21, Spring Boot 4.1.2, Maven 3.10.1 via Maven Wrapper 3.3.4 (ADR-0008, Q18 closed).
+- Java 21, Spring Boot 4.2.0, Maven 3.10.2 via Maven Wrapper 3.3.4 (ADR-0008, Q18 closed).
 - Current dependencies: Spring MVC, Actuator and Spring MVC test support.
 - Planned with implementation tickets: Validation, JPA, PostgreSQL 18 driver, Flyway, Kafka and OAuth2 Resource Server.
 - Add resilience4j, springdoc-openapi, WireMock and PostgreSQL 18 Testcontainers only with the features that use them.

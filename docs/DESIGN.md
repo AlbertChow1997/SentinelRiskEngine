@@ -222,8 +222,8 @@ The staging deployment of this system (CloudFront, S3, one ECS host) is in Secti
 
 | Component | Owner | Tech | Port | Responsibility |
 |---|---|---|---|---|
-| `payment-gateway` | Jiawei | Java 21, Spring Boot 4.1.x, Spring for Apache Kafka | 8080 | Merchant API, payment lifecycle, idempotency, risk check, acquirer simulation, ledger, outbox |
-| `risk-engine` | Jiawei | Java 21, Spring Boot 4.1.x | 8081 | Risk API, rules, context features, ML orchestration, decisions, audit, risk events |
+| `payment-gateway` | Jiawei | Java 21, Spring Boot 4.2.x, Spring for Apache Kafka | 8080 | Merchant API, payment lifecycle, idempotency, risk check, acquirer simulation, ledger, outbox |
+| `risk-engine` | Jiawei | Java 21, Spring Boot 4.2.x | 8081 | Risk API, rules, context features, ML orchestration, decisions, audit, risk events |
 | `ml-scorer` | Zheng | Python 3.12, FastAPI, scikit-learn, uv | 8000 | Fraud probability + explanation; feedback collector (`ml-feedback`, no port) |
 | `frontend` | Jiajun | React 19, TypeScript, Vite, TanStack Query; UI kit: Tailwind CSS + shadcn/ui with own design tokens (ADR-0010; was MUI) | 5173 dev / 3000 docker | Public website, merchant and analyst web app, LLM Console |
 | `postgres` | Jiawei | PostgreSQL 18 | 5432 | Databases `sentinel` (risk), `gateway` and `llm` — **one database per service** |
@@ -597,7 +597,7 @@ None of the imported contracts has been frozen yet (freeze points H1, H6, H11), 
 
 | Concern | Choice |
 |---|---|
-| Runtime | Java 21, Spring Boot 4.1.2 (ADR-0008) |
+| Runtime | Java 21, Spring Boot 4.2.0 (ADR-0008, updated 23 Nov 2026) |
 | Initializr dependencies | Spring Web, Validation, Spring Data JPA, PostgreSQL Driver, Flyway Migration, Actuator, Testcontainers |
 | Extra libraries | springdoc-openapi (Boot 4–compatible line), `resilience4j-circuitbreaker` (core library, used programmatically — avoids starter compatibility issues), WireMock (tests) |
 | HTTP client | Spring `RestClient` with connect timeout 100 ms, read timeout 200 ms |
@@ -1122,7 +1122,7 @@ For each feature, compare the request's value with the training distribution (st
 
 | Concern | Choice |
 |---|---|
-| Runtime | Java 21, Spring Boot 4.1.x — same baseline as the Risk Engine |
+| Runtime | Java 21, Spring Boot 4.2.x — same baseline as the Risk Engine |
 | Initializr dependencies | Spring Web, Validation, Spring Data JPA, PostgreSQL Driver, Flyway Migration, **Spring for Apache Kafka**, Actuator, Testcontainers |
 | Extra libraries | springdoc-openapi, `resilience4j-circuitbreaker` (core), `ulid-creator` (sortable IDs), WireMock (tests) |
 | HTTP client to Risk Engine | `RestClient`, connect 100 ms / read 300 ms, circuit breaker (window 20, failure 50 %, open 30 s) |

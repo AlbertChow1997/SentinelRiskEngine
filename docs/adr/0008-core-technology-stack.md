@@ -40,3 +40,5 @@ Dependency versions are pinned in `backend/pom.xml` and `.mvn/wrapper/maven-wrap
 - Dependabot may update PostgreSQL within 18; major database upgrades require a new explicit decision.
 - Revisit framework/library compatibility as persistence, OpenAPI tooling and security are added. This scaffold does not
   choose versions for libraries it does not yet use.
+
+Update, 23 November 2026: Dependabot PRs #45 and #46 moved the backend to Spring Boot **4.2.0** (minor) and Maven **3.10.2** (patch). Backend CI (Java 21) passed on both. Java 21 and PostgreSQL 18 are unchanged; the gateway follows the same Spring Boot line.

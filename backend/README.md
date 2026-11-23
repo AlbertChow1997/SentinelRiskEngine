@@ -5,7 +5,7 @@ Real-time transaction risk assessment: deterministic rules, an ML score, analyst
 | | |
 |---|---|
 | **Owner** | Jiawei Zhou (@AlbertChow1997) |
-| **Stack** | Java 21, Spring Boot 4.1.2, Maven 3.10.1 via Wrapper 3.3.4; PostgreSQL 18 is the persistence target |
+| **Stack** | Java 21, Spring Boot 4.2.0, Maven 3.10.2 via Wrapper 3.3.4; PostgreSQL 18 is the persistence target |
 | **Port** | 8081 |
 | **Contract** | `contracts/openapi-risk-engine-v1.yaml`; `contracts/asyncapi-events-v1.yaml` |
 | **Design** | `docs/DESIGN.md` sections 4.3-4.4 and 7; [ADR-0008](../docs/adr/0008-core-technology-stack.md) |

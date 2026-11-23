@@ -71,7 +71,7 @@ Design v2.0 numbered the tech-stack ADR 0001. ADR-0001 is now "Record architectu
 | Java + Quarkus | Good; fast start-up and low memory, attractive on a 4 GB host | Medium — different extension model and fewer examples | Free | Smaller than Spring | Lower memory, but less team knowledge when things break |
 
 **Chosen:** Java 21 + Spring Boot 4. **Why:** the hiring signal and the team's existing knowledge outweigh Quarkus's memory advantage.
-**Baseline:** Spring Boot 4.1.2 and Java 21, selected on 16 Nov 2026 for the M0 scaffold (ADR-0008; Q18 closed).
+**Baseline:** Spring Boot 4.2.0 and Java 21 (selected 4.1.2 on 16 Nov 2026 for the M0 scaffold; minor upgrade to 4.2.0 via Dependabot #45 on 23 Nov 2026; ADR-0008).
 **Review:** library compatibility when persistence, OpenAPI tooling and security are added.
 
 ## D02 — Java build tool
