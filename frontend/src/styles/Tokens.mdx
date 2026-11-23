@@ -20,8 +20,19 @@ Components use the semantic tokens below, never raw colour values. The raw palet
   />
   <ColorItem
     title="Action"
-    subtitle="primary (ink) · brand (indigo) · highlight (teal)"
+    subtitle="primary (black) · brand (deep purple) · highlight (muted lavender)"
     colors={{ primary: 'var(--primary)', brand: 'var(--brand)', highlight: 'var(--highlight)' }}
+  />
+  <ColorItem
+    title="Dark bands"
+    subtitle="hero · hero-glow (navy, lavender, sky) · hero-cta"
+    colors={{
+      hero: 'var(--hero)',
+      'glow-1': 'var(--hero-glow-1)',
+      'glow-2': 'var(--hero-glow-2)',
+      'glow-3': 'var(--hero-glow-3)',
+      cta: 'var(--hero-cta)',
+    }}
   />
   <ColorItem
     title="Risk bands"

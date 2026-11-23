@@ -105,8 +105,8 @@ IDs from 100 upwards cover the new scope. A new item takes the next free number.
 |---|---|---|---|
 | RISK-120 | ADR: UI kit (Tailwind CSS + shadcn/ui + Framer Motion vs MUI) | Bootstrap | Done (ADR-0010) |
 | RISK-30 | Vite + React + TypeScript scaffold, lint, theme, router, app shell, `ci-frontend.yml` | M0 | Done |
-| RISK-130 | Design tokens, shadcn/ui base components, ScoreBadge, Storybook with axe | M0 | In review |
-| RISK-121 | Homepage: hero, product showcase, how-it-works, KPI strip, API snippet, footer disclaimer | M0–M3 | To do |
+| RISK-130 | Design tokens, shadcn/ui base components, ScoreBadge, Storybook with axe | M0 | Done (#25) |
+| RISK-121 | Homepage: hero, product showcase, how-it-works, KPI strip, API snippet, footer disclaimer | M0–M3 | In review |
 | RISK-122 | `/sample`: scenario player on a bundled mock dataset | M3 | To do |
 | RISK-31 … RISK-38 | Analyst app pages (`DESIGN.md` §8.6), mapped onto the new routes | M1 | To do |
 | RISK-90 … RISK-94 | Payments UI (`DESIGN.md` §8.7) | M2 | To do |
