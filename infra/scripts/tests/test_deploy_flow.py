@@ -47,7 +47,13 @@ elif args[:2]==['ecs','describe-task-definition']:
     name=args[args.index('--task-definition')+1]
     print(json.dumps({'taskDefinition':{'family':name,'runtimePlatform':{'cpuArchitecture':'ARM64'},'containerDefinitions':[{'name':name,'image':'unpublished','healthCheck':{'command':['CMD','true']}}]}}))
 elif args[:2]==['ecs','register-task-definition']: print('task-test')
-elif args[:2]==['ecs','describe-services']: print(('old-task' if os.environ.get('ROLLBACK') else 'task-test')+'\\tCOMPLETED')
+elif args[:2]==['ecs','describe-services']:
+    # ROLLOUT_STATES: comma-separated states returned on successive calls; the last one repeats.
+    states=os.environ.get('ROLLOUT_STATES','COMPLETED').split(',')
+    counter=Path(os.environ['CALLS']+'.describe-services')
+    n=int(counter.read_text()) if counter.exists() else 0
+    counter.write_text(str(n+1))
+    print(('old-task' if os.environ.get('ROLLBACK') else 'task-test')+'\\t'+states[min(n,len(states)-1)])
 elif args[:2]==['cloudfront','create-invalidation']: print('invalidation-test')
 '''
         for name in ["aws", "docker", "python3"]:
@@ -61,7 +67,8 @@ elif args[:2]==['cloudfront','create-invalidation']: print('invalidation-test')
         self.env = dict(os.environ, PATH=str(tools)+os.pathsep+os.environ["PATH"], CALLS=str(self.log),
                         GITHUB_ACTIONS="true", GITHUB_REF="refs/heads/main", GITHUB_SHA="synthetic-commit",
                         STAGING_ECR_REGISTRY="registry.example.invalid", STAGING_WEBSITE_BUCKET="test-site",
-                        STAGING_DISTRIBUTION_ID="test-distribution", STAGING_URL="https://synthetic.cloudfront.net", INFRA_OWNER="test-owner")
+                        STAGING_DISTRIBUTION_ID="test-distribution", STAGING_URL="https://synthetic.cloudfront.net", INFRA_OWNER="test-owner",
+                        ROLLOUT_POLL_SECONDS="0", ROLLOUT_MAX_POLLS="5")
 
     def deploy(self):
         return subprocess.run(["bash", "infra/scripts/deploy-staging.sh"], cwd=self.root, env=self.env, capture_output=True, text=True)
@@ -99,6 +106,27 @@ elif args[:2]==['cloudfront','create-invalidation']: print('invalidation-test')
         result = self.deploy()
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("false success after rollback", result.stderr)
+        self.assertNotIn("s3 sync", self.log.read_text())
+
+    def test_rollout_still_in_progress_after_stable_is_awaited(self):
+        # Run 45198803686: services-stable returned, ECS marked the rollout COMPLETED 25 s later.
+        self.env["ROLLOUT_STATES"] = "IN_PROGRESS,IN_PROGRESS,COMPLETED"
+        result = self.deploy()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("s3 sync", self.log.read_text())
+
+    def test_failed_rollout_is_reported_as_failure(self):
+        self.env["ROLLOUT_STATES"] = "IN_PROGRESS,FAILED"
+        result = self.deploy()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("ended as FAILED", result.stderr)
+        self.assertNotIn("s3 sync", self.log.read_text())
+
+    def test_rollout_that_never_finishes_times_out(self):
+        self.env["ROLLOUT_STATES"] = "IN_PROGRESS"
+        result = self.deploy()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("ended as IN_PROGRESS", result.stderr)
         self.assertNotIn("s3 sync", self.log.read_text())
 
 
