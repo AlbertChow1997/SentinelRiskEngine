@@ -1,4 +1,7 @@
-mock_provider "aws" {}
+mock_provider "aws" {
+  mock_data "aws_partition" { defaults = { partition = "aws" } }
+  mock_data "aws_region" { defaults = { region = "eu-north-1" } }
+}
 run "exact_subjects" {
   command = plan
   module { source = "../../modules/github-oidc" }
@@ -7,6 +10,7 @@ run "exact_subjects" {
     repository            = "example/repository"
     state_bucket_name     = "sentinel-test-state"
     ecr_repositories      = []
+    ami_parameter_name    = "/aws/service/ecs/optimized-ami/amazon-linux-2023/arm64/recommended/image_id"
     existing_provider_arn = "REPLACE_WITH_PROVIDER_REFERENCE"
   }
   assert {
@@ -26,6 +30,7 @@ run "empty_existing_provider_creates_one" {
     repository            = "example/repository"
     state_bucket_name     = "sentinel-test-state"
     ecr_repositories      = []
+    ami_parameter_name    = "/aws/service/ecs/optimized-ami/amazon-linux-2023/arm64/recommended/image_id"
     existing_provider_arn = ""
   }
   assert {
@@ -37,13 +42,29 @@ run "plan_role_can_read_everything_the_plan_refreshes" {
   command = plan
   module { source = "../../modules/github-oidc" }
   variables {
-    name              = "test-oidc"
-    repository        = "example/repository"
-    state_bucket_name = "sentinel-test-state"
-    ecr_repositories  = []
+    name               = "test-oidc"
+    repository         = "example/repository"
+    state_bucket_name  = "sentinel-test-state"
+    ecr_repositories   = []
+    ami_parameter_name = "/aws/service/ecs/optimized-ami/amazon-linux-2023/arm64/recommended/image_id"
   }
   assert {
     condition     = alltrue([for action in ["ec2:GetManagedPrefixListEntries", "ecr:ListTagsForResource"] : contains(jsondecode(aws_iam_role_policy.plan.policy).Statement[0].Action, action)])
     error_message = "The plan role must read the CloudFront prefix list entries and ECR repository tags."
+  }
+}
+run "plan_role_reads_only_the_host_ami_parameter" {
+  command = plan
+  module { source = "../../modules/github-oidc" }
+  variables {
+    name               = "test-oidc"
+    repository         = "example/repository"
+    state_bucket_name  = "sentinel-test-state"
+    ecr_repositories   = []
+    ami_parameter_name = "/aws/service/ecs/optimized-ami/amazon-linux-2023/arm64/recommended/image_id"
+  }
+  assert {
+    condition     = jsondecode(aws_iam_role_policy.plan.policy).Statement[1].Resource == "arn:aws:ssm:eu-north-1::parameter/aws/service/ecs/optimized-ami/amazon-linux-2023/arm64/recommended/image_id"
+    error_message = "The SSM read must be built from the current Region and the host's parameter, not hard-coded."
   }
 }

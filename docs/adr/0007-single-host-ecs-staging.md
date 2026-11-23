@@ -74,3 +74,5 @@ module and the task definitions stay largely the same.
 - The environment needs to be available outside the scheduled window regularly.
 
 Update, 23 November 2026: the Region is now eu-north-1 because the team's AWS project is locked to it. Everything else in this ADR is unchanged. See ADR-0015.
+
+Update, 23 November 2026 (RISK-106): during development the window is every day 19:00-02:00 Europe/Dublin. The Monday to Friday 09:00-23:00 demo window returns before release (RISK-117). The schedule module now takes the window only from the root's `start_cron`/`stop_cron` variables.

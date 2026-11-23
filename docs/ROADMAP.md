@@ -169,6 +169,7 @@ RISK-144 ← RISK-82; RISK-128/129 ← RISK-145.
 | 11 Nov 2026 | Tracking moved from Jira to GitHub Issues and a GitHub Project; `RISK-<n>` stays as the backlog ID (Section 8). MIT licence added. |
 | 11 Nov 2026 | Schedule re-planned into milestones M0–M5 (this document). Old dates (29 Nov, 13 Dec) withdrawn. Awaiting team sign-off. |
 | 13 Nov 2026 | `contracts/openapi-ml-scorer-v1.yaml` written (RISK-140): `POST /v1/score`, `GET /v1/model-info`, `GET /health`. Q16 closed. Freezes at H1 (Tue 1 Dec). |
+| 23 Nov 2026 | RISK-106 re-lands the RISK-103 ECS platform from `main` with the #30 review fixes; #29's foundation fixes go first in a separate PR. Development schedule set to every day 19:00-02:00 Europe/Dublin; RISK-117 (#80, M5) restores the daytime demo window. |
 | 23 Nov 2026 | AWS project is locked to eu-north-1: staging moves there (ADR-0015, RISK-107). Project is on the Free plan with a USD 100 credit; Bedrock cross-Region access and DLM snapshots are open (RISK-108). RISK-103 code found stranded off `main` (RISK-106). |
 | 16 Nov 2026 | Owner confirmed PostgreSQL 18 across environments; corrected Compose volume layout and major-version policy. RISK-11 M0 backend scaffold implemented and validated (9 tests, Java 21 ARM64 image); awaiting teammate review. Spring Boot 4.1.2 / Java 21 recorded in ADR-0008; Q18 closed. RISK-12 remains the follow-up CI ticket. |
 

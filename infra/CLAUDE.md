@@ -14,7 +14,8 @@ Owner: Jiawei Zhou. Design: `docs/DESIGN.md` §19. Decision record: `docs/adr/00
 ## Status
 
 RISK-102 provides bootstrap/staging roots, network/ECR/OIDC modules, mock-plan tests and
-terraform CI. These configurations have not been applied. Pin Terraform using
+terraform CI; RISK-106 adds the ECS host, ecs-service and scheduler modules and the
+wake/sleep/status scripts. These configurations have not been applied. Pin Terraform using
 `.terraform-version`; use `init -backend=false` for credential-free validation.
 
 ## Commands

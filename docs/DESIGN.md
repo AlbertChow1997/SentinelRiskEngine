@@ -1992,7 +1992,7 @@ Managed services: ECR · Cognito · Bedrock · SSM Parameter Store · CloudWatch
 | Item | Setting |
 |---|---|
 | Scheduler | **EventBridge Scheduler** (timezone `Europe/Dublin`) with two schedules calling EC2 `StartInstances` / `StopInstances` on the tagged instance |
-| Default window | **Mon–Fri 09:00–23:00**; off at weekends. Window values are Terraform variables |
+| Window | **Now (development): every day 19:00–02:00.** **Demo window (from M5, RISK-117): Mon–Fri 09:00–23:00**, off at weekends. Values are the Terraform variables `start_cron` / `stop_cron` |
 | Manual override | `make aws-wake` (start the instance, wait until all ECS services are steady) and `make aws-sleep` (stop the instance); both ask for confirmation. Use `aws-wake` before interviews and demos outside the window |
 | Boot behaviour | The ECS agent re-registers the instance; services restart automatically (desired counts stay 1); postgres and kafka start first via container dependencies and health checks. Target: system usable **≤ 5 minutes** after start |
 | Deploys while stopped | `deploy-staging.yml` checks the instance state; if stopped it starts it, deploys, runs smoke tests, and leaves it running until the next scheduled stop |
@@ -2009,6 +2009,7 @@ Managed services: ECR · Cognito · Bedrock · SSM Parameter Store · CloudWatch
 | CloudFront, S3 website, Cognito, CloudWatch (7-day logs) | ~$0–2 (mostly free tier) |
 | Bedrock tokens (demo volume, budget-capped) | ~$1–3 |
 | **Total** | **≈ $20–28/month**; the same setup running 24/7 ≈ $40–45 |
+| *Development window now:* 7 h × 30 days ≈ 210 h of t4g.medium | ~$7 compute instead of ~$11–12 |
 
 Prices were re-checked for eu-north-1 on 23 Nov 2026 (`t4g.medium` USD 0.0344/h, gp3 USD 0.0836/GB-month); the totals hold. The AWS project is on the Free plan with a USD 100 credit, which covers about four months (RISK-108). **AWS Budgets** alerts at **$15 (forecast)** and **$25 (actual)**, created in the very first apply. Every resource is tagged `project=sentinel-pay`, `owner`, `env=staging`.
 
