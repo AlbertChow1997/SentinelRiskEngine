@@ -74,7 +74,6 @@ resource "aws_cloudfront_distribution" "this" {
     origin_id                = "web"
     domain_name              = aws_s3_bucket.web.bucket_regional_domain_name
     origin_access_control_id = aws_cloudfront_origin_access_control.web.id
-    s3_origin_config { origin_access_identity = "" }
   }
   origin {
     origin_id   = "api"
@@ -88,6 +87,7 @@ resource "aws_cloudfront_distribution" "this" {
       https_port             = 443
       origin_protocol_policy = "http-only"
       origin_ssl_protocols   = ["TLSv1.2"]
+      ip_address_type        = "ipv4"
     }
   }
   default_cache_behavior {
