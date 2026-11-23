@@ -24,7 +24,7 @@ Scaffolded (RISK-30). The UI kit is decided in ADR-0010: design tokens live in `
 
 ```bash
 npm ci
-npm run dev                  # http://localhost:5173, proxies /api to the local services
+npm run dev                  # http://localhost:5173; /api routed like the staging nginx origin (api-proxy.ts)
 npm run lint
 npm run typecheck
 npm test -- --run            # Vitest
