@@ -7,6 +7,9 @@ Owner: Jiawei Zhou. Design: `docs/DESIGN.md` §4.3–4.4 and §7. Contract: `con
 
 RISK-11 provides the M0 walking skeleton: health, JSON logs, request IDs, tests and an ARM64-capable container.
 It starts without PostgreSQL, Kafka or AWS. Persistence and business APIs arrive in M1.
+RISK-116 (#56) adds the contract-shaped `POST /api/v1/risk-assessments` stub (fixed APPROVE, degraded, nothing stored),
+Bean Validation and `GlobalExceptionHandler` (RFC 9457 with `code` and field `errors`). It is unauthenticated until RISK-111
+(threat model T18); add JWT validation before the endpoint stores or reads data.
 RISK-12 (#7) adds `ci-backend.yml`: Java 21 verification, coverage/test artifacts and backend Maven Dependabot updates.
 Its stable check always reports; internal path detection skips Maven for unrelated changes.
 Main runs are never replaced by a newer run; dependency and Wrapper caches are separate.
@@ -14,8 +17,10 @@ Main runs are never replaced by a newer run; dependency and Wrapper caches are s
 ## Stack
 
 - Java 21, Spring Boot 4.2.0, Maven 3.10.2 via Maven Wrapper 3.3.4 (ADR-0008, Q18 closed).
-- Current dependencies: Spring MVC, Actuator and Spring MVC test support.
-- Planned with implementation tickets: Validation, JPA, PostgreSQL 18 driver, Flyway, Kafka and OAuth2 Resource Server.
+- Current dependencies: Spring MVC, Validation (Hibernate Validator), Actuator and Spring MVC test support; test-only
+  networknt json-schema-validator 3.x, which checks responses against `contracts/openapi-risk-engine-v1.yaml`.
+  Those contract tests skip only when `../contracts` is missing outside CI (the image build uses `backend/` as context).
+- Planned with implementation tickets: JPA, PostgreSQL 18 driver, Flyway, Kafka and OAuth2 Resource Server.
 - Add resilience4j, springdoc-openapi, WireMock and PostgreSQL 18 Testcontainers only with the features that use them.
 - **Check versions against official docs or the `pom.xml`.** AI tools often produce Spring Boot 3 APIs.
 
