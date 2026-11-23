@@ -67,4 +67,7 @@ before enabling credentialed plans. Never grant Actions administrator access.
 Deploy trust uses environment:staging. Verify its main-only restriction and real
 reviewer gate before enabling deployment (RISK-101/Q21 entitlement blocker).
 RISK-104 adds the private CDN/OAC and the non-root nginx origin image with synthetic proxy
-integration tests. RISK-105 adds deployment. All configurations remain unapplied.
+integration tests. RISK-105 adds the manual, reviewer-gated deployment pipeline; see
+docs/runbooks/staging-deployment.md. Deploy role creation defaults off until the
+actual GitHub reviewer/main-only gate is verified.
+

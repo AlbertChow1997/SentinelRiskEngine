@@ -14,3 +14,7 @@ variable "plan_secret_parameters" {
   type    = set(string)
   default = []
 }
+variable "enable_deploy_role" {
+  type    = bool
+  default = false
+}

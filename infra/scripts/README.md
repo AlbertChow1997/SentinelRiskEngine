@@ -14,3 +14,9 @@ is no --yes switch. Region defaults to eu-north-1. AWS errors (expired login,
 AccessDenied) stop the script before any change. ECS calls go in batches of ten. Override cluster/group using
 SENTINEL_CLUSTER/SENTINEL_SCHEDULE_GROUP. Tests inject a fake AWS CLI and never
 contact AWS. See docs/runbooks/staging-platform.md for boot/data/recovery limits.
+
+RISK-105 adds deploy-staging.sh (approved GitHub workflow only), environment-gate
+verification, task-definition rendering and public smoke helpers. Fake CLI tests
+cover fresh/reused SHA deployment order and IAM lookup failure. The --agent-only
+wake option skips old service stability during CD, never confirmation. See
+docs/runbooks/staging-deployment.md; no live deployment has been performed.

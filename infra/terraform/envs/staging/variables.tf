@@ -30,3 +30,8 @@ variable "schedule_enabled" {
 }
 
 variable "website_bucket_name" { type = string }
+variable "staging_deploy_gate_verified" {
+  type        = bool
+  default     = false
+  description = "Enable only after verifying actual required-reviewer, prevent-self-review and exact-main GitHub environment controls."
+}

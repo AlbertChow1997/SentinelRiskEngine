@@ -1,4 +1,5 @@
 mock_provider "aws" {
+  override_during = plan
   mock_data "aws_partition" { defaults = { partition = "aws" } }
   mock_data "aws_region" { defaults = { region = "eu-north-1" } }
   mock_data "aws_ssm_parameter" { defaults = { value = "ami-0123456789abcdef0" } }
@@ -21,6 +22,19 @@ run "foundation_plan" {
   assert {
     condition     = var.start_cron == "cron(0 19 * * ? *)" && var.stop_cron == "cron(0 2 * * ? *)"
     error_message = "Development window is every day 19:00-02:00 Europe/Dublin until RISK-117 switches it."
+  }
+  assert {
+    condition     = module.github_oidc.deploy_role_arn == null && length(aws_iam_role_policy.deploy_platform) == 0
+    error_message = "Deploy credentials must not exist before the real environment gate is verified."
+  }
+}
+
+run "explicitly_enabled_deploy_is_scoped" {
+  command = plan
+  variables { staging_deploy_gate_verified = true }
+  assert {
+    condition     = length(aws_iam_role_policy.deploy_platform) == 1 && !contains(flatten([for statement in local.deploy_statements : statement.Action]), "ec2:StopInstances")
+    error_message = "The explicitly enabled role may deploy/start, but never stop arbitrary compute."
   }
 }
 

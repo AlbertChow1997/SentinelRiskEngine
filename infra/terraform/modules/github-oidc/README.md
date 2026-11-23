@@ -5,7 +5,8 @@ if one already exists (never create a duplicate). Exact audience and repository
 subjects separate PR plan access from environment:staging deployment access.
 Plan can read infrastructure/state and write only the S3 lockfile. Deploy can
 publish only the supplied ECR repositories; it cannot apply Terraform. Later
-infrastructure PRs add scoped deployment operations. No administrator policy.
+infrastructure PRs add scoped deployment operations. No administrator policy. Deploy role creation defaults off (enable_deploy_role=false).
+Enable it only after a real non-self/main-only environment gate is verified.
 
 Inputs: name, repository, state_bucket_name, ECR ARNs and optional existing provider.
 Outputs: plan_role_arn, deploy_role_arn (configure as GitHub variables, never copy

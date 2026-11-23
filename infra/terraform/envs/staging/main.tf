@@ -21,4 +21,5 @@ module "github_oidc" {
   ecr_repositories       = [for repo in module.ecr.repositories : repo.arn]
   ami_parameter_name     = module.host.ami_parameter_name
   plan_secret_parameters = [module.cdn.secret_parameter_arn]
+  enable_deploy_role     = var.staging_deploy_gate_verified
 }
