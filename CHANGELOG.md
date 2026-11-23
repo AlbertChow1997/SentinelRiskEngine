@@ -7,6 +7,7 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- RISK-106: ECS host, reusable ECS service and start/stop scheduler modules, and confirmed wake/sleep/status scripts (re-landed from #30 with its review fixes). Development schedule: every day 19:00-02:00 Europe/Dublin (demo window returns in RISK-117).
 - RISK-12 backend CI: Java 21 Maven verification, coverage/test artifacts and weekly Maven dependency updates.
 
 - RISK-11 backend M0 skeleton: Java 21 / Spring Boot 4.1.2, health, JSON logs, request correlation, tests and container.

@@ -13,3 +13,18 @@ variable "region" {
     error_message = "Use an AWS Region code such as eu-north-1."
   }
 }
+
+# Development window (owner's decision, 23 Nov 2026): every day 19:00-02:00 Europe/Dublin.
+# Switch to the demo window (Mon-Fri 09:00-23:00) when development ends: RISK-117.
+variable "start_cron" {
+  type    = string
+  default = "cron(0 19 * * ? *)"
+}
+variable "stop_cron" {
+  type    = string
+  default = "cron(0 2 * * ? *)"
+}
+variable "schedule_enabled" {
+  type    = bool
+  default = true
+}

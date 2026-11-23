@@ -1,8 +1,10 @@
 # Terraform staging
 
-RISK-102 implements bootstrap, network, ECR and GitHub OIDC. AWS bootstrap/apply
+RISK-102 implements bootstrap, network, ECR and GitHub OIDC; RISK-106 re-lands the
+RISK-103 ECS host, reusable ECS service and scheduler. AWS bootstrap/apply
 and a live plan still require account configuration/approval. Pin Terraform
-1.17.2 and AWS provider ~> 6.71.0 with committed provider lockfiles; ADR-0011.
+1.17.2 and AWS provider ~> 6.71.0 in the roots (modules declare minimums) with
+committed provider lockfiles; ADR-0011.
 
 | Root/module | Responsibility |
 |---|---|
@@ -10,6 +12,9 @@ and a live plan still require account configuration/approval. Pin Terraform
 | envs/staging | Remote-state root; `region` variable (default eu-north-1); default project/owner/env tags |
 | network | One public subnet; no NAT/ALB/SSH; HTTP only from CloudFront prefix list |
 | ecr | Six immutable encrypted scan-on-push repositories; ten-image retention |
+| ecs-ec2-host | Standalone t4g.medium, ECS cluster, IMDSv2, protected 20 GiB data disk, EIP; AMI changes ignored |
+| ecs-service | ARM64 bridge task + service, desired count 0 until CD; ARN-only secrets; `/ecs/<name>` logs |
+| scheduler | EventBridge Scheduler start/stop for that one host, Europe/Dublin |
 | github-oidc | Exact repo subjects; separate plan and deployment roles; optional existing provider |
 
 ## Validate without AWS
@@ -60,4 +65,4 @@ before enabling credentialed plans. Never grant Actions administrator access.
 
 Deploy trust uses environment:staging. Verify its main-only restriction and real
 reviewer gate before enabling deployment (RISK-101/Q21 entitlement blocker).
-ECS/scheduler, CDN/nginx and deployment follow as RISK-103/104/105.
+CDN/nginx and deployment follow as RISK-104/105.

@@ -1,11 +1,16 @@
 # Operations scripts
 
-Planned for the first infrastructure PRs (RISK-103). Each script is POSIX shell with `set -euo pipefail`.
+Bash scripts use set -euo pipefail (Bash is required; strict POSIX sh lacks
+pipefail/arrays). AWS CLI v2 and a short-term login are prerequisites.
 
-| Script | Make target | Does | Changes AWS state? |
-|---|---|---|---|
-| `aws-wake.sh` | `make aws-wake` | Starts the EC2 host and waits until every ECS service is steady | Yes — asks for confirmation |
-| `aws-sleep.sh` | `make aws-sleep` | Stops the EC2 host | Yes — asks for confirmation |
-| `aws-status.sh` | `make aws-status` | Shows instance state, ECS service health and the next scheduled start/stop | No |
+| Script | Make target | Behaviour |
+|---|---|---|
+| aws-wake.sh | aws-wake | Require start confirmation; wait for EC2/ECS agent/services |
+| aws-sleep.sh | aws-sleep | Require stop confirmation; wait for stopped state |
+| aws-status.sh | aws-status | Read-only host/service/schedule state and configured cron/timezone |
 
-The instance is found by its tags, never by a hard-coded ID.
+Host selection uses project/env tags and refuses zero or multiple matches. There
+is no --yes switch. Region defaults to eu-north-1. AWS errors (expired login,
+AccessDenied) stop the script before any change. ECS calls go in batches of ten. Override cluster/group using
+SENTINEL_CLUSTER/SENTINEL_SCHEDULE_GROUP. Tests inject a fake AWS CLI and never
+contact AWS. See docs/runbooks/staging-platform.md for boot/data/recovery limits.

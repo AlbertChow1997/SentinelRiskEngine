@@ -230,7 +230,7 @@ Storybook is the component catalogue, with axe accessibility checks (ADR-0010, d
 | Always on | Simplest | None | ≈ $40–45/month | Neutral | None |
 | Spot instance | Cheapest per hour | Medium | Lowest | Good story | Interruptions with stateful Kafka and PostgreSQL on the host are painful |
 
-**Chosen:** scheduled start/stop. **Review:** M5.
+**Chosen:** scheduled start/stop. *Development window (23 Nov 2026):* every day 19:00–02:00 Europe/Dublin (~210 h/month); the Mon–Fri 09:00–23:00 demo window returns before release (RISK-117). **Review:** M5.
 
 ## D16 — Python service framework
 
