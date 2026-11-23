@@ -1,6 +1,6 @@
 # Infrastructure (`infra/`)
 
-Terraform for the one AWS environment, **staging** (eu-west-1), plus the scripts that start, stop and inspect it.
+Terraform for the one AWS environment, **staging** (eu-north-1, ADR-0015), plus the scripts that start, stop and inspect it.
 
 | | |
 |---|---|

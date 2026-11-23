@@ -22,4 +22,5 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- RISK-107: staging Region is now eu-north-1 (ADR-0015); Terraform takes the Region from one `region` variable.
 - Standardised PostgreSQL 18 in documentation and future environment requirements; corrected the Compose volume mount and held Dependabot database upgrades within major 18.

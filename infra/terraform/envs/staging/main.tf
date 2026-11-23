@@ -1,11 +1,11 @@
 provider "aws" {
-  region = "eu-west-1"
+  region = var.region
   default_tags { tags = { project = "sentinel-pay", owner = var.owner, env = "staging" } }
 }
 module "network" {
   source            = "../../modules/network"
   name              = "sentinel-staging"
-  availability_zone = "eu-west-1a"
+  availability_zone = "${var.region}a"
 }
 module "ecr" {
   source = "../../modules/ecr"

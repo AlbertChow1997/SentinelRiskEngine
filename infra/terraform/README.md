@@ -7,7 +7,7 @@ and a live plan still require account configuration/approval. Pin Terraform
 | Root/module | Responsibility |
 |---|---|
 | bootstrap | Private/versioned/TLS-only state bucket; $15 forecast/$25 actual budget alerts in the very first apply |
-| envs/staging | Remote-state root; eu-west-1; default project/owner/env tags |
+| envs/staging | Remote-state root; `region` variable (default eu-north-1); default project/owner/env tags |
 | network | One public subnet; no NAT/ALB/SSH; HTTP only from CloudFront prefix list |
 | ecr | Six immutable encrypted scan-on-push repositories; ten-image retention |
 | github-oidc | Exact repo subjects; separate plan and deployment roles; optional existing provider |
@@ -29,7 +29,7 @@ prove live IAM, quotas, DNS or deployment health. CI adds TFLint and Trivy.
 
 ## Bootstrap, only after approval
 
-1. Check billing access/notification address, eu-west-1 quota and current pricing.
+1. Check billing access/notification address, eu-north-1 quota and current pricing.
    Inspect for an existing GitHub OIDC provider; supply its reference privately.
 2. Copy bootstrap example variables to ignored terraform.tfvars. Plan, review
    costs and get explicit approval before applying a saved plan. Alerts are not

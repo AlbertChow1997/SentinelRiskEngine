@@ -8,6 +8,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+env:
+  # The AWS project is locked to this Region (ADR-0015).
+  AWS_REGION: eu-north-1
 concurrency:
   group: terraform-${{ github.ref }}
   cancel-in-progress: true
@@ -58,7 +61,7 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.TF_PLAN_ROLE_ARN }}
-          aws-region: eu-west-1
+          aws-region: ${{ env.AWS_REGION }}
           mask-aws-account-id: true
       - name: Plan staging (never apply)
         env:
@@ -67,7 +70,7 @@ jobs:
           TF_VAR_owner: ${{ vars.INFRA_OWNER }}
         run: |
           cd infra/terraform/envs/staging
-          terraform init -input=false -lockfile=readonly -backend-config="bucket=$STATE_BUCKET" -backend-config=key=staging/terraform.tfstate -backend-config=region=eu-west-1 -backend-config=use_lockfile=true -backend-config=encrypt=true > /tmp/tf-init.log 2>&1
+          terraform init -input=false -lockfile=readonly -backend-config="bucket=$STATE_BUCKET" -backend-config=key=staging/terraform.tfstate -backend-config=region="$AWS_REGION" -backend-config=use_lockfile=true -backend-config=encrypt=true > /tmp/tf-init.log 2>&1
           terraform plan -input=false -out=tfplan > /tmp/tf-plan.log 2>&1
           terraform show -json tfplan | python ../../../scripts/summarize-plan.py > /tmp/plan-summary.md
           cat /tmp/plan-summary.md >> "$GITHUB_STEP_SUMMARY"

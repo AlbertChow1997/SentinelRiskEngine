@@ -202,7 +202,7 @@ Accessibility target: WCAG 2.1 AA (keyboard navigation, contrast, alt text, redu
 
 ## 7. AWS architecture (staging) — single-host ECS + scheduled start/stop
 
-**Decision (ADR-0007, accepted):** run all backend containers with **ECS on one EC2 Graviton instance**, and start/stop it on a schedule. Keep managed AWS services where they are cheap or free (S3, CloudFront, Cognito, Bedrock, ECR). Production would use Fargate + ALB + Multi-AZ RDS; that is the documented migration path, not the current build. Region: **eu-west-1 (Ireland)**.
+**Decision (ADR-0007, accepted):** run all backend containers with **ECS on one EC2 Graviton instance**, and start/stop it on a schedule. Keep managed AWS services where they are cheap or free (S3, CloudFront, Cognito, Bedrock, ECR). Production would use Fargate + ALB + Multi-AZ RDS; that is the documented migration path, not the current build. Region: **eu-north-1 (Stockholm)**, the Region the team's AWS project is locked to (ADR-0015).
 
 ### 7.1 Topology
 
