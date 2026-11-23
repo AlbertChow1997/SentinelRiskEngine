@@ -44,6 +44,10 @@ run "explicitly_enabled_deploy_is_scoped" {
     condition     = length(aws_iam_role_policy.deploy_platform) == 1 && !contains(flatten([for statement in local.deploy_statements : statement.Action]), "ec2:StopInstances")
     error_message = "The explicitly enabled role may deploy/start, but never stop arbitrary compute."
   }
+  assert {
+    condition     = anytrue([for statement in local.deploy_statements : statement.Resource == "*" && contains(statement.Action, "ecs:DescribeTaskDefinition")])
+    error_message = "ecs:DescribeTaskDefinition has no resource-level permissions; it must be granted on * or deployment fails."
+  }
 }
 
 override_data {
