@@ -24,6 +24,7 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- RISK-105: deploy role grants `ecs:DescribeTaskDefinition` on `*` (the action has no resource-level permissions); the second deployment attempt was denied.
 - RISK-105: GitHub OIDC trust uses the repository's immutable subject (`repo:OWNER@ID/REPO@ID`); the first deployment was refused with AccessDenied.
 
 ### Changed
