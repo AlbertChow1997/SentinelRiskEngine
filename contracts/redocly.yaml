@@ -8,5 +8,5 @@ rules:
   security-defined: error
   # Local-only server URLs are deliberate until the staging URL exists.
   no-server-example.com: off
-  # Re-enable once the team has chosen a licence.
+  # The repository LICENSE (MIT) covers the contracts; no per-file licence block.
   info-license: off

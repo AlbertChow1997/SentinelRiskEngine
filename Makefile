@@ -10,7 +10,6 @@ SHELL := /bin/bash
 COMPOSE        ?= docker compose
 REDOCLY        ?= npx --yes @redocly/cli@2
 ASYNCAPI       ?= npx --yes @asyncapi/cli@6
-OASDIFF        ?= docker run --rm -v "$(CURDIR)":/work -w /work tufin/oasdiff
 BASE_REF       ?= origin/main
 OPENAPI_FILES  := $(wildcard contracts/openapi-*.yaml)
 ASYNCAPI_FILES := $(wildcard contracts/asyncapi-*.yaml)

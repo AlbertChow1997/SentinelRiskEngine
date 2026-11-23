@@ -1,9 +1,0 @@
-GET /api/v1/blocklist the endpoint no longer allows anonymous access and now only accepts `BearerAuth`
-POST /api/v1/blocklist the endpoint no longer allows anonymous access and now only accepts `BearerAuth`
-DELETE /api/v1/blocklist/{entryId} the endpoint no longer allows anonymous access and now only accepts `BearerAuth`
-GET /api/v1/risk-assessments the endpoint no longer allows anonymous access and now only accepts `BearerAuth`
-POST /api/v1/risk-assessments the endpoint no longer allows anonymous access and now only accepts `BearerAuth`
-GET /api/v1/risk-assessments/{assessmentId} the endpoint no longer allows anonymous access and now only accepts `BearerAuth`
-GET /api/v1/risk-assessments/{assessmentId}/audit-events the endpoint no longer allows anonymous access and now only accepts `BearerAuth`
-POST /api/v1/risk-assessments/{assessmentId}/review the endpoint no longer allows anonymous access and now only accepts `BearerAuth`
-GET /api/v1/stats/summary the endpoint no longer allows anonymous access and now only accepts `BearerAuth`
