@@ -22,8 +22,8 @@ Costs are indicative for eu-west-1 and must be re-checked with the AWS Pricing C
 | D03 | Database | PostgreSQL 18 | Accepted | [0008](adr/0008-core-technology-stack.md) |
 | D04 | Messaging | Self-hosted Kafka (single broker, KRaft) | Accepted | 0004, 0006 (to write) |
 | D05 | Container platform | ECS on EC2 | Accepted | [0007](adr/0007-single-host-ecs-staging.md) |
-| D06 | Infrastructure as code | Terraform | Accepted | 0011 (to write) |
-| D07 | Identity provider | Amazon Cognito | Accepted | 0012 (to write) |
+| D06 | Infrastructure as code | Terraform | Accepted | [0011](adr/0011-terraform-staging-foundation.md) |
+| D07 | Identity provider | Amazon Cognito | Accepted | 0014 (reserved; to write) |
 | D08 | LLM access | Amazon Bedrock | Accepted | 0013 (to write) |
 | D09 | Frontend UI kit | Tailwind CSS + shadcn/ui (Radix) with own design tokens, Motion, TanStack Table, Recharts | Accepted | [0010](adr/0010-frontend-ui-kit.md) |
 | D10 | CI/CD | GitHub Actions | Accepted | [0008](adr/0008-core-technology-stack.md) |
@@ -49,9 +49,9 @@ Costs are indicative for eu-west-1 and must be re-checked with the AWS Pricing C
 | 0008 | Core technology stack (D01, D02, D03, D10) | Accepted; updated 16 Nov 2026 | [adr/0008-core-technology-stack.md](adr/0008-core-technology-stack.md) |
 | 0009 | FastAPI for the Python services (Django considered and rejected) | Accepted | [adr/0009-fastapi-for-python-services.md](adr/0009-fastapi-for-python-services.md) |
 | 0010 | Tailwind CSS and shadcn/ui with our own design tokens for the frontend | Accepted | [adr/0010-frontend-ui-kit.md](adr/0010-frontend-ui-kit.md) |
-| 0011 | Terraform for infrastructure as code | Accepted | to be written with the first infra PR |
+| [0011](adr/0011-terraform-staging-foundation.md) | Terraform and S3 native state locking | Proposed implementation | RISK-102; not applied |
 | [0012](adr/0012-pre-freeze-jwt-contracts.md) | Pre-freeze JWT contract transition | Proposed | RISK-100; producer/consumer review in PR #26 |
-| 0012 | Amazon Cognito as identity provider | Accepted | to be written at M3 |
+| 0014 | Amazon Cognito as identity provider | Accepted | Reserved for M3; 0012 is the existing JWT contract ADR |
 | 0013 | Amazon Bedrock for LLM access | Accepted | to be written at M4 |
 
 Design v2.0 numbered the tech-stack ADR 0001. ADR-0001 is now "Record architecture decisions" and the stack decision moved to 0008
@@ -121,7 +121,7 @@ Design v2.0 numbered the tech-stack ADR 0001. ADR-0001 is now "Record architectu
 | AWS CDK | Good; real programming languages, but synthesises CloudFormation | Medium | Free | Good on AWS-only teams | CloudFormation stack behaviour (slow rollbacks) |
 | CloudFormation | Works; verbose YAML, AWS only | Medium | Free | Moderate | Low tooling, slow feedback |
 
-**Chosen:** Terraform, remote state in S3. **Open:** DynamoDB lock table vs S3 native locking — check against the provider and CLI versions in the first infra PR.
+**Chosen:** Terraform 1.17.2, AWS provider ~> 6.71.0, versioned private S3 state with native `use_lockfile` locking. No DynamoDB table. ADR-0011; code awaits review and approved bootstrap/apply.
 **Review:** not planned.
 
 ## D07 — Identity provider
