@@ -12,7 +12,7 @@ committed provider lockfiles; ADR-0011.
 | envs/staging | Remote-state root; `region` variable (default eu-north-1); default project/owner/env tags |
 | network | One public subnet; no NAT/ALB/SSH; HTTP only from CloudFront prefix list |
 | ecr | Six immutable encrypted scan-on-push repositories; ten-image retention |
-| ecs-ec2-host | Standalone t4g.medium, ECS cluster, IMDSv2, protected 20 GiB data disk, EIP; AMI changes ignored |
+| ecs-ec2-host | Standalone ARM64 host (`instance_type`, default t4g.small on the Free plan), ECS cluster, IMDSv2, protected 20 GiB data disk, EIP; AMI changes ignored |
 | ecs-service | ARM64 bridge task + service, desired count 0 until CD; ARN-only secrets; `/ecs/<name>` logs |
 | scheduler | EventBridge Scheduler start/stop for that one host, Europe/Dublin |
 | github-oidc | Exact repo subjects; separate plan and deployment roles; optional existing provider |

@@ -2,6 +2,7 @@ module "host" {
   source            = "../../modules/ecs-ec2-host"
   name              = "sentinel-staging"
   availability_zone = module.network.availability_zone
+  instance_type     = var.instance_type
   subnet_id         = module.network.subnet_id
   security_group_id = module.network.security_group_id
   depends_on        = [module.network]

@@ -10,9 +10,10 @@ run "host_plan" {
     subnet_id         = "subnet-test"
     security_group_id = "sg-test"
     availability_zone = "eu-north-1a"
+    instance_type     = "t4g.small"
   }
   assert {
-    condition     = aws_instance.this.instance_type == "t4g.medium" && aws_instance.this.metadata_options[0].http_tokens == "required" && aws_ebs_volume.data.size == 20 && aws_ebs_volume.data.encrypted
+    condition     = aws_instance.this.instance_type == "t4g.small" && aws_instance.this.metadata_options[0].http_tokens == "required" && aws_ebs_volume.data.size == 20 && aws_ebs_volume.data.encrypted
     error_message = "Host must remain ARM64, IMDSv2-only and backed by an encrypted data disk."
   }
   assert {
@@ -42,4 +43,16 @@ run "schedule_plan" {
     condition     = alltrue([for k in ["start", "stop"] : jsondecode(aws_scheduler_schedule.this[k].target[0].input).InstanceIds == ["i-0123456789abcdef0"]])
     error_message = "Both schedules must target exactly this host."
   }
+}
+run "x86_instance_types_are_rejected" {
+  command = plan
+  module { source = "../../modules/ecs-ec2-host" }
+  variables {
+    name              = "test-host"
+    subnet_id         = "subnet-test"
+    security_group_id = "sg-test"
+    availability_zone = "eu-north-1a"
+    instance_type     = "m7i-flex.large"
+  }
+  expect_failures = [var.instance_type]
 }

@@ -53,6 +53,7 @@ Costs are indicative for eu-north-1 (re-checked against the AWS Price List API o
 | [0011](adr/0011-terraform-staging-foundation.md) | Terraform and S3 native state locking | Proposed implementation | RISK-102; not applied |
 | [0012](adr/0012-pre-freeze-jwt-contracts.md) | Pre-freeze JWT contract transition | Proposed | RISK-100; producer/consumer review in PR #26 |
 | [0015](adr/0015-staging-region-eu-north-1.md) | Run staging in eu-north-1, the AWS project's locked Region | Accepted | RISK-107; amends ADR-0007 |
+| [0016](adr/0016-free-plan-instance-size.md) | Run the staging host on t4g.small while on the Free plan | Accepted | RISK-108; amends ADR-0007 |
 | 0014 | Amazon Cognito as identity provider | Accepted | Reserved for M3; 0012 is the existing JWT contract ADR |
 | 0013 | Amazon Bedrock for LLM access | Accepted | to be written at M4 |
 
@@ -189,7 +190,7 @@ Storybook is the component catalogue, with axe accessibility checks (ADR-0010, d
 | Lightsail | Cheapest fixed price for a VM | Low | Low | Weak — little of it transfers to production AWS | Manual, not IaC-friendly |
 | Non-AWS hosts (Oracle Free Tier, Hetzner) | Cheap or free compute | Low | Lowest | Weak for an AWS-focused portfolio; no Cognito/Bedrock/IAM integration | Manual |
 
-**Chosen:** one EC2 host running ECS (ADR-0007). Indicative monthly cost:
+**Chosen:** one EC2 host running ECS (ADR-0007); `t4g.small` while the AWS project is on the Free plan (ADR-0016, USD 0.0172/h in eu-north-1). Indicative monthly cost:
 
 | Item | Monthly |
 |---|---|
