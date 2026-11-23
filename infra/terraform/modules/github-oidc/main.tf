@@ -26,7 +26,8 @@ resource "aws_iam_role_policy" "plan" {
   name = "read-staging-plan"
   role = aws_iam_role.github["plan"].id
   policy = jsonencode({ Version = "2012-10-17", Statement = [
-    { Effect = "Allow", Action = ["ec2:Describe*", "ecr:Describe*", "ecr:GetLifecyclePolicy", "iam:GetRole", "iam:GetRolePolicy", "iam:ListRolePolicies", "iam:ListAttachedRolePolicies", "iam:GetOpenIDConnectProvider", "iam:ListOpenIDConnectProviders", "iam:ListRoleTags"], Resource = "*" },
+    { Effect = "Allow", Action = ["ec2:Describe*", "ecr:Describe*", "ecr:GetLifecyclePolicy", "iam:GetRole", "iam:GetRolePolicy", "iam:ListRolePolicies", "iam:ListAttachedRolePolicies", "iam:GetOpenIDConnectProvider", "iam:ListOpenIDConnectProviders", "iam:ListRoleTags", "iam:GetInstanceProfile", "ecs:DescribeClusters", "ecs:DescribeServices", "ecs:DescribeTaskDefinition", "ecs:ListTagsForResource", "logs:DescribeLogGroups", "logs:ListTagsForResource", "scheduler:GetSchedule", "scheduler:GetScheduleGroup", "scheduler:ListTagsForResource", "ecr:ListTagsForResource"], Resource = "*" },
+    { Effect = "Allow", Action = ["ssm:GetParameter"], Resource = "arn:${data.aws_partition.current.partition}:ssm:eu-west-1::parameter/aws/service/ecs/optimized-ami/amazon-linux-2023/arm64/recommended/image_id" },
     { Effect = "Allow", Action = ["s3:ListBucket"], Resource = local.bucket_arn },
     { Effect = "Allow", Action = ["s3:GetObject"], Resource = "${local.bucket_arn}/staging/terraform.tfstate" },
     { Effect = "Allow", Action = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"], Resource = "${local.bucket_arn}/staging/terraform.tfstate.tflock" }

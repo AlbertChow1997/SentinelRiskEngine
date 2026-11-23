@@ -1,0 +1,29 @@
+#!/bin/bash
+set -euo pipefail
+printf 'ECS_CLUSTER=${cluster}\nECS_ENABLE_TASK_IAM_ROLE=true\nECS_ENABLE_TASK_IAM_ROLE_NETWORK_HOST=false\n' >> /etc/ecs/ecs.config
+# The attachment is asynchronous. Match the specific EBS NVMe serial, not nvme1n1.
+device=/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_${volume_id}
+for attempt in $(seq 1 120); do
+  [ -b "$device" ] && break
+  sleep 5
+done
+[ -b "$device" ] || { echo 'Data volume missing; refusing to start ECS' >&2; exit 1; }
+if ! blkid "$device" >/dev/null 2>&1; then mkfs.xfs "$device"; fi
+uuid=$(blkid -s UUID -o value "$device")
+mkdir -p /data
+grep -q "UUID=$uuid " /etc/fstab || printf 'UUID=%s /data xfs defaults,noatime 0 2\n' "$uuid" >> /etc/fstab
+mountpoint -q /data || mount /data
+mkdir -p /data/postgres /data/kafka
+if [ ! -f /swapfile ]; then
+  fallocate -l 2G /swapfile
+  chmod 600 /swapfile
+  mkswap /swapfile
+fi
+swapon --show=NAME --noheadings | grep -qx /swapfile || swapon /swapfile
+grep -q '^/swapfile ' /etc/fstab || printf '/swapfile none swap sw 0 0\n' >> /etc/fstab
+mkdir -p /etc/systemd/system/ecs.service.d
+printf '[Unit]\nRequiresMountsFor=/data\n[Service]\nExecStartPre=/usr/bin/mountpoint -q /data\n' > /etc/systemd/system/ecs.service.d/data.conf
+systemctl daemon-reload
+systemctl enable ecs
+# ECS waits for cloud-final; blocking here would deadlock initial registration.
+systemctl start --no-block ecs

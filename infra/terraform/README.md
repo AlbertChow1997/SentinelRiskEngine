@@ -51,4 +51,6 @@ before enabling credentialed plans. Never grant Actions administrator access.
 
 Deploy trust uses environment:staging. Verify its main-only restriction and real
 reviewer gate before enabling deployment (RISK-101/Q21 entitlement blocker).
-ECS/scheduler, CDN/nginx and deployment follow as RISK-103/104/105.
+RISK-103 adds ecs-ec2-host, ecs-service and scheduler modules plus safely confirmed
+operations scripts; see docs/runbooks/staging-platform.md. CDN/nginx and
+deployment follow as RISK-104/105. All configurations remain unapplied.
