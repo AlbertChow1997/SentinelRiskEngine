@@ -24,6 +24,7 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- RISK-108: staging host type is a validated ARM64 variable, default t4g.small while the AWS project is on the Free plan (ADR-0016).
 - RISK-106: Terraform foundation review fixes from #29: plan-role read permissions, optional existing OIDC provider in CI, module minimum-version constraints, Dependabot-safe and non-cancelling plan job, single sticky plan comment, version read from `.terraform-version`.
 - RISK-107: staging Region is now eu-north-1 (ADR-0015); Terraform takes the Region from one `region` variable.
 - Standardised PostgreSQL 18 in documentation and future environment requirements; corrected the Compose volume mount and held Dependabot database upgrades within major 18.

@@ -24,6 +24,10 @@ run "foundation_plan" {
     error_message = "Development window is every day 19:00-02:00 Europe/Dublin until RISK-117 switches it."
   }
   assert {
+    condition     = var.instance_type == "t4g.small"
+    error_message = "The Free plan allows only Free-Tier-eligible types; t4g.small is the ARM64 default (ADR-0016)."
+  }
+  assert {
     condition     = module.github_oidc.deploy_role_arn == null && length(aws_iam_role_policy.deploy_platform) == 0
     error_message = "Deploy credentials must not exist before the real environment gate is verified."
   }

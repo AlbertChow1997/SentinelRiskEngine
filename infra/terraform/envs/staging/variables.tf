@@ -35,3 +35,11 @@ variable "staging_deploy_gate_verified" {
   default     = false
   description = "Enable only after verifying actual required-reviewer, prevent-self-review and exact-main GitHub environment controls."
 }
+
+# The AWS Free plan allows only Free-Tier-eligible types; t4g.small (2 GiB) is the largest
+# ARM64 one and is enough for M0 (risk-engine + nginx). The full stack needs t4g.medium,
+# which requires the Paid plan (ADR-0016, RISK-108).
+variable "instance_type" {
+  type    = string
+  default = "t4g.small"
+}

@@ -1,6 +1,6 @@
 # Single ARM64 ECS host
 
-Standalone t4g.medium using the current ECS-optimised AL2023 ARM64 SSM AMI,
+Standalone ARM64 Graviton host (`instance_type`; t4g.small on the Free plan, ADR-0016) using the current ECS-optimised AL2023 ARM64 SSM AMI,
 SSM/ECS instance role, IMDSv2 (hop limit 1), encrypted 30 GiB root and separately
 protected 20 GiB gp3 data disk, EIP and 2 GiB swap. No ASG or SSH key.
 Inputs: name, subnet/security-group IDs, the subnet's availability_zone (pass the

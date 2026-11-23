@@ -212,7 +212,7 @@ Browser ──HTTPS──▶ CloudFront (dxxxx.cloudfront.net)
                      └── /api/*    → EC2 origin (Elastic IP DNS, HTTP :80)
                                       SG: inbound :80 only from the CloudFront origin-facing
                                       managed prefix list + secret header checked by nginx
-EC2 t4g.medium (ARM64, 4 GB, ECS-optimised Amazon Linux 2023, public subnet, Elastic IP)
+EC2 t4g.small now (ARM64, 2 GB; Free plan, ADR-0016) → t4g.medium (4 GB) for the full stack; ECS-optimised AL2023, public subnet, Elastic IP
  └── ECS cluster "sentinel-staging" (EC2 capacity, bridge networking, static host ports)
       ├── nginx (:80)            path routing → services below; rejects requests without the CloudFront secret header
       ├── payment-gateway (:8080)   risk-engine (:8081)   ml-scorer (:8000)   llm-insights (:8001)
@@ -228,7 +228,7 @@ Managed services: ECR · Cognito · Bedrock · SSM Parameter Store · CloudWatch
 | Concern | Choice | Notes |
 |---|---|---|
 | IaC | **Terraform**, remote state in S3 (+ DynamoDB lock, or S3 native locking if the provider version supports it — check) | Modules: `network`, `ecs-ec2-host`, `ecs-service`, `ecr`, `cdn`, `cognito`, `scheduler`, `observability`, `github-oidc` |
-| Compute | One **t4g.medium** On-Demand instance, **standalone (not an Auto Scaling Group)** so stop/start keeps its EBS volumes and data | AMI from SSM parameter `/aws/service/ecs/optimized-ami/amazon-linux-2023/arm64/recommended/image_id`; user data registers it to the ECS cluster and mounts `/data`; 2 GB swap file as a safety net |
+| Compute | One **t4g.small** On-Demand instance while the project is on the AWS Free plan (ADR-0016; Terraform variable `instance_type`), **t4g.medium** for the full stack, **standalone (not an Auto Scaling Group)** so stop/start keeps its EBS volumes and data | AMI from SSM parameter `/aws/service/ecs/optimized-ami/amazon-linux-2023/arm64/recommended/image_id`; user data registers it to the ECS cluster and mounts `/data`; 2 GB swap file as a safety net |
 | Container orchestration | **ECS on EC2**, one ECS service per component, **bridge** network mode with static host ports | `minimumHealthyPercent = 0`, `maximumPercent = 100` (one host + static ports means a short restart per deploy — accepted, documented). Deployment circuit breaker with rollback enabled |
 | Service-to-service calls | Via the host: services call each other at `http://<docker0 gateway>:<port>` (e.g. `172.17.0.1:8000`) set through env vars | Service Connect is the cleaner option but its Envoy sidecars cost ~50 MB each; revisit if memory allows (record in TECH_DECISIONS) |
 | Images | **ARM64 only** (`linux/arm64`), built on GitHub-hosted ARM runners or with `docker buildx`; stored in **ECR** with scan-on-push and a lifecycle policy (keep last 10) | Verify every base image (Kafka, Postgres, Python, JRE) publishes `linux/arm64` |
@@ -265,7 +265,7 @@ Managed services: ECR · Cognito · Bedrock · SSM Parameter Store · CloudWatch
 | CloudFront, S3 website, Cognito, CloudWatch (7-day logs) | ~$0–2 (mostly free tier) |
 | Bedrock tokens (demo volume, budget-capped) | ~$1–3 |
 | **Total** | **≈ $20–28/month**; the same setup running 24/7 ≈ $40–45 |
-| *Development window now:* 7 h × 30 days ≈ 210 h of t4g.medium | ~$7 compute instead of ~$11–12 |
+| *Now:* t4g.small, development window 7 h × 30 days ≈ 210 h (USD 0.0172/h) | ~$3.6 compute |
 
 New-account AWS credits (if available) cover this for many months. **AWS Budgets** alerts at **$15 (forecast)** and **$25 (actual)**. Tag every resource `project=sentinel-pay`, `owner`, `env=staging`.
 

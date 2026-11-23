@@ -24,7 +24,7 @@ resource "aws_ebs_volume" "data" {
 }
 resource "aws_instance" "this" {
   ami                    = nonsensitive(data.aws_ssm_parameter.ami.value)
-  instance_type          = "t4g.medium"
+  instance_type          = var.instance_type
   subnet_id              = var.subnet_id
   vpc_security_group_ids = [var.security_group_id]
   iam_instance_profile   = aws_iam_instance_profile.this.name
