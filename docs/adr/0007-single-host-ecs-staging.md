@@ -32,7 +32,7 @@ Constraints:
 
 Database baseline updated to PostgreSQL 18 on 16 Nov 2026 at the owner's request; see ADR-0008.
 
-Run all backend containers with **ECS on one EC2 `t4g.medium` (ARM64) instance** in eu-west-1, and start and stop that instance
+Run all backend containers with **ECS on one EC2 `t4g.medium` (ARM64) instance** in eu-west-1 (superseded: eu-north-1, see ADR-0015), and start and stop that instance
 on a schedule. Specifically:
 
 - **Compute:** one standalone On-Demand instance (not an Auto Scaling Group), so stopping and starting keeps its EBS volumes. ECS-optimised Amazon Linux 2023 AMI resolved from the public SSM parameter. A separate 20 GB gp3 data volume mounted at `/data` holds PostgreSQL and Kafka data.
@@ -72,3 +72,5 @@ module and the task definitions stay largely the same.
 - Out-of-memory kills appear.
 - The project gets its own domain.
 - The environment needs to be available outside the scheduled window regularly.
+
+Update, 23 November 2026: the Region is now eu-north-1 because the team's AWS project is locked to it. Everything else in this ADR is unchanged. See ADR-0015.

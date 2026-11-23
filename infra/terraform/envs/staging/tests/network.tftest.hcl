@@ -4,7 +4,7 @@ run "cloudfront_only_ingress" {
   module { source = "../../modules/network" }
   variables {
     name              = "test-network"
-    availability_zone = "eu-west-1a"
+    availability_zone = "eu-north-1a"
   }
   assert {
     condition     = aws_vpc_security_group_ingress_rule.cloudfront.from_port == 80 && aws_vpc_security_group_ingress_rule.cloudfront.to_port == 80 && aws_vpc_security_group_ingress_rule.cloudfront.cidr_ipv4 == null

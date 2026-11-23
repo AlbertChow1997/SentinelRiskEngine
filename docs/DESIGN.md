@@ -359,7 +359,7 @@ risk-engine              Kafka                      llm-insights                
 | View | Where | Notes |
 |---|---|---|
 | Local | `docker compose` (Sections 4.1 and 12.1) | All services on one Docker network; LLM uses `StubProvider`; login uses the shared Cognito pool |
-| Staging | AWS eu-west-1 (Section 19) | CloudFront + S3 for the frontend; one EC2 host running every backend container under ECS; on a weekday schedule |
+| Staging | AWS eu-north-1 (Section 19, ADR-0015) | CloudFront + S3 for the frontend; one EC2 host running every backend container under ECS; on a weekday schedule |
 | Production | Not built | Migration path documented in Section 19.5 |
 
 ---
@@ -1937,13 +1937,14 @@ Due dates are tracked in `docs/ROADMAP.md`. Q1–Q9 are carried over from design
 | Q18 | *Closed 16 Nov 2026:* Java 21 + Spring Boot 4.1.2 selected for the backend scaffold (ADR-0008); gateway follows the same line | — |
 | Q19 | Bedrock model ID and whether new-account AWS credits are available | Jiawei |
 | Q20 | ADR numbering: design v2.0 used 0001 for "tech stack"; 0001 is now "record architecture decisions" and the stack decision moves to 0008 — accept? | Jiawei |
+| Q22 | Can this Free-plan project call Bedrock Claude models through cross-Region inference profiles, and how are EBS snapshots automated without DLM? (ADR-0015) | Jiawei — RISK-108 |
 | Q21 | *Audited 19 Nov 2026:* ruleset and branch-protection APIs return 403 requiring Pro/public-repo entitlement; no staging environment exists. These gates are not enforced. See `reviews/2026-11-19-bootstrap-readiness.md`; required environment reviewers need a separate entitlement check. Keep RISK-101 open for remaining controls | Jiawei |
 
 ---
 
 ## 19. AWS architecture (staging) — single-host ECS with scheduled start/stop
 
-**Decision (ADR-0007, accepted):** run all backend containers with **ECS on one EC2 Graviton instance**, and start and stop it on a schedule. Keep managed AWS services where they are cheap or free (S3, CloudFront, Cognito, Bedrock, ECR). Production would use Fargate + ALB + Multi-AZ RDS; that is the documented migration path, not the current build. Region: **eu-west-1 (Ireland)**.
+**Decision (ADR-0007, accepted):** run all backend containers with **ECS on one EC2 Graviton instance**, and start and stop it on a schedule. Keep managed AWS services where they are cheap or free (S3, CloudFront, Cognito, Bedrock, ECR). Production would use Fargate + ALB + Multi-AZ RDS; that is the documented migration path, not the current build. Region: **eu-north-1 (Stockholm)**, the Region the team's AWS project is locked to (ADR-0015).
 
 Nothing in this section exists yet. It is built at milestone M0, with `terraform plan` reviewed in PRs and every `terraform apply` explicitly approved.
 
@@ -2009,7 +2010,7 @@ Managed services: ECR · Cognito · Bedrock · SSM Parameter Store · CloudWatch
 | Bedrock tokens (demo volume, budget-capped) | ~$1–3 |
 | **Total** | **≈ $20–28/month**; the same setup running 24/7 ≈ $40–45 |
 
-New-account AWS credits (if available) cover this for many months. **AWS Budgets** alerts at **$15 (forecast)** and **$25 (actual)**, created in the very first apply. Every resource is tagged `project=sentinel-pay`, `owner`, `env=staging`.
+Prices were re-checked for eu-north-1 on 23 Nov 2026 (`t4g.medium` USD 0.0344/h, gp3 USD 0.0836/GB-month); the totals hold. The AWS project is on the Free plan with a USD 100 credit, which covers about four months (RISK-108). **AWS Budgets** alerts at **$15 (forecast)** and **$25 (actual)**, created in the very first apply. Every resource is tagged `project=sentinel-pay`, `owner`, `env=staging`.
 
 ### 19.5 Known trade-offs and the path to production
 
@@ -2018,7 +2019,19 @@ New-account AWS credits (if available) cover this for many months. **AWS Budgets
 - PostgreSQL and Kafka are self-managed: we own backups and upgrades.
 - **Migration path to the production shape:** swap `ecs-ec2-host` for Fargate services behind an ALB, move PostgreSQL to RDS and Kafka to MSK. The `ecs-service` module and the task definitions stay largely the same.
 
-### 19.6 Guard rails for changes
+### 19.6 AWS project constraints (ADR-0015)
+
+The account is a project in the new AWS experience on the Free plan. Its constraints apply to everything in this section:
+
+| Constraint | Effect on this design | Tracked in |
+|---|---|---|
+| One Region per project: eu-north-1 | All Regional resources in eu-north-1; Terraform variable `region` | RISK-107 |
+| No cross-Region features | Bedrock Claude models in eu-north-1 are reachable only through cross-Region inference profiles, so LLM access is unconfirmed | RISK-108 |
+| Data Lifecycle Manager not on the supported list | Daily EBS snapshots may need another mechanism | RISK-108 |
+| WAF with CloudFront unavailable | WAF stays deferred | ADR-0007 |
+| USD 100 credit; irreversible upgrade when it runs out or after six months | About four months of staging at the estimated rate | RISK-108, ROADMAP §7 |
+
+### 19.7 Guard rails for changes
 
 - `terraform plan` is always allowed. **`terraform apply`, starting or stopping the instance, and creating AWS resources need explicit approval** from the tech lead each time.
 - No long-lived AWS keys anywhere: GitHub Actions assumes a role through OIDC; people use SSO or short-lived credentials.

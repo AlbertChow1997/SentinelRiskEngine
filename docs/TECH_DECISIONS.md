@@ -11,7 +11,7 @@
 
 **Criteria.** Every table scores the options on the same five points: **Fit** for this project, **Learning curve** for this team,
 **Cost**, **Ecosystem / hiring signal** (how much the choice helps in Irish and EU job interviews), and **Operational burden**.
-Costs are indicative for eu-west-1 and must be re-checked with the AWS Pricing Calculator before the first apply.
+Costs are indicative for eu-north-1 (re-checked against the AWS Price List API on 23 Nov 2026) and must be re-checked with the AWS Pricing Calculator before the first apply.
 
 ## Decision summary
 
@@ -34,6 +34,7 @@ Costs are indicative for eu-west-1 and must be re-checked with the AWS Pricing C
 | D15 | Running hours | Scheduled start/stop (EventBridge Scheduler) | Accepted | [0007](adr/0007-single-host-ecs-staging.md) |
 | D16 | Python service framework | FastAPI | Accepted | [0009](adr/0009-fastapi-for-python-services.md) |
 | D17 | Work tracking | GitHub Issues + GitHub Projects | Accepted | — (process tooling; recorded here) |
+| D18 | AWS Region | eu-north-1 (project-locked) | Accepted | [0015](adr/0015-staging-region-eu-north-1.md) |
 
 ## ADR index
 
@@ -51,6 +52,7 @@ Costs are indicative for eu-west-1 and must be re-checked with the AWS Pricing C
 | 0010 | Tailwind CSS and shadcn/ui with our own design tokens for the frontend | Accepted | [adr/0010-frontend-ui-kit.md](adr/0010-frontend-ui-kit.md) |
 | [0011](adr/0011-terraform-staging-foundation.md) | Terraform and S3 native state locking | Proposed implementation | RISK-102; not applied |
 | [0012](adr/0012-pre-freeze-jwt-contracts.md) | Pre-freeze JWT contract transition | Proposed | RISK-100; producer/consumer review in PR #26 |
+| [0015](adr/0015-staging-region-eu-north-1.md) | Run staging in eu-north-1, the AWS project's locked Region | Accepted | RISK-107; amends ADR-0007 |
 | 0014 | Amazon Cognito as identity provider | Accepted | Reserved for M3; 0012 is the existing JWT contract ADR |
 | 0013 | Amazon Bedrock for LLM access | Accepted | to be written at M4 |
 
@@ -253,3 +255,12 @@ built-in pieces help only one of the two services, and it costs memory and an ex
 **Chosen:** GitHub Issues + GitHub Projects (decided 11 Nov 2026). **Why:** for a three-person team, keeping Jira and GitHub linked
 both ways is overhead with no benefit. The `RISK-<n>` keys stay as backlog IDs in issue titles, branches and commits.
 **Review:** not planned.
+
+## D18 — AWS Region
+
+| Option | Fit | Learning curve | Cost | Ecosystem / hiring signal | Operational burden |
+|---|---|---|---|---|---|
+| **eu-north-1 (Stockholm)** | The only Region the team's AWS project can use | None | Slightly lower: `t4g.medium` USD 0.0344/h, gp3 USD 0.0836/GB-month | Neutral | Bedrock Claude only via cross-Region inference profiles, which the Free plan may block (RISK-108) |
+| eu-west-1 (Ireland, original plan) | Closest to the team | None | `t4g.medium` USD 0.0368/h, gp3 USD 0.0880/GB-month | Neutral | Needs a second, advanced AWS account; gives up the project's credit |
+
+**Chosen:** eu-north-1 (decided 23 Nov 2026, ADR-0015). **Review:** if the team moves to an advanced AWS account.

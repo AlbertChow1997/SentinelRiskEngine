@@ -34,7 +34,7 @@ make aws-sleep               # asks for confirmation
 - One module per concern, each with `variables.tf`, `outputs.tf`, `main.tf`, `versions.tf` and a short `README.md`.
 - Pin the Terraform CLI and the AWS provider with version constraints. **Check the provider documentation for resource arguments; do not rely on memory.**
 - Every resource is tagged `project=sentinel-pay`, `owner`, `env=staging` — set `default_tags` on the provider.
-- Region `eu-west-1`. Images and the instance are **ARM64**.
+- Region `eu-north-1` (the AWS project is locked to it; ADR-0015), set once through the `region` variable. Images and the instance are **ARM64**.
 - The instance is standalone (no Auto Scaling Group), so stop/start keeps its volumes.
 - No SSH and no port 22. Access is through SSM Session Manager.
 - The security group admits port 80 only from the CloudFront origin-facing managed prefix list.

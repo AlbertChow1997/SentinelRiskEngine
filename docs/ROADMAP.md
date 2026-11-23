@@ -169,6 +169,7 @@ RISK-144 ← RISK-82; RISK-128/129 ← RISK-145.
 | 11 Nov 2026 | Tracking moved from Jira to GitHub Issues and a GitHub Project; `RISK-<n>` stays as the backlog ID (Section 8). MIT licence added. |
 | 11 Nov 2026 | Schedule re-planned into milestones M0–M5 (this document). Old dates (29 Nov, 13 Dec) withdrawn. Awaiting team sign-off. |
 | 13 Nov 2026 | `contracts/openapi-ml-scorer-v1.yaml` written (RISK-140): `POST /v1/score`, `GET /v1/model-info`, `GET /health`. Q16 closed. Freezes at H1 (Tue 1 Dec). |
+| 23 Nov 2026 | AWS project is locked to eu-north-1: staging moves there (ADR-0015, RISK-107). Project is on the Free plan with a USD 100 credit; Bedrock cross-Region access and DLM snapshots are open (RISK-108). RISK-103 code found stranded off `main` (RISK-106). |
 | 16 Nov 2026 | Owner confirmed PostgreSQL 18 across environments; corrected Compose volume layout and major-version policy. RISK-11 M0 backend scaffold implemented and validated (9 tests, Java 21 ARM64 image); awaiting teammate review. Spring Boot 4.1.2 / Java 21 recorded in ADR-0008; Q18 closed. RISK-12 remains the follow-up CI ticket. |
 
 ## 7. Risks to the schedule
@@ -179,6 +180,7 @@ See [the acceptance-criteria audit](reviews/2026-11-19-bootstrap-readiness.md). 
 | Risk | Likelihood | Effect on dates | Mitigation |
 |---|---|---|---|
 | Jiawei is on the critical path for M0, M1, M2 and half of M3 | High | Every slip moves all later milestones | Hand E2E collections, Python CI and LLM alarms to Zheng; keep Should items optional; weekly re-plan |
+| AWS Free-plan credit (USD 100) runs out after about four months of staging, or Bedrock is blocked on the Free plan | Medium | M4 LLM staging and M5 demo depend on a Paid upgrade decision | RISK-108 spike before M4; budget alerts at USD 15/25; decide the irreversible upgrade explicitly |
 | December assessments reduce capacity more than assumed (Q7) | Medium | M1 slips by 1–2 weeks | S4–S5 are already planned at reduced capacity; the holiday weeks are unplanned buffer |
 | AWS account setup, Bedrock model access or GitHub OIDC takes longer than a sprint | Medium | M0 slips; M4 staging step slips | Start account setup and the model-access request in S0; everything else works locally with `StubProvider` |
 | First Terraform apply reveals cost or quota surprises | Low | M0 slips by days | Budgets alerts in the first apply; `terraform plan` reviewed in PR |

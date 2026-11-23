@@ -1,5 +1,5 @@
 provider "aws" {
-  region = "eu-west-1"
+  region = var.region
   default_tags { tags = { project = "sentinel-pay", owner = var.owner, env = "staging" } }
 }
 resource "aws_s3_bucket" "state" {

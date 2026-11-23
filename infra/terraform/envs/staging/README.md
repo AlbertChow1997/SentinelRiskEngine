@@ -1,6 +1,6 @@
 # Staging root
 
-Wires network, ECR and repository OIDC modules in eu-west-1 with required
+Wires network, ECR and repository OIDC modules in eu-north-1 (variable `region`, ADR-0015) with required
 project/owner/env tags. Inputs are in terraform.tfvars.example. Backend setup and
 approval sequence: ../../README.md. Terraform has not been applied.
 Run init -backend=false, validate and test for credential-free mock plans.
