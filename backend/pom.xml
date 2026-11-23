@@ -16,7 +16,7 @@
   <description>Sentinel Pay Risk Engine walking skeleton</description>
   <properties>
     <java.version>21</java.version>
-    <spotless.version>3.0.0</spotless.version>
+    <spotless.version>3.11.0</spotless.version>
     <google-java-format.version>1.28.0</google-java-format.version>
     <jacoco.version>0.8.16</jacoco.version>
   </properties>
