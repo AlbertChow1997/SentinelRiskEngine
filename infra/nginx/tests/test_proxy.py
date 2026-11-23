@@ -56,6 +56,17 @@ class ProxyTests(unittest.TestCase):
             headers["X-Sentinel-Origin"] = secret
         return urlopen(Request("http://127.0.0.1:8080"+path, headers=headers))
 
+    def test_config_accepts_secrets_of_every_allowed_length(self):
+        # Staging uses a 64-character secret; the entrypoint allows 32-128. nginx's default
+        # map_hash_bucket_size (64 on Graviton) could not hold it and nginx refused to start.
+        for length in (32, 64, 128):
+            env = dict(os.environ, ORIGIN_SECRET="s" * length, RISK_UPSTREAM="127.0.0.1:18081",
+                       GATEWAY_UPSTREAM="127.0.0.1:18080", LLM_UPSTREAM="127.0.0.1:18001")
+            result = subprocess.run(["/usr/local/bin/sentinel-entrypoint", "nginx", "-t", "-q"],
+                                    env=env, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, f"{length}-character secret: {result.stderr}")
+            self.assertNotIn("s" * length, result.stdout + result.stderr)
+
     def test_missing_and_wrong_header_rejected(self):
         for secret in [None, "wrong"]:
             with self.assertRaises(HTTPError) as error:

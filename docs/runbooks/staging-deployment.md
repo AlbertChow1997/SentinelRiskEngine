@@ -1,9 +1,10 @@
-# Staging deployment (prepared, disabled)
+# Staging deployment
 
 RISK-105 implements a manual pipeline for M0's existing risk-engine health
 service, nginx and frontend shell. Gateway/ML/LLM/database workloads are not
-invented or deployed. No AWS deployment has occurred. Required reviewer support
-is currently unavailable on this private repository's plan (Q21).
+invented or deployed. **Live since 23 Nov 2026** (first successful run 45254610739):
+https://d3aso5251rtpo6.cloudfront.net. The repository is public so the `staging`
+environment can require a non-self reviewer (Zheng or Jiajun); Q21 is resolved.
 
 ## Enable only after prerequisites are real
 
@@ -52,7 +53,8 @@ definitions. On rerun, an existing SHA is pulled/scanned and reused; it is never
 overwritten. IAM/network lookup errors fail instead of being treated as missing
 images. Wake requires the same confirmation mechanism, waits for EC2 and the ECS
 agent, then replaces risk-engine and nginx sequentially and waits for stability.
-It also verifies the PRIMARY revision and COMPLETED rollout state: a stable
+It then waits (up to ten minutes) for the PRIMARY rollout to leave IN_PROGRESS, because `services-stable`
+can return before ECS marks it COMPLETED, and verifies the PRIMARY revision and COMPLETED rollout state: a stable
 service after circuit-breaker rollback must fail the new deployment, not report
 an old healthy revision as success.
 The --agent-only wake option avoids waiting for an unhealthy old deployment

@@ -21,7 +21,7 @@ the real CI/CD path, so every later milestone is delivered the same way it will 
 | # | Milestone | Outcome (definition of reached) | Target date | Owner | Status |
 |---|---|---|---|---|---|
 | — | Bootstrap | Repository skeleton, living documents, contracts imported, contract and CodeQL workflows | Sun 15 Nov 2026 | Jiawei | In review |
-| **M0** | Walking skeleton | One hello-world service and the frontend shell deployed to AWS staging through the full pipeline: Terraform, GitHub OIDC, ARM64 images in ECR, approval gate, ECS deploy, S3 + CloudFront, smoke test. Budgets alerts live | **Sun 29 Nov 2026** | Jiawei | Proposed |
+| **M0** | Walking skeleton | One hello-world service and the frontend shell deployed to AWS staging through the full pipeline: Terraform, GitHub OIDC, ARM64 images in ECR, approval gate, ECS deploy, S3 + CloudFront, smoke test. Budgets alerts live | **Sun 29 Nov 2026** | Jiawei | **Reached 23 Nov 2026** (deploy run 45254610739) |
 | **M1** | Risk engine + ML | Risk Engine scope of `DESIGN.md` §7 and ML scorer scope of §9; analyst app pages on mocks then on the real API; scenarios E1–E9 pass | **Sun 10 Jan 2027** | Jiawei, Zheng, Jiajun | Proposed |
 | **M2** | Gateway + Kafka | Payment Gateway scope of §10, events and outbox of §11, risk-engine event changes of §7.12; scenarios P1–P14 pass | **Sun 7 Feb 2027** | Jiawei | Proposed |
 | **M3** | Website, auth and dashboards | Public site (`/`, `/sample`, `/pricing`, `/about`), Cognito login and roles, `/product`, role-based `/dashboard`, JWT on ops and analytics endpoints, merchant provisioning | **Sun 21 Feb 2027** | Jiajun, Jiawei | Proposed |
@@ -88,7 +88,7 @@ IDs from 100 upwards cover the new scope. A new item takes the next free number.
 | RISK-105 | `deploy-staging.yml`: OIDC, ARM64 build, Trivy, ECR, approval gate, ECS deploy, S3 sync, smoke test | M0 | In progress; pipeline on `main`, first live deployment after the approved apply |
 | RISK-11 (M0 subset) | Health-only backend scaffold, request IDs, JSON logs, tests and ARM64 container (#6) | M0 | In review |
 | RISK-12 | Backend CI: Java 21 verify, coverage/test artifacts and Maven Dependabot (#7) | M0 | In review |
-| RISK-11 (M1 remainder) | Validation, Problem Details and persistence groundwork beyond the merged M0 health scaffold | M1 | To do |
+| RISK-11 (M1 remainder) | Validation, Problem Details and persistence groundwork beyond the merged M0 health scaffold | M1 | Stub, validation and Problem Details in RISK-116 (#56, in review); persistence is RISK-13 |
 | RISK-13 … RISK-21 | Remaining Risk Engine backlog (`DESIGN.md` §7.11); M0 CI is listed separately above | M1 | To do |
 | RISK-70 … RISK-84 | Gateway and event backlog (`DESIGN.md` §10.11) | M2 | To do |
 | RISK-110 | `cognito` module: user pool, groups, app client, Hosted UI domain, test users | M3 | To do |
@@ -169,6 +169,7 @@ RISK-144 ← RISK-82; RISK-128/129 ← RISK-145.
 | 11 Nov 2026 | Tracking moved from Jira to GitHub Issues and a GitHub Project; `RISK-<n>` stays as the backlog ID (Section 8). MIT licence added. |
 | 11 Nov 2026 | Schedule re-planned into milestones M0–M5 (this document). Old dates (29 Nov, 13 Dec) withdrawn. Awaiting team sign-off. |
 | 13 Nov 2026 | `contracts/openapi-ml-scorer-v1.yaml` written (RISK-140): `POST /v1/score`, `GET /v1/model-info`, `GET /health`. Q16 closed. Freezes at H1 (Tue 1 Dec). |
+| 23 Nov 2026 | **M0 walking skeleton reached.** Deploy run 45254610739 (approved by Zheng) published risk-engine and nginx to the ECS host and the frontend to S3/CloudFront; smoke and independent checks pass (`/` 200, `/api/health` UP via CloudFront, origin closed to direct access). Four first-deploy fixes: #89 OIDC immutable subject, #90 DescribeTaskDefinition on `*`, #91 wait for rollout completion, #92 nginx map hash size. Repository made public for the environment reviewer gate (Q21). |
 | 23 Nov 2026 | First apply: bootstrap (state bucket, budget alerts) done; staging stopped at 55/64 because the Free plan refuses t4g.medium. Host set to t4g.small for M0 (ADR-0016); the full stack needs the Paid plan or an x86 type before M1 (RISK-108). |
 | 23 Nov 2026 | RISK-106 re-lands the RISK-103 ECS platform from `main` with the #30 review fixes; #29's foundation fixes go first in a separate PR. Development schedule set to every day 19:00-02:00 Europe/Dublin; RISK-117 (#80, M5) restores the daytime demo window. |
 | 23 Nov 2026 | AWS project is locked to eu-north-1: staging moves there (ADR-0015, RISK-107). Project is on the Free plan with a USD 100 credit; Bedrock cross-Region access and DLM snapshots are open (RISK-108). RISK-103 code found stranded off `main` (RISK-106). |

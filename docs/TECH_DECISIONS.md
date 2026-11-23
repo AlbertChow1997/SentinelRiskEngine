@@ -72,6 +72,7 @@ Design v2.0 numbered the tech-stack ADR 0001. ADR-0001 is now "Record architectu
 
 **Chosen:** Java 21 + Spring Boot 4. **Why:** the hiring signal and the team's existing knowledge outweigh Quarkus's memory advantage.
 **Baseline:** Spring Boot 4.2.0 and Java 21 (selected 4.1.2 on 16 Nov 2026 for the M0 scaffold; minor upgrade to 4.2.0 via Dependabot #45 on 23 Nov 2026; ADR-0008).
+**Contract tests (RISK-116, 23 Nov 2026):** test-only `com.networknt:json-schema-validator` 3.x validates Risk Engine responses against the OpenAPI 3.1 contract. OpenAPI 3.1 schemas are JSON Schema 2020-12, which it supports natively, and it uses Jackson 3 like Spring Boot 4. Rejected: Atlassian `swagger-request-validator` (built on swagger-parser, whose OpenAPI 3.1 support is incomplete) and springdoc-based comparisons (the contract is the source, not generated code). No runtime cost.
 **Review:** library compatibility when persistence, OpenAPI tooling and security are added.
 
 ## D02 — Java build tool
