@@ -7,6 +7,7 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- RISK-116: Risk Engine `POST /api/v1/risk-assessments` stub (fixed, contract-valid assessment), Bean Validation and RFC 9457 Problem Details (`code`, field `errors`; 400/404/409/500); responses are validated against the OpenAPI contract in tests. Unauthenticated until RISK-111 (threat model T18).
 - RISK-106: ECS host, reusable ECS service and start/stop scheduler modules, and confirmed wake/sleep/status scripts (re-landed from #30 with its review fixes). Development schedule: every day 19:00-02:00 Europe/Dublin (demo window returns in RISK-117).
 - RISK-115: AWS Agent Toolkit starter rules in `CLAUDE.md` and `AGENTS.md` (project decisions take precedence; help level HIGH).
 - RISK-12 backend CI: Java 21 Maven verification, coverage/test artifacts and weekly Maven dependency updates.
@@ -25,6 +26,7 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 - RISK-105: a failed first deployment scales the service back to 0 instead of leaving ECS retrying the `:unpublished` placeholder image forever; a `services-stable` timeout alone no longer ends the deploy before the rollout check.
+- RISK-104: CloudFront origins match what AWS stores (no empty `s3_origin_config` next to OAC; the API origin pins `ip_address_type = "ipv4"`), so `terraform plan` no longer shows a permanent in-place change.
 - RISK-104: nginx sets `map_hash_bucket_size 256` so the origin-secret map accepts the 64-character staging secret (nginx refused to start on Graviton); tests cover 32/64/128-character secrets.
 - RISK-105: the deploy waits for the ECS rollout to finish before checking it; `services-stable` returned 25 s before ECS marked the first rollout COMPLETED, and the deploy reported a false failure.
 - RISK-105: deploy role grants `ecs:DescribeTaskDefinition` on `*` (the action has no resource-level permissions); the second deployment attempt was denied.
