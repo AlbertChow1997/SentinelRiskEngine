@@ -4,8 +4,8 @@
 # has accepted the collaborator invitation.
 #
 #   @AlbertChow1997    Jiawei Zhou   tech lead, risk engine, payment gateway, infra, CI/CD
-#   @jiajunxiao-work   Jiajun Xiao   frontend
-#   @zliu-59           Zheng Liu     ml-scorer, llm-insights (proposed owner, confirm via issue)
+#   @jiajunxiao-work   Jiajun Xiao   frontend, staging host A (gateway)
+#   @zliu-59           Zheng Liu     ml-scorer, llm-insights (proposed owner, confirm via issue), staging host C (ml)
 
 # Default: the tech lead reviews anything without a more specific owner.
 *                                           @AlbertChow1997
@@ -27,6 +27,9 @@
 
 # Platform, delivery and shared docs
 /infra/                                     @AlbertChow1997
+# Host roots in the teammates' accounts (ADR-0017): the host owner and the infra owner.
+/infra/terraform/envs/staging-gateway/      @jiajunxiao-work @AlbertChow1997
+/infra/terraform/envs/staging-ml/           @zliu-59 @AlbertChow1997
 /.github/                                   @AlbertChow1997
 /docker-compose.yml                         @AlbertChow1997
 /Makefile                                   @AlbertChow1997

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Accepted |
+| **Status** | Accepted; topology amended by [ADR-0017](0017-three-account-staging-hosts.md) (three hosts in three accounts) |
 | **Date** | 11 Nov 2026 |
 | **Deciders** | Jiawei Zhou (tech lead, owner of `infra/`) |
 | **Related** | `DESIGN.md` §19 · `TECH_DECISIONS.md` D05, D11–D15 |

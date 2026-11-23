@@ -39,6 +39,8 @@ llm-insights ──▶ [boundary: instance role] ──▶ Bedrock
 | EP7 | Deploy pipeline | GitHub OIDC + environment approval | M0 |
 | EP8 | SSM Session Manager | IAM | M0 |
 | EP9 | `/actuator/health` and its liveness/readiness groups | None; status only, no component details | M0 (RISK-11) |
+| EP10 | Cross-account VPC peering between hosts A, B and C (service ports 8000, 8001, 8080, 8081, 5432, 9092) | Network only: one port per flow from the peer host's `/32`; PostgreSQL per-service logins | M1–M2 (ADR-0017) |
+| EP11 | Cross-account ECR pulls and per-account OIDC deploy roles | IAM: repository policies per account; roles trust only this repository's `staging` environment | M1 (ADR-0017) |
 
 ## 3. Threats and mitigations
 
@@ -63,10 +65,14 @@ Seed entries from the design. Each row needs an owner and a status once the comp
 | T15 | Elevation of privilege | A compromised workflow deploys to AWS | OIDC role limited to this repository and branch; environment approval gate; least-privilege IAM policy | Planned (M0) |
 | T16 | Information disclosure | Actuator leaks environment variables or configuration | Only health exposed; details disabled; HTTP test verifies `/actuator/env` is unavailable | Implemented (RISK-11) |
 | T17 | Tampering | Caller-controlled request IDs inject log content or leak into another request | Restrict to 1–64 safe ASCII characters; generate a UUID otherwise; restore MDC in `finally`; do not log payloads | Implemented (RISK-11) |
+| T19 | Information disclosure / Tampering | Traffic between the three hosts (HTTP, Kafka `PLAINTEXT`, PostgreSQL without TLS) is read or altered | Confined to peered VPCs; security groups allow one port per flow from the peer `/32`; no internet path to hosts A and C; no real personal or card data. Mandatory TLS/`SASL_SSL` if the public fallback is used | Accepted for staging (ADR-0017) |
+| T20 | Elevation of privilege | A compromised teammate account or deploy role reaches another account | Peering admits only listed ports; each OIDC role can deploy only its own cluster; ECR policies grant pull, not push; database logins reach only their own database; no shared AWS credentials | Planned (RISK-165, RISK-167) |
+| T21 | Information disclosure | A database credential leaks while being handed to another account | Generated in the consuming account's SSM; handed over by a password manager's one-time share; never GitHub, chat or email; rotate after any doubt | Planned (RISK-170) |
 
 ## 4. Review log
 
 | Date | Change | Reviewer |
 |---|---|---|
+| 23 Nov 2026 | ADR-0017: three hosts in three accounts; EP10, EP11, T19–T21 | Pending Jiajun and Zheng |
 | 11 Nov 2026 | Skeleton created with seed threats from `DESIGN.md` | — |
 | 16 Nov 2026 | RISK-11 adds health-only HTTP entry point and request-ID safeguards | Pending teammate review |

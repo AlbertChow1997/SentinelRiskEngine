@@ -40,8 +40,10 @@ from the AWS Agent Toolkit, adopted in RISK-115 (23 Nov 2026). The team's AWS ac
 - Golden rule 11 still applies: ask before `terraform apply`, creating or deleting AWS resources, or anything that costs money.
 - Never put the AWS account ID, credentials or tokens in the repository, issues or PRs (golden rule 3).
 
-Only the tech lead has AWS access today (profile `sentinel-pay`). Teammates can ignore the AWS steps until they are invited
-to the project as team members.
+Each host lives in its owner's own AWS account (ADR-0017): Jiawei's (profile `sentinel-pay`) runs host B and the shared
+services, Jiajun's runs host A (gateway) and Zheng's runs host C (ml). Each person works only in their own account and
+never shares credentials. The rules above apply in every account; before creating anything, a teammate confirms their
+account's Region is eu-north-1 and records the plan (RISK-168, RISK-169).
 
 ## AWS Guidance for the new AWS experience
 
