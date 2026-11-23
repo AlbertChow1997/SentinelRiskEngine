@@ -1,10 +1,10 @@
 name: terraform
 on:
   pull_request:
-    paths: ['infra/**', '.github/workflows/terraform.yml', '.terraform-version']
+    paths: ['infra/**', '.github/workflows/terraform.yml', '.github/workflows/deploy-staging.yml', '.terraform-version']
   push:
     branches: [main]
-    paths: ['infra/**', '.github/workflows/terraform.yml', '.terraform-version']
+    paths: ['infra/**', '.github/workflows/terraform.yml', '.github/workflows/deploy-staging.yml', '.terraform-version']
   workflow_dispatch:
 permissions:
   contents: read

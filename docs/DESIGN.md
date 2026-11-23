@@ -447,7 +447,7 @@ an always-reporting gate exists, or unrelated PRs will wait indefinitely for a c
 | `contracts.yml` | changes in `contracts/` | Validate OpenAPI (Redocly) and AsyncAPI (AsyncAPI CLI); detect breaking changes (`oasdiff`) | **Exists** |
 | `codeql.yml` | PR + weekly | CodeQL for Java, Python, JavaScript/TypeScript and workflow files; a language starts analysing when its first source file lands | **Exists**, but skipped while the repository is private: code scanning there needs GitHub Advanced Security |
 | `terraform.yml` | changes in `infra/` | `terraform fmt -check`, `validate`, `tflint`, `checkov`/`trivy config`, `plan` posted as a PR comment | M0 |
-| `deploy-staging.yml` | push to `main` (after CI) or manual | AWS credentials through **GitHub OIDC** → build **ARM64** images → Trivy scan → push to ECR (tag = git SHA) → **approval gate** (GitHub Environment `staging`, required reviewer) → start the EC2 host if stopped and wait for ECS → register task definitions and update services (circuit-breaker rollback) → frontend build → S3 sync → CloudFront invalidation → smoke test through the CloudFront URL | M0 |
+| `deploy-staging.yml` | Manual on main, explicit DEPLOY_STAGING, enabled only after real reviewer/main-only gate exists | Build/test **ARM64** images and frontend → Trivy scan → **approval gate** (GitHub Environment `staging`, required non-self reviewer) → AWS credentials through **GitHub OIDC** → ECR publication (immutable git SHA; tasks use digest) → start the EC2 host if stopped and wait for ECS → register task definitions and update services (circuit-breaker rollback) → frontend build → S3 sync → CloudFront invalidation → smoke test through the CloudFront URL | M0 |
 
 - **CI never calls paid external APIs.** LLM tests use `StubProvider`; AWS calls are stubbed (moto or a stubbed boto3 client).
 - **Dependabot** covers GitHub Actions and docker-compose now; Maven, uv, npm, Docker and Terraform are enabled as each manifest appears.
@@ -1938,7 +1938,7 @@ Due dates are tracked in `docs/ROADMAP.md`. Q1–Q9 are carried over from design
 | Q19 | Bedrock model ID and whether new-account AWS credits are available | Jiawei |
 | Q20 | ADR numbering: design v2.0 used 0001 for "tech stack"; 0001 is now "record architecture decisions" and the stack decision moves to 0008 — accept? | Jiawei |
 | Q22 | Can this Free-plan project call Bedrock Claude models through cross-Region inference profiles, and how are EBS snapshots automated without DLM? (ADR-0015) | Jiawei — RISK-108 |
-| Q21 | *Audited 19 Nov 2026:* ruleset and branch-protection APIs return 403 requiring Pro/public-repo entitlement; no staging environment exists. These gates are not enforced. See `reviews/2026-11-19-bootstrap-readiness.md`; required environment reviewers need a separate entitlement check. Keep RISK-101 open for remaining controls | Jiawei |
+| Q21 | *Resolved 23 Nov 2026:* the repository is public, so GitHub environment protection is available. `staging` now requires a reviewer (Zheng or Jiajun) with self-review prevented and allows only `main`; `infra/scripts/deployment_gate.py` verifies this before any AWS access. History: private-plan rulesets returned 403 (19 Nov) and required reviewers returned 422 (20 Nov). Branch rulesets on `main` are still to be configured (RISK-101) | Jiawei |
 
 ---
 

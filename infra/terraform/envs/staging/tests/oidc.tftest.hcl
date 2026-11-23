@@ -7,6 +7,7 @@ run "exact_subjects" {
   module { source = "../../modules/github-oidc" }
   variables {
     name                  = "test-oidc"
+    enable_deploy_role    = true
     repository            = "example/repository"
     state_bucket_name     = "sentinel-test-state"
     ecr_repositories      = []
