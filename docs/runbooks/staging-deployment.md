@@ -69,8 +69,11 @@ There is no automatic stop, Terraform apply or destructive cleanup.
 ## Failure and rollback
 
 Before the first successful ECS revision, circuit-breaker rollback has nothing to
-restore. Inspect service events/exited tasks privately; correct or redeploy a
-known-good image through the same approval flow. Subsequent failed deployments
+restore: it returns to Terraform's `:unpublished` placeholder, which can never be
+pulled. The deploy therefore scales such a service back to desired count 0 when its
+rollout fails, so ECS stops retrying the pull. Inspect service events/exited tasks
+privately; correct or redeploy a known-good image through the same approval flow
+(the next deploy sets the desired count back to 1). Subsequent failed deployments
 can use ECS's previous completed revision. Smoke failure does not prove automatic
 rollback of the frontend and both services; inspect each one separately.
 

@@ -24,6 +24,7 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- RISK-105: a failed first deployment scales the service back to 0 instead of leaving ECS retrying the `:unpublished` placeholder image forever; a `services-stable` timeout alone no longer ends the deploy before the rollout check.
 - RISK-104: nginx sets `map_hash_bucket_size 256` so the origin-secret map accepts the 64-character staging secret (nginx refused to start on Graviton); tests cover 32/64/128-character secrets.
 - RISK-105: the deploy waits for the ECS rollout to finish before checking it; `services-stable` returned 25 s before ECS marked the first rollout COMPLETED, and the deploy reported a false failure.
 - RISK-105: deploy role grants `ecs:DescribeTaskDefinition` on `*` (the action has no resource-level permissions); the second deployment attempt was denied.
