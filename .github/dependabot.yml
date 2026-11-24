@@ -47,6 +47,12 @@ updates:
         patterns: ["storybook", "@storybook/*", "eslint-plugin-storybook"]
       playwright:
         patterns: ["@playwright/test", "playwright-core"]
+    ignore:
+      # TypeScript 7 cannot be installed yet: typescript-eslint (8.74.0, 23 Nov 2026) supports only
+      # TypeScript < 6.1.0, so `npm ci` fails (see #39). Minor and patch updates still arrive.
+      # Remove this once typescript-eslint supports TypeScript 7; the frontend owner upgrades by hand.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
 
   # - package-ecosystem: docker
   #   directories: ["/backend", "/payment-gateway", "/ml-scorer", "/llm-insights", "/frontend"]
