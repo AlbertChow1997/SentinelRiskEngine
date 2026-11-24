@@ -45,8 +45,11 @@ elif args[:2]==['ecs','describe-container-instances']: print('True')
 elif args[:2]==['ecs','list-services']: print('service-test')
 elif args[:2]==['ecs','describe-task-definition']:
     name=args[args.index('--task-definition')+1]
-    print(json.dumps({'taskDefinition':{'family':name,'runtimePlatform':{'cpuArchitecture':'ARM64'},'containerDefinitions':[{'name':name,'image':'unpublished','healthCheck':{'command':['CMD','true']}}]}}))
+    image=os.environ.get('PREVIOUS_IMAGE','registry.example.invalid/repo@sha256:previous')
+    print(json.dumps({'taskDefinition':{'family':name,'runtimePlatform':{'cpuArchitecture':'ARM64'},'containerDefinitions':[{'name':name,'image':image,'healthCheck':{'command':['CMD','true']}}]}}))
 elif args[:2]==['ecs','register-task-definition']: print('task-test')
+elif args[:3]==['ecs','wait','services-stable'] and os.environ.get('WAIT_FAILS'):
+    print('Waiter ServicesStable failed: Max attempts exceeded',file=sys.stderr); sys.exit(255)
 elif args[:2]==['ecs','describe-services']:
     # ROLLOUT_STATES: comma-separated states returned on successive calls; the last one repeats.
     states=os.environ.get('ROLLOUT_STATES','COMPLETED').split(',')
@@ -128,6 +131,29 @@ elif args[:2]==['cloudfront','create-invalidation']: print('invalidation-test')
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("ended as IN_PROGRESS", result.stderr)
         self.assertNotIn("s3 sync", self.log.read_text())
+
+    def test_failed_first_deployment_scales_the_placeholder_service_to_zero(self):
+        # Run 45250760919: rollback to ':unpublished' retried CannotPullImageManifestError forever.
+        self.env.update(PREVIOUS_IMAGE="registry.example.invalid/repo:unpublished", ROLLBACK="true",
+                        ROLLOUT_STATES="IN_PROGRESS", WAIT_FAILS="true")
+        result = self.deploy()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("scaled it to 0", result.stderr)
+        calls = self.log.read_text()
+        self.assertIn("--desired-count 0", calls)
+        self.assertNotIn("s3 sync", calls)
+
+    def test_failed_later_deployment_keeps_the_previous_revision_running(self):
+        self.env.update(ROLLBACK="true", WAIT_FAILS="true")
+        result = self.deploy()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn("--desired-count 0", self.log.read_text())
+
+    def test_waiter_timeout_alone_does_not_fail_a_completed_rollout(self):
+        self.env["WAIT_FAILS"] = "true"
+        result = self.deploy()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("s3 sync", self.log.read_text())
 
 
 if __name__ == "__main__":

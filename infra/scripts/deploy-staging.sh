@@ -30,10 +30,16 @@ printf 'start\n' | bash infra/scripts/aws-wake.sh --agent-only
 for component in risk-engine nginx; do
   service="sentinel-staging-$component"
   aws ecs describe-task-definition --task-definition "$service" > "$work/task.json"
+  # Terraform creates each service with an ':unpublished' placeholder image. If the first real
+  # deployment fails, the circuit breaker "rolls back" to that placeholder and ECS retries the
+  # impossible pull forever, so such a service is scaled back to zero on failure.
+  never_published=$(python3 -c 'import json,sys; t=json.load(open(sys.argv[1]))["taskDefinition"]; print(str(any(c["image"].endswith(":unpublished") for c in t["containerDefinitions"])).lower())' "$work/task.json")
   python3 infra/scripts/render_task_definition.py "$work/task.json" "$service" "${images[$component]}" > "$work/register.json"
   revision=$(aws ecs register-task-definition --cli-input-json "file://$work/register.json" --tags key=project,value=sentinel-pay key=env,value=staging "key=owner,value=$INFRA_OWNER" --query 'taskDefinition.taskDefinitionArn' --output text)
   aws ecs update-service --cluster sentinel-staging --service "$service" --task-definition "$revision" --desired-count 1 > "$work/service.json"
-  aws ecs wait services-stable --cluster sentinel-staging --services "$service"
+  # The waiter gives up after ten minutes, e.g. while a rollback to the placeholder retries;
+  # the rollout check below decides success or failure either way.
+  aws ecs wait services-stable --cluster sentinel-staging --services "$service" || echo "services-stable did not succeed for $service; checking the rollout state." >&2
   # services-stable can return before ECS marks the rollout COMPLETED: with the circuit breaker
   # it settles some seconds later (25 s in run 45198803686). Wait for a final rollout state.
   for ((poll = 1; poll <= ${ROLLOUT_MAX_POLLS:-60}; poll++)); do
@@ -42,7 +48,14 @@ for component in risk-engine nginx; do
     [[ "$rollout" == IN_PROGRESS ]] || break
     sleep "${ROLLOUT_POLL_SECONDS:-10}"
   done
-  [[ "$actual" == "$revision" && "$rollout" == COMPLETED ]] || { echo "ECS rollout ended as $rollout on $actual, not COMPLETED on the new revision; refusing a false success after rollback." >&2; exit 1; }
+  if [[ "$actual" != "$revision" || "$rollout" != COMPLETED ]]; then
+    echo "ECS rollout ended as $rollout on $actual, not COMPLETED on the new revision; refusing a false success after rollback." >&2
+    if [[ "$never_published" == true ]]; then
+      aws ecs update-service --cluster sentinel-staging --service "$service" --desired-count 0 > "$work/service.json"
+      echo "$service had never run a published image; scaled it to 0 so ECS stops retrying the placeholder." >&2
+    fi
+    exit 1
+  fi
 done
 # Hashed assets remain available for older open pages/rollback. Index is published last.
 aws s3 sync .staging-artifact/frontend/ "s3://$STAGING_WEBSITE_BUCKET/" --exclude index.html --cache-control 'public,max-age=300' --only-show-errors

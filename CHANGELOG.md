@@ -25,6 +25,7 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- RISK-105: a failed first deployment scales the service back to 0 instead of leaving ECS retrying the `:unpublished` placeholder image forever; a `services-stable` timeout alone no longer ends the deploy before the rollout check.
 - RISK-104: CloudFront origins match what AWS stores (no empty `s3_origin_config` next to OAC; the API origin pins `ip_address_type = "ipv4"`), so `terraform plan` no longer shows a permanent in-place change.
 - RISK-104: nginx sets `map_hash_bucket_size 256` so the origin-secret map accepts the 64-character staging secret (nginx refused to start on Graviton); tests cover 32/64/128-character secrets.
 - RISK-105: the deploy waits for the ECS rollout to finish before checking it; `services-stable` returned 25 s before ECS marked the first rollout COMPLETED, and the deploy reported a false failure.
