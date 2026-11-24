@@ -5,7 +5,7 @@ Terraform for the one AWS environment, **staging** (eu-north-1, ADR-0015), plus 
 | | |
 |---|---|
 | **Owner** | Jiawei Zhou (@AlbertChow1997) |
-| **Design** | `docs/DESIGN.md` §19 · `docs/adr/0007-single-host-ecs-staging.md` |
+| **Design** | `docs/DESIGN.md` §19 · `docs/adr/0007-single-host-ecs-staging.md` · `docs/adr/0017-three-account-staging-hosts.md` (three hosts in three accounts) |
 | **Status** | Layout only. No Terraform code and **no AWS resources exist yet** — first tickets RISK-102 … RISK-105 (milestone M0) |
 
 ```text

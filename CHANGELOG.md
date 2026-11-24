@@ -34,6 +34,7 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- RISK-164: staging moves to three ECS hosts in three team members' AWS accounts (ADR-0017): host B (engine, Jiawei), host A (gateway + Kafka, Jiajun), host C (ML + LLM, Zheng), joined by cross-account VPC peering after a verification spike. DESIGN §19, CLAUDE.md §7, TECH_DECISIONS D08/D12/D19, threat model (EP10, EP11, T19–T21), ROADMAP (RISK-164 … RISK-170, H14–H19) and CODEOWNERS updated. LLM access: Bedrock with an ECS task role, Claude Haiku 5.5 via the `eu.` profile, no API key (Q19 closed).
 - RISK-108: staging host type is a validated ARM64 variable, default t4g.small while the AWS project is on the Free plan (ADR-0016).
 - RISK-106: Terraform foundation review fixes from #29: plan-role read permissions, optional existing OIDC provider in CI, module minimum-version constraints, Dependabot-safe and non-cancelling plan job, single sticky plan comment, version read from `.terraform-version`.
 - RISK-107: staging Region is now eu-north-1 (ADR-0015); Terraform takes the Region from one `region` variable.

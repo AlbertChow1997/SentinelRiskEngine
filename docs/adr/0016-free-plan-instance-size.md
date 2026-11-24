@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Accepted |
+| **Status** | Accepted; the rejection of option 4 is reversed by [ADR-0017](0017-three-account-staging-hosts.md) |
 | **Date** | 23 Nov 2026 |
 | **Deciders** | Jiawei Zhou (tech lead, owner of `infra/`) |
 | **Related** | RISK-108 (#52) · ADR-0007 · ADR-0015 · `TECH_DECISIONS.md` D12 |

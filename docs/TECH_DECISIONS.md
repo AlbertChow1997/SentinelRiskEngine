@@ -24,17 +24,18 @@ Costs are indicative for eu-north-1 (re-checked against the AWS Price List API o
 | D05 | Container platform | ECS on EC2 | Accepted | [0007](adr/0007-single-host-ecs-staging.md) |
 | D06 | Infrastructure as code | Terraform | Accepted | [0011](adr/0011-terraform-staging-foundation.md) |
 | D07 | Identity provider | Amazon Cognito | Accepted | 0014 (reserved; to write) |
-| D08 | LLM access | Amazon Bedrock | Accepted | 0013 (to write) |
+| D08 | LLM access | Amazon Bedrock with an ECS task role (no API key); Claude Haiku 5.5 via the `eu.` profile, Nova Lite fallback | Accepted | 0013 (to write), [0017](adr/0017-three-account-staging-hosts.md) |
 | D09 | Frontend UI kit | Tailwind CSS + shadcn/ui (Radix) with own design tokens, Motion, TanStack Table, Recharts | Accepted | [0010](adr/0010-frontend-ui-kit.md) |
 | D10 | CI/CD | GitHub Actions | Accepted | [0008](adr/0008-core-technology-stack.md) |
 | D11 | Network layout | Public subnets, no NAT Gateway | Accepted | [0007](adr/0007-single-host-ecs-staging.md) |
-| D12 | Staging hosting shape | One EC2 host running ECS | Accepted | [0007](adr/0007-single-host-ecs-staging.md) |
+| D12 | Staging hosting shape | Three ECS hosts (`t4g.small`) in three team members' accounts | Accepted | [0007](adr/0007-single-host-ecs-staging.md), [0016](adr/0016-free-plan-instance-size.md), [0017](adr/0017-three-account-staging-hosts.md) |
 | D13 | Database hosting | PostgreSQL container + backups | Accepted | [0007](adr/0007-single-host-ecs-staging.md) |
 | D14 | Ingress and TLS | CloudFront with an HTTP origin (prefix list + secret header) | Accepted | [0007](adr/0007-single-host-ecs-staging.md) |
 | D15 | Running hours | Scheduled start/stop (EventBridge Scheduler) | Accepted | [0007](adr/0007-single-host-ecs-staging.md) |
 | D16 | Python service framework | FastAPI | Accepted | [0009](adr/0009-fastapi-for-python-services.md) |
 | D17 | Work tracking | GitHub Issues + GitHub Projects | Accepted | — (process tooling; recorded here) |
 | D18 | AWS Region | eu-north-1 (project-locked) | Accepted | [0015](adr/0015-staging-region-eu-north-1.md) |
+| D19 | Network between the staging accounts | Cross-account VPC peering (verify first); public + TLS fallback | Accepted, pending spike RISK-166 | [0017](adr/0017-three-account-staging-hosts.md) |
 
 ## ADR index
 
@@ -46,14 +47,15 @@ Costs are indicative for eu-north-1 (re-checked against the AWS Price List API o
 | 0004 | Synchronous REST for decisions, Kafka events for everything else | Accepted in design v2.0 (`DESIGN.md` §4.1) | to be written |
 | 0005 | Gateway fallback policy when the Risk Engine is unavailable | Accepted in design v2.0 (`DESIGN.md` §4.7) | to be written |
 | 0006 | Transactional outbox | Accepted in design v2.0 (`DESIGN.md` §11.3) | to be written |
-| 0007 | Single-host ECS staging with scheduled start/stop | Accepted | [adr/0007-single-host-ecs-staging.md](adr/0007-single-host-ecs-staging.md) |
+| 0007 | Single-host ECS staging with scheduled start/stop | Accepted; topology amended by ADR-0017 | [adr/0007-single-host-ecs-staging.md](adr/0007-single-host-ecs-staging.md) |
 | 0008 | Core technology stack (D01, D02, D03, D10) | Accepted; updated 16 Nov 2026 | [adr/0008-core-technology-stack.md](adr/0008-core-technology-stack.md) |
 | 0009 | FastAPI for the Python services (Django considered and rejected) | Accepted | [adr/0009-fastapi-for-python-services.md](adr/0009-fastapi-for-python-services.md) |
 | 0010 | Tailwind CSS and shadcn/ui with our own design tokens for the frontend | Accepted | [adr/0010-frontend-ui-kit.md](adr/0010-frontend-ui-kit.md) |
 | [0011](adr/0011-terraform-staging-foundation.md) | Terraform and S3 native state locking | Proposed implementation | RISK-102; not applied |
 | [0012](adr/0012-pre-freeze-jwt-contracts.md) | Pre-freeze JWT contract transition | Proposed | RISK-100; producer/consumer review in PR #26 |
 | [0015](adr/0015-staging-region-eu-north-1.md) | Run staging in eu-north-1, the AWS project's locked Region | Accepted | RISK-107; amends ADR-0007 |
-| [0016](adr/0016-free-plan-instance-size.md) | Run the staging host on t4g.small while on the Free plan | Accepted | RISK-108; amends ADR-0007 |
+| [0016](adr/0016-free-plan-instance-size.md) | Run the staging host on t4g.small while on the Free plan | Accepted; option 4 reversed by ADR-0017 | RISK-108; amends ADR-0007 |
+| [0017](adr/0017-three-account-staging-hosts.md) | Run staging on three hosts in three AWS accounts | Accepted (peering pending RISK-166) | RISK-164; amends ADR-0007 and ADR-0016 |
 | 0014 | Amazon Cognito as identity provider | Accepted | Reserved for M3; 0012 is the existing JWT contract ADR |
 | 0013 | Amazon Bedrock for LLM access | Accepted | to be written at M4 |
 
@@ -146,8 +148,12 @@ Design v2.0 numbered the tech-stack ADR 0001. ADR-0001 is now "Record architectu
 | **Amazon Bedrock** (Converse API) | Good: IAM-scoped access from the instance role, no API key to store, one API across models, same AWS bill and budget alarm | Low–medium | Pay per token; budget-capped (~$1–3/month at demo volume) | Strong: "LLM on AWS with IAM and guardrails" | Model access must be enabled per account |
 | Direct LLM provider API | Simplest SDK, newest models first | Low | Pay per token; a second bill | Strong | An API key to store and rotate; a second vendor |
 
+| Bedrock API keys | Same models, key-based like a direct API | Low | As Bedrock | Weak signal | A key to store and rotate, which the task role makes unnecessary |
+
 **Chosen:** Amazon Bedrock behind an `LlmProvider` interface, so a direct-API provider can be added without touching the service logic.
-**Open:** the model ID (Q19). **Review:** M4.
+**Access (ADR-0017, 23 Nov 2026):** Bedrock runs in account C (Zheng). `llm-insights` calls the Converse API with its ECS **task role**, which allows `bedrock:InvokeModel` only on the chosen inference profile and the foundation models it routes to. There is no API key.
+**Model (Q19 closed):** Claude Haiku 5.5 through the `eu.anthropic.claude-haiku-5-5` cross-Region inference profile (`ACTIVE` in eu-north-1 on 23 Nov 2026). If the Free plan blocks cross-Region inference, the fallback is `amazon.nova-lite-v1:0` in-Region. The switch is configuration only. Anthropic models need a one-time use-case form per account before first use (RISK-169).
+**Review:** M4.
 
 ## D09 — Frontend UI kit
 
@@ -191,7 +197,12 @@ Storybook is the component catalogue, with axe accessibility checks (ADR-0010, d
 | Lightsail | Cheapest fixed price for a VM | Low | Low | Weak — little of it transfers to production AWS | Manual, not IaC-friendly |
 | Non-AWS hosts (Oracle Free Tier, Hetzner) | Cheap or free compute | Low | Lowest | Weak for an AWS-focused portfolio; no Cognito/Bedrock/IAM integration | Manual |
 
-**Chosen:** one EC2 host running ECS (ADR-0007); `t4g.small` while the AWS project is on the Free plan (ADR-0016, USD 0.0172/h in eu-north-1). Indicative monthly cost:
+| **Three `t4g.small` ECS hosts in three accounts** (added 23 Nov 2026) | Good: the full stack fits on Free-plan instance types; ML/LLM memory problems cannot take payments down | Medium–high: cross-account peering, three states, three OIDC roles | ≈ $30–35/month in total, split over three Free-plan credits (B ≈ $13–15, A ≈ $9–10, C ≈ $8–10) | Good: a realistic multi-account pattern | Three hosts and three owners; no high availability |
+| One `t4g.medium` after a Paid upgrade | The original plan: everything on one host | Medium | ≈ $15/month on the development window, one credit | Good | One host; the upgrade cannot be undone |
+
+**Chosen:** three ECS hosts in three team members' accounts (ADR-0017), each a `t4g.small` (ADR-0016). This amends the single host of ADR-0007. Host B (engine) is Jiawei's, host A (gateway) is Jiajun's, host C (ml) is Zheng's. Per-account cost is in `DESIGN.md` §19.4.
+
+The original single-host estimate is kept below for comparison:
 
 | Item | Monthly |
 |---|---|
@@ -203,7 +214,7 @@ Storybook is the component catalogue, with axe accessibility checks (ADR-0010, d
 | Bedrock tokens (demo volume, budget-capped) | ~$1–3 |
 | **Total** | **≈ $20–28/month**; the same setup running 24/7 ≈ $40–45 |
 
-**Review:** when out-of-memory kills appear (move to t4g.large) and at M5.
+**Review:** if the peering spike fails (RISK-166), when an account leaves the Free plan, when out-of-memory kills appear on host A, and at M5.
 
 ## D13 — Database hosting
 
@@ -268,3 +279,15 @@ both ways is overhead with no benefit. The `RISK-<n>` keys stay as backlog IDs i
 | eu-west-1 (Ireland, original plan) | Closest to the team | None | `t4g.medium` USD 0.0368/h, gp3 USD 0.0880/GB-month | Neutral | Needs a second, advanced AWS account; gives up the project's credit |
 
 **Chosen:** eu-north-1 (decided 23 Nov 2026, ADR-0015). **Review:** if the team moves to an advanced AWS account.
+
+## D19 — Network between the staging accounts
+
+| Option | Fit | Learning curve | Cost | Ecosystem / hiring signal | Operational burden |
+|---|---|---|---|---|---|
+| **Cross-account VPC peering** | Good: private IPs only; Kafka and PostgreSQL never face the internet; `/32` security-group rules | Medium: non-overlapping CIDRs, routes, AZ-ID alignment | Free within one AZ | Strong: standard multi-account networking | Three peerings to keep; unverified on the Free plan |
+| Public IPs + TLS + IP allow-lists | Works anywhere | High: TLS for PostgreSQL, Kafka `SASL_SSL` and every HTTP hop | ≈ $3.6/month per extra Elastic IP plus intra-Region transfer | Moderate | Certificates and credentials to manage |
+| Transit Gateway or PrivateLink | Production-grade hub or service endpoints | High | Hourly attachments/endpoints (≈ $7+/month each) plus data processing | Strong | Overkill for three hosts |
+| WireGuard/Tailscale overlay | Simple private mesh | Low | Free tier | Weak for an AWS portfolio | A third-party dependency on every host |
+
+**Chosen:** cross-account VPC peering with fixed host IPs (ADR-0017), verified in RISK-166 before anything depends on it. The public + TLS option is the fallback.
+**Review:** after the RISK-166 spike.

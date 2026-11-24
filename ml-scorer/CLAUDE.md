@@ -9,6 +9,11 @@ Owner: Zheng Liu (@zliu-59). Design: `docs/DESIGN.md` §9. Contract: `contracts/
 
 Not scaffolded yet. The commands below are the target once RISK-50 lands; until then `make test-ml` prints "skipped".
 
+## Staging
+
+`ml-scorer` runs on staging host C in Zheng's AWS account (ADR-0017, `infra/terraform/envs/staging-ml`). The risk engine on host B
+calls it at `http://10.44.1.10:8000` over VPC peering; host C takes no internet traffic.
+
 ## Stack
 
 - Python 3.12, managed with **uv** (`pyproject.toml` + `uv.lock`).

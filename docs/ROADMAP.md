@@ -43,6 +43,7 @@ in parallel with the backend (Section 3).
 - **Jiawei is the critical path.** Eleven weeks of work plus the assessment period and a two-week holiday break gives mid-March.
 - Zheng has the most slack. Candidates to move from Jiawei to Zheng: the Newman E2E collections, the `ml-scorer` and `llm-insights` CI workflows, and the LLM alarms.
 - Availability (~12 h/week each) is an assumption until Q2 is answered.
+- ADR-0017 (23 Nov 2026) adds about 14 h for Jiawei (RISK-165/166/167/170), 10–12 h for Jiajun (RISK-168) and 10–12 h for Zheng (RISK-169). Hosting work moves partly off the critical path to the teammates.
 
 ## 3. Sprint plan (one-week sprints, Monday–Sunday)
 
@@ -96,6 +97,11 @@ IDs from 100 upwards cover the new scope. A new item takes the next free number.
 | RISK-112 | `POST /api/v1/merchants/me`, `cognito_sub` migration, API key management endpoints | M3 | To do |
 | RISK-113 | Analytics endpoints for the analyst dashboard (contract first) | M3 | To do |
 | RISK-114 | `observability` module: log groups, alarms, dashboard; `pg_dump` and DLM backups | M4 | To do |
+| RISK-164 | Epic: three-account staging (ADR-0017): design, docs, coordination of RISK-165 … RISK-170 | M1 | In review (design PR) |
+| RISK-165 | Shared Terraform for multi-account hosts: network by AZ ID and CIDR, host role/optional data volume/optional EIP/fixed IP, `vpc-peering` module, cross-account ECR pull policies, `staging-gateway` and `staging-ml` root templates; fixed IP `10.42.1.10` and nginx upstreams on host B | M1 | To do |
+| RISK-166 | Spike with Jiajun and Zheng: cross-account VPC peering and ECR pulls on the Free plan; decide peering or the public + TLS fallback | M1 | To do |
+| RISK-167 | Multi-account delivery: per-account OIDC roles in `deploy-staging.yml`, wake/sleep/status across accounts, smoke checks through every host | M1 | To do |
+| RISK-170 | PostgreSQL 18 service on host B: databases `sentinel`, `gateway`, `llm`, one login per service, access from hosts A and C only | M1 | To do |
 | RISK-160 | Runbooks for gateway and risk engine, ORR checklist run, threat model review | M5 | To do |
 | RISK-161 | Release `v1.0.0`: changelog, release notes, demo script | M5 | To do |
 
@@ -118,6 +124,7 @@ IDs from 100 upwards cover the new scope. A new item takes the next free number.
 | RISK-128 | AI summary panel with feedback in the review flow | M4 | To do |
 | RISK-129 | LLM Console: overview, invocations table, invocation detail | M4 | To do |
 | RISK-162 | Accessibility (WCAG 2.1 AA) and cross-browser pass | M5 | To do |
+| RISK-168 | Staging host A (gateway) in Jiajun's own AWS account: confirm Region and plan, state bucket and budgets, `envs/staging-gateway` (network, host, ECS cluster, scheduler, OIDC deploy role), peering, Kafka service, gateway service, runbook (ADR-0017) | M1 (account, spike) · M2 (services) | To do |
 
 ### 4.3 Zheng Liu — ML scorer, LLM insights (proposed)
 
@@ -133,6 +140,7 @@ IDs from 100 upwards cover the new scope. A new item takes the next free number.
 | RISK-145 | Insight, invocation, stats and feedback APIs; JWT authentication and role permissions | M4 | To do |
 | RISK-146 | `RiskInsightGenerated` event; scenarios L1–L4 | M4 | To do |
 | RISK-163 | Model card, `llm-insights` and `ml-scorer` runbooks | M5 | To do |
+| RISK-169 | Staging host C (ml) in Zheng's own AWS account: confirm Region and plan, state bucket and budgets, `envs/staging-ml` (network, host, ECS cluster, scheduler, OIDC deploy role), peering, ml-scorer service; later llm-insights task role, Bedrock model access and ml-feedback (ADR-0017) | M1 (ml-scorer) · M4 (LLM) | To do |
 
 ## 5. Dependencies and hand-offs
 
@@ -154,6 +162,15 @@ Definitions are in `DESIGN.md` §3.2. All dates are **Proposed**.
 | H9 | All | P1–P14 pass | Sat 6 Feb 2027 | M2 |
 | H11 | All | LLM Insights API + `risk.insights.v1` frozen | Tue 9 Feb 2027 | RISK-128, RISK-129 |
 | H13 | Zheng → Jiajun | `llm-insights` in compose with `StubProvider` | Sun 21 Feb 2027 | Console integration |
+| H14 | Jiajun, Zheng → Jiawei | Accounts confirmed (eu-north-1, plan and end date), state bucket and budgets applied, account IDs shared privately | Sun 6 Dec 2026 | RISK-166 |
+| H15 | Jiawei → Jiajun, Zheng | Shared modules and root templates (RISK-165) | Sun 6 Dec 2026 | RISK-168, RISK-169 Terraform |
+| H16 | All | Peering and cross-account ECR pull verified, or fallback chosen (RISK-166) | Sun 13 Dec 2026 | Every cross-host dependency |
+| H17 | Zheng → Jiawei | Host C runs ml-scorer, reachable from host B | Sun 3 Jan 2027 | E1–E9 on staging (H5) |
+| H18 | Jiawei → Jiajun, Zheng | `gateway` and `llm` database logins on host B (RISK-170) | Sun 17 Jan 2027 | Gateway on host A; llm-insights on host C |
+| H19 | Jiajun → Jiawei, Zheng | Host A runs Kafka, reachable from hosts B and C; gateway service deployable | Sun 24 Jan 2027 | H8, RISK-96, M2 |
+
+Three-account staging (ADR-0017): RISK-166 ← RISK-165 and H14; RISK-168/169 services ← RISK-166; RISK-167 ← RISK-165;
+gateway on host A ← RISK-170; llm-insights on host C ← RISK-170 and Bedrock access.
 
 Ticket dependencies carried over from design v2.0: RISK-74 ← RISK-11/17; RISK-78 ← RISK-82; RISK-83 ← RISK-77;
 RISK-91/92 ← RISK-79; RISK-96 ← RISK-77. New: RISK-111 ← RISK-100 and RISK-110; RISK-124 ← RISK-110;
@@ -169,6 +186,7 @@ RISK-144 ← RISK-82; RISK-128/129 ← RISK-145.
 | 11 Nov 2026 | Tracking moved from Jira to GitHub Issues and a GitHub Project; `RISK-<n>` stays as the backlog ID (Section 8). MIT licence added. |
 | 11 Nov 2026 | Schedule re-planned into milestones M0–M5 (this document). Old dates (29 Nov, 13 Dec) withdrawn. Awaiting team sign-off. |
 | 13 Nov 2026 | `contracts/openapi-ml-scorer-v1.yaml` written (RISK-140): `POST /v1/score`, `GET /v1/model-info`, `GET /health`. Q16 closed. Freezes at H1 (Tue 1 Dec). |
+| 23 Nov 2026 | **Staging moves to three hosts in three accounts (ADR-0017).** Host B (engine, Jiawei) stays; host A (gateway + Kafka) is configured by Jiajun and host C (ML + LLM) by Zheng, each in their own AWS account in eu-north-1, joined by VPC peering (spike RISK-166 first). Images stay in account B's ECR; one pipeline assumes a role per account. LLM: Bedrock with a task role, Claude Haiku 5.5 via the `eu.` profile (Q19 closed). New items RISK-164 … RISK-170; hand-offs H14–H19. All dates Proposed. |
 | 23 Nov 2026 | **M0 walking skeleton reached.** Deploy run 45254610739 (approved by Zheng) published risk-engine and nginx to the ECS host and the frontend to S3/CloudFront; smoke and independent checks pass (`/` 200, `/api/health` UP via CloudFront, origin closed to direct access). Four first-deploy fixes: #89 OIDC immutable subject, #90 DescribeTaskDefinition on `*`, #91 wait for rollout completion, #92 nginx map hash size. Repository made public for the environment reviewer gate (Q21). |
 | 23 Nov 2026 | First apply: bootstrap (state bucket, budget alerts) done; staging stopped at 55/64 because the Free plan refuses t4g.medium. Host set to t4g.small for M0 (ADR-0016); the full stack needs the Paid plan or an x86 type before M1 (RISK-108). |
 | 23 Nov 2026 | RISK-106 re-lands the RISK-103 ECS platform from `main` with the #30 review fixes; #29's foundation fixes go first in a separate PR. Development schedule set to every day 19:00-02:00 Europe/Dublin; RISK-117 (#80, M5) restores the daytime demo window. |
@@ -183,11 +201,14 @@ See [the acceptance-criteria audit](reviews/2026-11-19-bootstrap-readiness.md). 
 | Risk | Likelihood | Effect on dates | Mitigation |
 |---|---|---|---|
 | Jiawei is on the critical path for M0, M1, M2 and half of M3 | High | Every slip moves all later milestones | Hand E2E collections, Python CI and LLM alarms to Zheng; keep Should items optional; weekly re-plan |
-| AWS Free-plan credit (USD 100) runs out after about four months of staging, or Bedrock is blocked on the Free plan | Medium | M4 LLM staging and M5 demo depend on a Paid upgrade decision | RISK-108 spike before M4; budget alerts at USD 15/25; decide the irreversible upgrade explicitly |
+| A Free-plan credit runs out or an account reaches its six-month limit (account B: 23 May 2027), or Bedrock is blocked on the Free plan | Medium | M4 LLM staging and M5 demo depend on upgrade decisions | Cost is split over three accounts (ADR-0017); budget alerts in every account; Nova Lite fallback for Bedrock; decide any irreversible upgrade explicitly |
 | December assessments reduce capacity more than assumed (Q7) | Medium | M1 slips by 1–2 weeks | S4–S5 are already planned at reduced capacity; the holiday weeks are unplanned buffer |
 | AWS account setup, Bedrock model access or GitHub OIDC takes longer than a sprint | Medium | M0 slips; M4 staging step slips | Start account setup and the model-access request in S0; everything else works locally with `StubProvider` |
 | First Terraform apply reveals cost or quota surprises | Low | M0 slips by days | Budgets alerts in the first apply; `terraform plan` reviewed in PR |
-| 4 GB host cannot hold all containers | Medium | M4 or M5 work to resize | Memory limits from day one; move to t4g.large and record it here |
+| A 2 GiB host cannot hold its containers (host A, ~1.7 GiB, is tightest) | Medium | M2 work to rebalance | Memory limits from day one; lower Kafka's heap; upgrade that account if needed and record it here |
+| Cross-account peering or ECR pulls are blocked on the Free plan | Medium | M1/M2 staging integration slips 1–2 weeks | RISK-166 spike before anything depends on it; public + TLS fallback (`DESIGN.md` §19.8) |
+| A teammate's account is in another Region, on an unsuitable plan, or unavailable | Low–medium | That host's milestone slips | Step 0 of RISK-168/169 checks it first; the host can be rebuilt from Terraform in another account |
+| First Terraform/ECS work for Jiajun and Zheng takes longer than estimated (~10–12 h each) | Medium | M2 (host A) or M1 (host C) slips | Root templates and a step-by-step checklist in RISK-165/168/169; pairing sessions with Jiawei; local work continues on `docker compose` |
 | Frontend scope (website + app + console ≈ 100 h) exceeds one person's capacity | Medium | M3 or M4 slips | `/docs` and prompt comparison are Could; `/pricing` and `/about` are small and can move after M3 |
 | Private repository on a plan without rulesets, required code-owner review or environment reviewers | Medium | No date impact, but the review and approval gates become convention rather than enforcement | Check Q21; deployment fails closed and deploy credentials default off until a real gate or separately approved equivalent exists |
 | Contract changes after a freeze | Medium | Rework in two components | Freeze points H1, H6, H11; additive-only rule; `oasdiff` in CI |

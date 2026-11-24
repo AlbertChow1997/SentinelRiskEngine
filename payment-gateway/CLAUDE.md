@@ -7,6 +7,12 @@ Owner: Jiawei Zhou. Design: `docs/DESIGN.md` §4.5–4.7, §10 and §11. Contrac
 
 Not scaffolded yet. The commands below are the target once RISK-70 lands; until then `make test-gateway` prints "skipped".
 
+## Staging
+
+The gateway runs on staging host A in Jiajun's AWS account, next to Kafka (ADR-0017, `infra/terraform/envs/staging-gateway`).
+It calls the risk engine at `http://10.42.1.10:8081` and its `gateway` database at `10.42.1.10:5432` on host B, over VPC peering.
+Jiawei owns the code; Jiajun owns the host.
+
 ## Stack
 
 - Java 21, Spring Boot 4.2.x (same line as `backend/`; ADR-0008 closes Q18), Maven wrapper; PostgreSQL 18.

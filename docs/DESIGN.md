@@ -359,7 +359,7 @@ risk-engine              Kafka                      llm-insights                
 | View | Where | Notes |
 |---|---|---|
 | Local | `docker compose` (Sections 4.1 and 12.1) | All services on one Docker network; LLM uses `StubProvider`; login uses the shared Cognito pool |
-| Staging | AWS eu-north-1 (Section 19, ADR-0015) | CloudFront + S3 for the frontend; one EC2 host running every backend container under ECS; on a weekday schedule |
+| Staging | AWS eu-north-1 (Section 19, ADR-0015, ADR-0017) | CloudFront + S3 for the frontend; three ECS hosts (engine, gateway, ml) in three team members' accounts, joined by VPC peering; on a schedule |
 | Production | Not built | Migration path documented in Section 19.5 |
 
 ---
@@ -1890,7 +1890,8 @@ On a merchant's first login the frontend calls `POST /api/v1/merchants/me`. The 
 | LLM returns wrong or misleading summaries | Medium | Medium | Advisory label, schema validation, caveats field, analyst feedback, sampling of non-REVIEW cases, LLM Console | Zheng |
 | LLM cost runaway | Medium | Low | Token limits, daily budget, cost alarm, `StubProvider` outside staging | Zheng |
 | AWS bill surprise | Medium | Medium | Budgets alerts in the first apply, scheduled stop, resource tags, no NAT Gateway or ALB | Jiawei |
-| Single staging host fails or runs out of memory (4 GB) | Medium | Medium | Container memory limits, 2 GB swap, EBS snapshots and `pg_dump`; move to t4g.large if OOMs appear | Jiawei |
+| A staging host fails or runs out of memory (2 GiB each) | Medium | Medium | Container memory limits, 2 GiB swap, EBS snapshots and `pg_dump`; rebuild from Terraform; upgrade one account if OOMs persist | Host owner |
+| Cross-account peering or ECR access blocked on the Free plan | Medium | High | Spike before any dependency (RISK-166); public + TLS fallback (Section 19.8) | Jiawei |
 | Bedrock model access not enabled in time | Medium | Medium | Request access during M0; everything is testable with `StubProvider` | Jiawei |
 | Authentication retrofitted onto endpoints designed as open | High | Medium | Contract changes first (Section 6.7); role tests per endpoint; threat model update | Jiawei |
 | Three services' worth of secrets and config | Medium | Medium | SSM Parameter Store, GitHub OIDC, `.env.example` only, CodeQL and Trivy | Jiawei |
@@ -1935,119 +1936,157 @@ Due dates are tracked in `docs/ROADMAP.md`. Q1–Q9 are carried over from design
 | Q16 | *Closed 13 Nov 2026:* Zheng wrote `openapi-ml-scorer-v1.yaml` (RISK-140); it freezes at H1 | — |
 | Q17 | *Closed 11 Nov 2026:* the repository is MIT-licensed (`LICENSE`) | — |
 | Q18 | *Closed 16 Nov 2026:* Java 21 + Spring Boot 4.1.2 selected for the backend scaffold (ADR-0008); gateway follows the same line | — |
-| Q19 | Bedrock model ID and whether new-account AWS credits are available | Jiawei |
+| Q19 | *Closed 23 Nov 2026:* Bedrock with an ECS task role, no API key; default Claude Haiku 5.5 through the `eu.` inference profile, fallback Amazon Nova Lite in-Region; Bedrock runs in account C (ADR-0017, D08). Account B has a USD 120 credit until 23 May 2027 | — |
 | Q20 | ADR numbering: design v2.0 used 0001 for "tech stack"; 0001 is now "record architecture decisions" and the stack decision moves to 0008 — accept? | Jiawei |
-| Q22 | Can this Free-plan project call Bedrock Claude models through cross-Region inference profiles, and how are EBS snapshots automated without DLM? (ADR-0015) | Jiawei — RISK-108 |
+| Q22 | Can a Free-plan account call Bedrock Claude models through cross-Region inference profiles, and how are EBS snapshots automated without DLM? (ADR-0015) | Zheng (Bedrock, RISK-169), Jiawei (snapshots, RISK-108) |
+| Q23 | Do the Free-plan SCPs/RCPs allow cross-account VPC peering and cross-account ECR pulls? (ADR-0017) | Jiawei, Jiajun, Zheng — RISK-166 |
 | Q21 | *Resolved 23 Nov 2026:* the repository is public, so GitHub environment protection is available. `staging` now requires a reviewer (Zheng or Jiajun) with self-review prevented and allows only `main`; `infra/scripts/deployment_gate.py` verifies this before any AWS access. History: private-plan rulesets returned 403 (19 Nov) and required reviewers returned 422 (20 Nov). Branch rulesets on `main` are still to be configured (RISK-101) | Jiawei |
 
 ---
 
-## 19. AWS architecture (staging) — single-host ECS with scheduled start/stop
+## 19. AWS architecture (staging) — three ECS hosts in three accounts, scheduled start/stop
 
-**Decision (ADR-0007, accepted):** run all backend containers with **ECS on one EC2 Graviton instance**, and start and stop it on a schedule. Keep managed AWS services where they are cheap or free (S3, CloudFront, Cognito, Bedrock, ECR). Production would use Fargate + ALB + Multi-AZ RDS; that is the documented migration path, not the current build. Region: **eu-north-1 (Stockholm)**, the Region the team's AWS project is locked to (ADR-0015).
+**Decision (ADR-0007, amended by ADR-0017):** the backend containers run under **ECS on three EC2 Graviton `t4g.small` hosts**. Each host is in a different team member's AWS account, all in **eu-north-1** and the same availability zone (AZ ID `eun1-az1`). The hosts are connected by cross-account VPC peering and started and stopped on one schedule. Managed services stay where they are cheap or free (S3, CloudFront, Cognito, Bedrock, ECR). Production would use Fargate + ALB + Multi-AZ RDS; that is the documented migration path, not the current build. Region: **eu-north-1 (Stockholm)** (ADR-0015).
 
-Nothing in this section exists yet. It is built at milestone M0, with `terraform plan` reviewed in PRs and every `terraform apply` explicitly approved.
+Host B and the public entry point run since M0 (23 Nov 2026). Hosts A and C, the peering and the multi-account pipeline are tracked in RISK-164 … RISK-170. Every `terraform plan` is reviewed in a PR, and every `terraform apply` is approved by the owner of that account.
 
 ### 19.1 Topology
 
 ```text
-Browser ──HTTPS──▶ CloudFront (dxxxx.cloudfront.net)
-                     ├── /*        → S3 bucket (React build, Origin Access Control)
-                     └── /api/*    → EC2 origin (Elastic IP DNS, HTTP :80)
-                                      SG: inbound :80 only from the CloudFront origin-facing
-                                      managed prefix list + secret header checked by nginx
-EC2 t4g.small now (ARM64, 2 GB; Free plan, ADR-0016) → t4g.medium (4 GB) for the full stack; ECS-optimised AL2023, public subnet, Elastic IP
- └── ECS cluster "sentinel-staging" (EC2 capacity, bridge networking, static host ports)
-      ├── nginx (:80)            path routing → services below; rejects requests without the CloudFront secret header
-      ├── payment-gateway (:8080)   risk-engine (:8081)   ml-scorer (:8000)   llm-insights (:8001)
-      ├── ml-feedback (no port)
-      ├── kafka (:9092, KRaft)   data on /data/kafka
-      └── postgres (:5432)       data on /data/postgres  (databases: sentinel, gateway, llm)
- └── EBS gp3 30 GB root + EBS gp3 20 GB data volume mounted at /data
-Managed services: ECR · Cognito · Bedrock · SSM Parameter Store · CloudWatch Logs/Alarms · EventBridge Scheduler · DLM snapshots · AWS Budgets
+Browser ──HTTPS──▶ CloudFront (dxxxx.cloudfront.net)              [account B: Jiawei]
+                     ├── /*      → S3 bucket (React build, Origin Access Control)
+                     └── /api/*  → host B (Elastic IP DNS, HTTP :80; SG admits only the CloudFront prefix list;
+                                   nginx rejects requests without the secret header)
+
+ account B (Jiawei)  VPC 10.42.0.0/16        account A (Jiajun)  VPC 10.43.0.0/16      account C (Zheng)  VPC 10.44.0.0/16
+ ┌───────────────────────────────┐           ┌────────────────────────────┐           ┌────────────────────────────┐
+ │ host B "engine" 10.42.1.10    │  peering  │ host A "gateway" 10.43.1.10│  peering  │ host C "ml" 10.44.1.10     │
+ │  nginx :80 (public entry)     │◀─────────▶│  payment-gateway :8080     │◀─────────▶│  ml-scorer :8000           │
+ │  risk-engine :8081            │           │  kafka :9092 (KRaft)       │           │  llm-insights :8001        │
+ │  postgres :5432               │◀──────────┼────────── peering ─────────┼──────────▶│  ml-feedback (no port)     │
+ │   (sentinel, gateway, llm)    │           │  /data: kafka              │           │  task role → Bedrock       │
+ │  /data: postgres              │           └────────────────────────────┘           └────────────────────────────┘
+ └───────────────────────────────┘
+ Each host: t4g.small (ARM64, 2 GiB), ECS-optimised AL2023, public subnet in AZ ID eun1-az1, its own ECS cluster
+ Account B also: ECR (all images) · CloudFront/S3 · Cognito · Budgets · state bucket
+ Accounts A and C also: Budgets · state bucket · their own scheduler, OIDC deploy role, SSM parameters and log groups
 ```
+
+Routes, security-group rules and the fallback are in Section 19.8.
 
 ### 19.2 Components and choices
 
 | Concern | Choice | Notes |
 |---|---|---|
-| IaC | **Terraform**, remote state in S3 (+ DynamoDB lock, or S3 native locking if the provider version supports it — check) | Modules: `network`, `ecs-ec2-host`, `ecs-service`, `ecr`, `cdn`, `cognito`, `scheduler`, `observability`, `github-oidc` |
-| Compute | One **t4g.small** On-Demand instance while the project is on the AWS Free plan (ADR-0016; Terraform variable `instance_type`), **t4g.medium** for the full stack, **standalone (not an Auto Scaling Group)** so stop/start keeps its EBS volumes and data | AMI from SSM parameter `/aws/service/ecs/optimized-ami/amazon-linux-2023/arm64/recommended/image_id`; user data registers it to the ECS cluster and mounts `/data`; 2 GB swap file as a safety net |
-| Container orchestration | **ECS on EC2**, one ECS service per component, **bridge** network mode with static host ports | `minimumHealthyPercent = 0`, `maximumPercent = 100` (one host + static ports means a short restart per deploy — accepted, documented). Deployment circuit breaker with rollback enabled |
-| Service-to-service calls | Via the host: services call each other at `http://<docker0 gateway>:<port>` (e.g. `172.17.0.1:8000`) set through env vars | Service Connect is the cleaner option but its Envoy sidecars cost ~50 MB each; revisit if memory allows |
-| Images | **ARM64 only** (`linux/arm64`), built on GitHub-hosted ARM runners or with `docker buildx`; stored in **ECR** with scan-on-push and a lifecycle policy (keep last 10) | Verify every base image (Kafka, Postgres, Python, JRE) publishes `linux/arm64` |
-| Database | **PostgreSQL 18 container** on the data volume | Nightly `pg_dump` to a private S3 bucket (7-day lifecycle) + daily EBS snapshots via **Data Lifecycle Manager** (keep 7). Upgrade path: RDS |
-| Kafka | **Single-broker KRaft container** on the data volume | MSK is too costly; outbox tables remain the source of truth |
-| Ingress | **CloudFront** for HTTPS on the default `*.cloudfront.net` domain; nginx on the instance as reverse proxy | CloudFront → origin is HTTP, locked to the CloudFront prefix list + secret header (stored in SSM). Upgrade path: own domain + TLS to origin. No ALB (saves ~$18/month) |
-| Static IP | One **Elastic IP** so the CloudFront origin hostname survives stop/start | Billed hourly whether the instance runs or not (~$3.6/month) |
-| Auth | Cognito user pool, app client, Hosted UI domain; callback/logout URLs = the CloudFront domain + `http://localhost:5173` | Free tier covers this project |
-| LLM | Amazon Bedrock; instance role allows `bedrock:InvokeModel` on the chosen model ARN only | Model access must be enabled in the account first |
-| Secrets & config | **SSM Parameter Store** SecureString, injected as ECS task `secrets` | No secrets in task definitions, images or Git |
-| Access | **No SSH.** SSM Session Manager only (instance role `AmazonSSMManagedInstanceCore`); the security group has no port 22 | |
-| Observability | `awslogs` driver → CloudWatch Logs (**7-day retention**); alarms on EC2 status check, container restarts, nginx 5xx (from a logs metric filter), LLM error rate and daily cost; one CloudWatch dashboard | Alarms use `treat_missing_data = notBreaching` so scheduled downtime does not page anyone |
-| Memory budget (4 GB) | gateway 512 MB · risk-engine 512 MB · kafka 768 MB (heap 512 MB) · postgres 384 MB · ml-scorer 256 MB · llm-insights 256 MB · ml-feedback 128 MB · nginx 32 MB · OS + ECS agent ~400 MB ≈ **3.3 GB** | Set container memory limits and JVM `-XX:MaxRAMPercentage=75`; if OOMs appear, move to t4g.large (record in ROADMAP). |
+| IaC | **Terraform**, remote state in S3 with S3 native locking; **one root and one state bucket per account**: `envs/staging` (B), `envs/staging-gateway` (A), `envs/staging-ml` (C) | Shared modules: `network`, `ecs-ec2-host`, `ecs-service`, `ecr`, `cdn`, `cognito`, `scheduler`, `observability`, `github-oidc`, `vpc-peering` (RISK-165) |
+| Compute | One **t4g.small** On-Demand instance per account (Free plan, ADR-0016/0017), **standalone (not an Auto Scaling Group)** so stop/start keeps its EBS volumes and data | AMI from SSM parameter `/aws/service/ecs/optimized-ami/amazon-linux-2023/arm64/recommended/image_id`; user data registers the host to its account's ECS cluster and mounts `/data` where the host has one; 2 GiB swap file as a safety net |
+| Container orchestration | **ECS on EC2**, one cluster per account, one ECS service per component, **bridge** network mode with static host ports | `minimumHealthyPercent = 0`, `maximumPercent = 100` (one host per service + static ports means a short restart per deploy — accepted). Deployment circuit breaker with rollback |
+| Service-to-service calls | Same host: `http://172.17.0.1:<port>` (docker0). Other host: the peer's **fixed private IP** (`10.42.1.10`, `10.43.1.10`, `10.44.1.10`), set through env vars | Fixed IPs keep task definitions stable without a DNS zone or Service Connect sidecars (about 50 MiB each) |
+| Images | **ARM64 only**, built once on GitHub-hosted ARM runners, scanned, stored in **account B's ECR** (scan-on-push, keep last 10) | Repository policies let accounts A and C pull only their repositories; account IDs only in private tfvars |
+| Database | **One PostgreSQL 18 container on host B** with three databases (`sentinel`, `gateway`, `llm`) and one login per service that can reach only its database | Nightly `pg_dump` to a private S3 bucket (7-day lifecycle) + daily EBS snapshots (DLM availability on the Free plan: RISK-108). Upgrade path: RDS |
+| Kafka | **Single-broker KRaft container on host A**, advertised listener `10.43.1.10:9092` | MSK is too costly; outbox tables remain the source of truth |
+| Ingress | **CloudFront** for HTTPS on the default `*.cloudfront.net` domain; nginx on host B is the only public entry and proxies to A and C over peering | CloudFront → origin is HTTP, locked to the CloudFront prefix list + secret header (stored in SSM). Hosts A and C accept no traffic from the internet. No ALB |
+| Static IP | One **Elastic IP** on host B so the CloudFront origin hostname survives stop/start | Hosts A and C use an auto-assigned public IP only for outbound calls (ECR, SSM, CloudWatch, Bedrock); billed only while running |
+| Auth | Cognito user pool (account B), app client, Hosted UI domain; callback/logout URLs = the CloudFront domain + `http://localhost:5173` | Free tier covers this project |
+| LLM | Amazon Bedrock in account C; the `llm-insights` **task role** allows `bedrock:InvokeModel` only on the chosen inference profile and its foundation models. **No API key** | Default model: Claude Haiku 5.5 through the `eu.` cross-Region inference profile; fallback Amazon Nova Lite in-Region if the Free plan blocks the profile (Section 19.6) |
+| Secrets & config | **SSM Parameter Store** SecureString in each account, injected as ECS task `secrets` | Database passwords for `gateway` and `llm` are generated in the consuming account and handed to the database owner through a password manager's one-time share — never GitHub, chat or email |
+| Access | **No SSH.** SSM Session Manager only (instance role `AmazonSSMManagedInstanceCore`); no port 22 | Each owner reaches their own host |
+| Observability | `awslogs` driver → CloudWatch Logs in each account (**7-day retention**); alarms on EC2 status check, container restarts, nginx 5xx, LLM error rate and daily cost | Alarms use `treat_missing_data = notBreaching`; cross-account dashboards are a later option |
+| Memory budget (2 GiB per host) | **B:** risk-engine 512 MiB · postgres 384 MiB · nginx 64 MiB. **A:** gateway 512 MiB · kafka 768 MiB (heap 512 MiB). **C:** ml-scorer 256 MiB · llm-insights 256 MiB · ml-feedback 128 MiB. Plus OS + ECS agent ~400 MiB each → B ~1.4 GiB, A ~1.7 GiB, C ~1.0 GiB | Container memory limits and JVM `-XX:MaxRAMPercentage=75`; if OOMs appear on A, move Kafka's heap down or upgrade that account (record in ROADMAP) |
 
-RISK-104 implements the private S3/OAC distribution and nginx ingress configuration;
-no live endpoint is deployed yet. Static routes use a viewer-request SPA rewrite
-only on the S3 behaviour; API errors are never rewritten into HTML/200. API caching
-is disabled and Authorization/cookies/query strings are forwarded. The origin
-header is stripped before upstream calls. The default CloudFront certificate
-forces the AWS TLSv1 security policy; a stricter minimum requires an own domain
-and ACM certificate. WAF is deferred for this budgeted portfolio environment,
-not included or claimed as protection. Resource-local scan exceptions for SSE-S3
-and no WAF expire 31 Jan 2027. Review these tradeoffs before public deployment.
+RISK-104 implements the private S3/OAC distribution and nginx ingress configuration. Static routes use a viewer-request
+SPA rewrite only on the S3 behaviour; API errors are never rewritten into HTML/200. API caching is disabled and
+Authorization/cookies/query strings are forwarded. The origin header is stripped before upstream calls. The default
+CloudFront certificate forces the AWS TLSv1 security policy; a stricter minimum requires an own domain and ACM certificate.
+WAF is deferred for this budgeted portfolio environment, not included or claimed as protection. Resource-local scan
+exceptions for SSE-S3 and no WAF expire 31 Jan 2027. Review these tradeoffs before public deployment.
 
 ### 19.3 Scheduled start/stop
 
 | Item | Setting |
 |---|---|
-| Scheduler | **EventBridge Scheduler** (timezone `Europe/Dublin`) with two schedules calling EC2 `StartInstances` / `StopInstances` on the tagged instance |
-| Window | **Now (development): every day 19:00–02:00.** **Demo window (from M5, RISK-117): Mon–Fri 09:00–23:00**, off at weekends. Values are the Terraform variables `start_cron` / `stop_cron` |
-| Manual override | `make aws-wake` (start the instance, wait until all ECS services are steady) and `make aws-sleep` (stop the instance); both ask for confirmation. Use `aws-wake` before interviews and demos outside the window |
-| Boot behaviour | The ECS agent re-registers the instance; services restart automatically (desired counts stay 1); postgres and kafka start first via container dependencies and health checks. Target: system usable **≤ 5 minutes** after start |
-| Deploys while stopped | `deploy-staging.yml` checks the instance state; if stopped it starts it, deploys, runs smoke tests, and leaves it running until the next scheduled stop |
+| Scheduler | **EventBridge Scheduler** in each account (timezone `Europe/Dublin`), calling EC2 `StartInstances` / `StopInstances` on that account's host. All three use the same `start_cron` / `stop_cron` |
+| Window | **Now (development): every day 19:00–02:00.** **Demo window (from M5, RISK-117): Mon–Fri 09:00–23:00**, off at weekends. RISK-117 changes all three accounts together |
+| Manual override | `make aws-wake` / `make aws-sleep` act on every host whose account the caller can reach (RISK-167); both ask for confirmation. Use `aws-wake` before interviews and demos outside the window |
+| Boot behaviour | Each ECS agent re-registers its host; services restart automatically (desired counts stay 1). Container dependencies cannot span hosts, so services retry their database and Kafka connections at start-up and ECS restarts tasks that exit. Target: system usable **≤ 5 minutes** after start |
+| Deploys while stopped | `deploy-staging.yml` starts any stopped host it deploys to, deploys, runs smoke tests, and leaves the hosts running until the next scheduled stop |
 | Frontend | Always available (S3 + CloudFront). When the backend is asleep, the web app shows the "Demo environment is sleeping" banner (Section 8.8.3). `/sample` keeps working because it is fully client-side |
 
-### 19.4 Cost (indicative — re-check with the AWS Pricing Calculator and record in `TECH_DECISIONS.md`)
+### 19.4 Cost (indicative; re-checked for eu-north-1 on 23 Nov 2026)
 
-| Item | Monthly |
-|---|---|
-| t4g.medium, ~14 h × 22 weekdays ≈ 310 h | ~$11–12 |
-| EBS gp3 root 30 GB + data 20 GB | ~$4–5 |
-| Elastic IP (charged 24/7) | ~$3.6 |
-| EBS snapshots, S3 backups, ECR storage | ~$1–2 |
-| CloudFront, S3 website, Cognito, CloudWatch (7-day logs) | ~$0–2 (mostly free tier) |
-| Bedrock tokens (demo volume, budget-capped) | ~$1–3 |
-| **Total** | **≈ $20–28/month**; the same setup running 24/7 ≈ $40–45 |
-| *Now:* t4g.small, development window 7 h × 30 days ≈ 210 h (USD 0.0172/h) | ~$3.6 compute |
+Development window: 7 h × 30 days ≈ 210 h/month. Prices: `t4g.small` USD 0.0172/h, gp3 USD 0.0836/GB-month, public IPv4 USD 0.005/h.
 
-Prices were re-checked for eu-north-1 on 23 Nov 2026 (`t4g.medium` USD 0.0344/h, gp3 USD 0.0836/GB-month); the totals hold. The AWS project is on the Free plan with a USD 100 credit, which covers about four months (RISK-108). **AWS Budgets** alerts at **$15 (forecast)** and **$25 (actual)**, created in the very first apply. Every resource is tagged `project=sentinel-pay`, `owner`, `env=staging`.
+| Account | Items | Monthly |
+|---|---|---|
+| B (Jiawei) | t4g.small ~$3.6 · EBS root 30 GB + data 20 GB ~$4.2 · Elastic IP 24/7 ~$3.6 · ECR, S3, CloudFront, CloudWatch, backups ~$1–3 | **≈ $13–15** |
+| A (Jiajun) | t4g.small ~$3.6 · EBS root 30 GB + data 20 GB ~$4.2 · public IPv4 while running ~$1.1 · logs < $1 | **≈ $9–10** |
+| C (Zheng) | t4g.small ~$3.6 · EBS root 30 GB ~$2.5 · public IPv4 while running ~$1.1 · Bedrock tokens ~$1–3 (budget-capped) | **≈ $8–10** |
+| **All** | Peering traffic within one AZ is free | **≈ $30–35**, each account paid from its own Free-plan credit |
+
+The demo window (about 308 h/month) multiplies the compute lines by about 1.5. Every account creates **AWS Budgets** alerts in its first apply: forecast $15 and actual $25 for B; forecast $10 and actual $15 for A and C. Every resource is tagged `project=sentinel-pay`, `owner`, `env=staging`.
 
 ### 19.5 Known trade-offs and the path to production
 
-- Single host = no high availability; brief downtime per deploy; host failure means rebuild from snapshot. Acceptable for a demo environment.
-- CloudFront → origin traffic is unencrypted HTTP, mitigated by the prefix-list rule and the secret header; production would use TLS to the origin (own domain + certificate).
+- No high availability, and more parts. If host A or B is down, payments stop. If host C is down, assessments fall back to rules-only (`degraded`) and insights pause. A demo needs all three hosts up.
+- Host failure means rebuilding that host from Terraform; PostgreSQL data on B is restored from snapshot or `pg_dump`.
+- CloudFront → origin traffic is unencrypted HTTP, mitigated by the prefix-list rule and the secret header. Traffic between hosts is unencrypted inside peered VPCs (threat model T19).
 - PostgreSQL and Kafka are self-managed: we own backups and upgrades.
-- **Migration path to the production shape:** swap `ecs-ec2-host` for Fargate services behind an ALB, move PostgreSQL to RDS and Kafka to MSK. The `ecs-service` module and the task definitions stay largely the same.
+- **Migration path to the production shape:** replace the hosts with Fargate services behind an ALB in one account, move PostgreSQL to RDS and Kafka to MSK. The `ecs-service` module and the task definitions stay largely the same. Consolidating onto one `t4g.medium` after a Paid upgrade is also supported (ADR-0017).
 
-### 19.6 AWS project constraints (ADR-0015)
+### 19.6 AWS project constraints (ADR-0015, ADR-0017)
 
-The account is a project in the new AWS experience on the Free plan. Its constraints apply to everything in this section:
+All three accounts follow these constraints. Each teammate confirms their account's Region and plan before creating anything (RISK-168, RISK-169).
 
 | Constraint | Effect on this design | Tracked in |
 |---|---|---|
-| One Region per project: eu-north-1 | All Regional resources in eu-north-1; Terraform variable `region` | RISK-107 |
-| No cross-Region features | Bedrock Claude models in eu-north-1 are reachable only through cross-Region inference profiles, so LLM access is unconfirmed | RISK-108 |
+| One Region: eu-north-1 | All Regional resources in eu-north-1 in every account; Terraform variable `region` | RISK-107, RISK-168, RISK-169 |
+| No cross-Region features | Claude models in eu-north-1 are reached through `eu.` cross-Region inference profiles (`ACTIVE` in the profile list on 23 Nov 2026), whose use on the Free plan is unverified; Nova Lite is available in-Region as a fallback | RISK-108, RISK-169 |
+| Managed SCPs and RCPs | Cross-account VPC peering and cross-account ECR pulls are unverified on the Free plan | RISK-166 |
 | Data Lifecycle Manager not on the supported list | Daily EBS snapshots may need another mechanism | RISK-108 |
 | WAF with CloudFront unavailable | WAF stays deferred | ADR-0007 |
-| USD 100 credit; irreversible upgrade when it runs out or after six months | About four months of staging at the estimated rate | RISK-108, ROADMAP §7 |
-| Only Free-Tier-eligible instance types (largest ARM64: t4g.small, 2 GiB) | M0 runs on t4g.small; the full stack needs the Paid plan or an x86 type | ADR-0016, RISK-108 |
+| Free-plan credit and six-month limit per account | Account B's plan ends on 23 May 2027 unless upgraded; each teammate records their own end date in their host issue | RISK-108, ROADMAP §7 |
+| Only Free-Tier-eligible instance types (largest ARM64: t4g.small, 2 GiB) | One `t4g.small` per account | ADR-0016, ADR-0017 |
 
 ### 19.7 Guard rails for changes
 
-- `terraform plan` is always allowed. **`terraform apply`, starting or stopping the instance, and creating AWS resources need explicit approval** from the tech lead each time.
-- No long-lived AWS keys anywhere: GitHub Actions assumes a role through OIDC; people use SSO or short-lived credentials.
-- No hard-coded account IDs or ARNs in Terraform; modules take variables and expose outputs.
+- `terraform plan` is always allowed. **`terraform apply`, starting or stopping a host, and creating AWS resources need explicit approval from the owner of that account** each time. Changes that affect another account (peering, ECR policies, database users) also need that account owner's agreement in the PR.
+- No long-lived AWS keys anywhere: GitHub Actions assumes a per-account role through OIDC; people use SSO or short-lived credentials.
+- No account IDs, ARNs or credentials in Git, issues or PRs. Peer account IDs and role ARNs live in private `terraform.tfvars` and GitHub environment variables.
+
+### 19.8 Cross-account network (ADR-0017)
+
+**Addressing.** The three VPCs use non-overlapping CIDRs, and each has one public subnet in AZ ID `eun1-az1`:
+
+| VPC | CIDR | Subnet | Host IP |
+|---|---|---|---|
+| B | `10.42.0.0/16` | `10.42.1.0/24` | `10.42.1.10` |
+| A | `10.43.0.0/16` | `10.43.1.0/24` | `10.43.1.10` |
+| C | `10.44.0.0/16` | `10.44.1.0/24` | `10.44.1.10` |
+
+**Peering.** Three connections: B↔A and B↔C are requested by B and accepted by A and C; C↔A is requested by C and accepted by A. Each side adds routes for the peer CIDR to its subnet's route table. DNS resolution over peering is not needed.
+
+**Allowed flows.** Every rule allows one port and admits only the peer host's `/32`; everything else is denied.
+
+| From | To | Port | Purpose |
+|---|---|---|---|
+| CloudFront prefix list | B nginx | 80 | Public entry (unchanged) |
+| B `10.42.1.10` | A gateway | 8080 | nginx → `/api/v1/payments`, `/ops`, `/merchants` |
+| B `10.42.1.10` | C llm-insights | 8001 | nginx → `/api/v1/insights`, `/llm` |
+| A `10.43.1.10` | B risk-engine | 8081 | Synchronous assessment |
+| B `10.42.1.10` | C ml-scorer | 8000 | Synchronous ML score |
+| C `10.44.1.10` | B risk-engine | 8081 | Assessment details for prompts |
+| A `10.43.1.10`, C `10.44.1.10` | B PostgreSQL | 5432 | `gateway` and `llm` databases |
+| B `10.42.1.10`, C `10.44.1.10` | A Kafka | 9092 | Produce and consume events |
+
+**Verification first (RISK-166).** Before any service depends on it, the three account owners create the peering, then confirm that a TCP connection between the hosts works and that an image pull from account B's ECR succeeds from A and C.
+
+**Fallback if peering or cross-account access is blocked.**
+- Elastic IPs on A and C.
+- Security groups admit only the peer Elastic IPs.
+- PostgreSQL `hostssl` + scram, Kafka `SASL_SSL`, TLS between services.
+- Images pushed to each account's own ECR.
+
+The fallback is designed in detail only if the spike fails.
 
 ---
 

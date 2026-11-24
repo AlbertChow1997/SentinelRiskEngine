@@ -16,6 +16,12 @@ Proposed owner: Zheng Liu (@zliu-59). Design: `docs/DESIGN.md` §4.8, §6.6 and 
 
 Not scaffolded yet. The commands below are the target once RISK-141 lands; until then `make test-llm` prints "skipped".
 
+## Staging
+
+`llm-insights` runs on staging host C in Zheng's AWS account (ADR-0017, `infra/terraform/envs/staging-ml`). It calls Bedrock with its
+ECS task role (no API key; default Claude Haiku 5.5 via the `eu.` inference profile, fallback Nova Lite), reads Kafka on host A
+(`10.43.1.10:9092`), its `llm` database on host B (`10.42.1.10:5432`) and the risk engine on host B (`10.42.1.10:8081`).
+
 ## Stack
 
 - Python 3.12, managed with **uv**.

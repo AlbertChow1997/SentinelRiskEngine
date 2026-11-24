@@ -12,8 +12,8 @@ If something here conflicts with `docs/DESIGN.md`, **ask the user**. Don't guess
 | Person | GitHub | Owns |
 |---|---|---|
 | Jiawei Zhou | @AlbertChow1997 | Tech lead · `backend/` (risk engine) · `payment-gateway/` · `infra/` · CI/CD · releases |
-| Jiajun Xiao | @jiajunxiao-work | `frontend/` (website + web app) |
-| Zheng Liu | @zliu-59 | `ml-scorer/` · proposed owner of `llm-insights/` (confirm via issue) |
+| Jiajun Xiao | @jiajunxiao-work | `frontend/` (website + web app) · staging host A (gateway) in their own AWS account, `infra/terraform/envs/staging-gateway/` |
+| Zheng Liu | @zliu-59 | `ml-scorer/` · proposed owner of `llm-insights/` (confirm via issue) · staging host C (ml) in their own AWS account, `infra/terraform/envs/staging-ml/` |
 
 The user you are talking to is usually **Jiawei Zhou**. Only change another owner's area when the user explicitly asks. Even then, the change goes through a PR that owner reviews.
 
@@ -57,8 +57,10 @@ sentinel-pay/
 ├── infra/
 │   ├── terraform/
 │   │   ├── modules/              # network, ecs-ec2-host, ecs-service, ecr, cdn, cognito, scheduler, observability, github-oidc
-│   │   └── envs/staging/         # the one AWS environment (staging); prod is out of scope
-│   └── scripts/                  # aws-sleep.sh / aws-wake.sh / aws-status.sh (stop/start/inspect the ECS host)
+│   │   ├── envs/staging/         # staging host B + shared services (Jiawei's account); prod is out of scope
+│   │   ├── envs/staging-gateway/ # staging host A (Jiajun's account, ADR-0017)
+│   │   └── envs/staging-ml/      # staging host C (Zheng's account, ADR-0017)
+│   └── scripts/                  # aws-sleep.sh / aws-wake.sh / aws-status.sh (stop/start/inspect the ECS hosts)
 ├── docs/
 │   ├── DESIGN.md                 # living design doc (from Sentinel_Pay_Design_v2.md + this brief)
 │   ├── ROADMAP.md                # schedule & progress
@@ -200,83 +202,51 @@ Accessibility target: WCAG 2.1 AA (keyboard navigation, contrast, alt text, redu
 
 ---
 
-## 7. AWS architecture (staging) — single-host ECS + scheduled start/stop
+## 7. AWS architecture (staging) — three ECS hosts in three accounts + scheduled start/stop
 
-**Decision (ADR-0007, accepted):** run all backend containers with **ECS on one EC2 Graviton instance**, and start/stop it on a schedule. Keep managed AWS services where they are cheap or free (S3, CloudFront, Cognito, Bedrock, ECR). Production would use Fargate + ALB + Multi-AZ RDS; that is the documented migration path, not the current build. Region: **eu-north-1 (Stockholm)**, the Region the team's AWS project is locked to (ADR-0015).
+**Decision (ADR-0007, amended by ADR-0017):** the backend runs under **ECS on three EC2 Graviton `t4g.small` hosts**, one in each team member's AWS account. All three are in **eu-north-1** (ADR-0015) and the same availability zone (AZ ID `eun1-az1`), joined by **cross-account VPC peering**, and started and stopped on one schedule. Managed services stay where they are cheap or free (S3, CloudFront, Cognito, Bedrock, ECR). Production would use Fargate + ALB + Multi-AZ RDS; that is the documented migration path, not the current build.
 
-### 7.1 Topology
+**`docs/DESIGN.md` §19 is the full specification** (topology, components, schedule, per-account cost, network flows, fallback). This section keeps only what you need while working.
+
+### 7.1 Hosts and owners
+
+| Host | AWS account (owner, configures it) | Containers | Terraform root |
+|---|---|---|---|
+| **B: engine** (public entry; live since M0) | Jiawei | nginx (:80), risk-engine (:8081), PostgreSQL 18 (:5432; databases `sentinel`, `gateway`, `llm`) | `infra/terraform/envs/staging` |
+| **A: gateway** | Jiajun | payment-gateway (:8080), Kafka KRaft (:9092) | `infra/terraform/envs/staging-gateway` |
+| **C: ml** | Zheng | ml-scorer (:8000), llm-insights (:8001), ml-feedback | `infra/terraform/envs/staging-ml` |
 
 ```text
-Browser ──HTTPS──▶ CloudFront (dxxxx.cloudfront.net)
-                     ├── /*        → S3 bucket (React build, Origin Access Control)
-                     └── /api/*    → EC2 origin (Elastic IP DNS, HTTP :80)
-                                      SG: inbound :80 only from the CloudFront origin-facing
-                                      managed prefix list + secret header checked by nginx
-EC2 t4g.small now (ARM64, 2 GB; Free plan, ADR-0016) → t4g.medium (4 GB) for the full stack; ECS-optimised AL2023, public subnet, Elastic IP
- └── ECS cluster "sentinel-staging" (EC2 capacity, bridge networking, static host ports)
-      ├── nginx (:80)            path routing → services below; rejects requests without the CloudFront secret header
-      ├── payment-gateway (:8080)   risk-engine (:8081)   ml-scorer (:8000)   llm-insights (:8001)
-      ├── ml-feedback (no port)
-      ├── kafka (:9092, KRaft)   data on /data/kafka
-      └── postgres (:5432)       data on /data/postgres  (databases: sentinel, gateway, llm)
- └── EBS gp3 30 GB root + EBS gp3 20 GB data volume mounted at /data
-Managed services: ECR · Cognito · Bedrock · SSM Parameter Store · CloudWatch Logs/Alarms · EventBridge Scheduler · DLM snapshots · AWS Budgets
+Browser ─HTTPS─▶ CloudFront ─/*────▶ S3 (React build, OAC)                     [account B]
+                            └/api/*─▶ host B nginx :80 (prefix list + secret header)
+host B 10.42.1.10 ◀──peering──▶ host A 10.43.1.10 ◀──peering──▶ host C 10.44.1.10
 ```
 
-### 7.2 Components and choices
+- **Network:** VPCs `10.42.0.0/16` (B), `10.43.0.0/16` (A), `10.44.0.0/16` (C). Fixed host IPs `10.4x.1.10`. Security groups admit one port per flow from the peer host's `/32` only (`DESIGN.md` §19.8). Hosts A and C take no internet traffic; nginx on B proxies to them.
+- **Service-to-service calls:** same host → `http://172.17.0.1:<port>`; other host → the peer's fixed private IP, set through env vars.
+- **Peering is verified before anything depends on it (RISK-166).** If the Free plan blocks it, the fallback is Elastic IPs + TLS everywhere (`DESIGN.md` §19.8).
+- **Images:** ARM64 only, built once and stored in **account B's ECR**; accounts A and C pull through repository policies.
+- **Deploys:** one `deploy-staging.yml` behind the `staging` environment approval; it assumes a GitHub OIDC role in each account.
+- **LLM:** Bedrock in account C, called with the `llm-insights` ECS **task role** — no API key. Default Claude Haiku 5.5 via the `eu.` inference profile; fallback Amazon Nova Lite in-Region.
+- **Secrets:** SSM Parameter Store SecureString in each account, injected as ECS task `secrets`. Credentials that must reach another account go through a password manager's one-time share, never GitHub, chat or email.
+- **Access:** no SSH; SSM Session Manager only. Each owner reaches their own host.
+- **Memory (2 GiB each, incl. ~400 MiB OS + agent):** B ~1.4 GiB, A ~1.7 GiB, C ~1.0 GiB. Set container memory limits and JVM `-XX:MaxRAMPercentage=75`.
 
-| Concern | Choice | Notes |
-|---|---|---|
-| IaC | **Terraform**, remote state in S3 (+ DynamoDB lock, or S3 native locking if the provider version supports it — check) | Modules: `network`, `ecs-ec2-host`, `ecs-service`, `ecr`, `cdn`, `cognito`, `scheduler`, `observability`, `github-oidc` |
-| Compute | One **t4g.small** On-Demand instance while the project is on the AWS Free plan (ADR-0016; Terraform variable `instance_type`), **t4g.medium** for the full stack, **standalone (not an Auto Scaling Group)** so stop/start keeps its EBS volumes and data | AMI from SSM parameter `/aws/service/ecs/optimized-ami/amazon-linux-2023/arm64/recommended/image_id`; user data registers it to the ECS cluster and mounts `/data`; 2 GB swap file as a safety net |
-| Container orchestration | **ECS on EC2**, one ECS service per component, **bridge** network mode with static host ports | `minimumHealthyPercent = 0`, `maximumPercent = 100` (one host + static ports means a short restart per deploy — accepted, documented). Deployment circuit breaker with rollback enabled |
-| Service-to-service calls | Via the host: services call each other at `http://<docker0 gateway>:<port>` (e.g. `172.17.0.1:8000`) set through env vars | Service Connect is the cleaner option but its Envoy sidecars cost ~50 MB each; revisit if memory allows (record in TECH_DECISIONS) |
-| Images | **ARM64 only** (`linux/arm64`), built on GitHub-hosted ARM runners or with `docker buildx`; stored in **ECR** with scan-on-push and a lifecycle policy (keep last 10) | Verify every base image (Kafka, Postgres, Python, JRE) publishes `linux/arm64` |
-| Database | **PostgreSQL 18 container** on the data volume | Nightly `pg_dump` to a private S3 bucket (7-day lifecycle) + daily EBS snapshots via **Data Lifecycle Manager** (keep 7). Upgrade path: RDS |
-| Kafka | **Single-broker KRaft container** on the data volume | MSK is too costly; outbox tables remain the source of truth |
-| Ingress | **CloudFront** for HTTPS on the default `*.cloudfront.net` domain; nginx on the instance as reverse proxy | CloudFront → origin is HTTP, locked to the CloudFront prefix list + secret header (stored in SSM). Upgrade path: own domain + TLS to origin. No ALB (saves ~$18/month) |
-| Static IP | One **Elastic IP** so the CloudFront origin hostname survives stop/start | Billed hourly whether the instance runs or not (~$3.6/month) |
-| Auth | Cognito user pool, app client, Hosted UI domain; callback/logout URLs = the CloudFront domain + `http://localhost:5173` | Free tier covers this project |
-| LLM | Amazon Bedrock; instance role allows `bedrock:InvokeModel` on the chosen model ARN only | Model access must be enabled in the account first |
-| Secrets & config | **SSM Parameter Store** SecureString, injected as ECS task `secrets` | No secrets in task definitions, images or Git |
-| Access | **No SSH.** SSM Session Manager only (instance role `AmazonSSMManagedInstanceCore`); SG has no port 22 | |
-| Observability | `awslogs` driver → CloudWatch Logs (**7-day retention**); alarms on EC2 status check, container restarts, nginx 5xx (from logs metric filter), LLM error rate and daily cost; one CloudWatch dashboard | Alarms use `treat_missing_data = notBreaching` so scheduled downtime doesn't page anyone |
-| Memory budget (4 GB) | gateway 512 MB · risk-engine 512 MB · kafka 768 MB (heap 512 MB) · postgres 384 MB · ml-scorer 256 MB · llm-insights 256 MB · ml-feedback 128 MB · nginx 32 MB · OS + ECS agent ~400 MB ≈ **3.3 GB** | Set container memory limits and JVM `-XX:MaxRAMPercentage=75`; if OOMs appear, move to t4g.large (record in ROADMAP) |
+### 7.2 Scheduled start/stop
 
-### 7.3 Scheduled start/stop
+- EventBridge Scheduler in each account (`Europe/Dublin`), same `start_cron` / `stop_cron`.
+- **Now (development): every day 19:00–02:00. Demo window from M5 (RISK-117): Mon–Fri 09:00–23:00**, changed in all three accounts together.
+- `make aws-wake` / `make aws-sleep` ask for confirmation. Services retry their database and Kafka connections at start-up, because container dependencies cannot span hosts. Target: usable ≤ 5 minutes after start.
+- The frontend (S3 + CloudFront) is always available and shows the "Demo environment is sleeping" banner when `/api/health` does not answer.
 
-| Item | Setting |
-|---|---|
-| Scheduler | **EventBridge Scheduler** (timezone `Europe/Dublin`) with two schedules calling EC2 `StartInstances` / `StopInstances` on the tagged instance |
-| Window | **Now (development): every day 19:00–02:00.** **Demo window (from M5, RISK-117): Mon–Fri 09:00–23:00**, off at weekends. Values are the Terraform variables `start_cron` / `stop_cron` |
-| Manual override | `make aws-wake` (start instance, wait until all ECS services are steady) and `make aws-sleep` (stop instance); both ask for confirmation. Use `aws-wake` before interviews/demos outside the window |
-| Boot behaviour | ECS agent re-registers the instance; services restart automatically (desired counts stay 1); postgres and kafka start first via container dependencies/health checks. Target: system usable **≤ 5 minutes** after start |
-| Deploys while stopped | `deploy-staging.yml` checks the instance state; if stopped it starts it, deploys, runs smoke tests, and leaves it running until the next scheduled stop |
-| Frontend | Always available (S3 + CloudFront). When the backend is asleep, the web app shows a friendly "Demo environment is sleeping" banner with the scheduled hours (demo window: Mon–Fri 09:00–23:00 Irish time) (frontend checks `/api/health` with a short timeout). `/sample` keeps working because it is fully client-side |
+### 7.3 Cost and trade-offs
 
-### 7.4 Cost (indicative — re-check with the AWS Pricing Calculator and record in TECH_DECISIONS)
+- About **USD 30–35/month in total** on the development window, paid from three Free-plan credits: B ≈ $13–15, A ≈ $9–10, C ≈ $8–10 (`DESIGN.md` §19.4). Same-AZ peering traffic is free.
+- AWS Budgets alerts in every account's first apply. Tag every resource `project=sentinel-pay`, `owner`, `env=staging`.
+- No high availability: A or B down stops payments; C down means rules-only (`degraded`) assessments and no insights.
+- Traffic between hosts is unencrypted inside peered VPCs (threat model T19). PostgreSQL and Kafka are self-managed.
 
-| Item | Monthly |
-|---|---|
-| t4g.medium, ~14 h × 22 weekdays ≈ 310 h | ~$11–12 |
-| EBS gp3 root 30 GB + data 20 GB | ~$4–5 |
-| Elastic IP (charged 24/7) | ~$3.6 |
-| EBS snapshots, S3 backups, ECR storage | ~$1–2 |
-| CloudFront, S3 website, Cognito, CloudWatch (7-day logs) | ~$0–2 (mostly free tier) |
-| Bedrock tokens (demo volume, budget-capped) | ~$1–3 |
-| **Total** | **≈ $20–28/month**; the same setup running 24/7 ≈ $40–45 |
-| *Now:* t4g.small, development window 7 h × 30 days ≈ 210 h (USD 0.0172/h) | ~$3.6 compute |
-
-New-account AWS credits (if available) cover this for many months. **AWS Budgets** alerts at **$15 (forecast)** and **$25 (actual)**. Tag every resource `project=sentinel-pay`, `owner`, `env=staging`.
-
-### 7.5 Known trade-offs (document in ADR-0007)
-
-- Single host = no high availability; brief downtime per deploy; host failure means rebuild from snapshot. Acceptable for a demo environment.
-- CloudFront → origin traffic is unencrypted HTTP, mitigated by the prefix-list rule and secret header; production would use TLS to the origin (own domain + certificate).
-- Postgres and Kafka self-managed: we own backups and upgrades.
-- Migration path to production shape: swap `ecs-ec2-host` for Fargate services behind an ALB, move Postgres to RDS, Kafka to MSK — the `ecs-service` module and task definitions stay largely the same.
-
-**Never run `terraform apply`, start/stop the instance, or create AWS resources without explicit user confirmation in the current conversation.** `terraform plan` is fine.
+**Never run `terraform apply`, start/stop a host, or create AWS resources without explicit confirmation from the owner of that account in the current conversation.** `terraform plan` is fine. Changes that touch another account (peering, ECR policies, database users) also need that owner's agreement in the PR.
 
 ---
 
@@ -397,7 +367,7 @@ Seed decisions for `TECH_DECISIONS.md`:
 - Tailwind/shadcn vs MUI
 - GitHub Actions vs AWS CodePipeline
 - Public subnets vs NAT Gateway
-- **Single EC2 host running ECS (accepted, ADR-0007)** vs Fargate + ALB + RDS vs App Runner vs Lightsail vs non-AWS hosts (Oracle Free Tier, Hetzner) — include the cost table from §7.4
+- **Three ECS hosts in three accounts (accepted, ADR-0017; amends the single host of ADR-0007)** vs one `t4g.medium` on the Paid plan vs Fargate + ALB + RDS vs App Runner vs Lightsail vs non-AWS hosts (Oracle Free Tier, Hetzner) — include the cost table from `DESIGN.md` §19.4
 - PostgreSQL container + backups vs RDS
 - CloudFront with HTTP origin (prefix list + secret header) vs ALB + ACM vs own domain with TLS origin
 - Scheduled start/stop (EventBridge Scheduler) vs always-on vs Spot
@@ -482,7 +452,7 @@ Work through these in order. Each item is its own branch and PR unless noted. Be
    Put the dates and owners in as **Proposed**, and open a `decision-needed` issue for team sign-off.
 4. **Contracts:** add `openapi-llm-insights-v1.yaml`; add `risk.insights.v1` to the AsyncAPI file; secure the ops/analytics endpoints with JWT in the gateway and risk contracts; add `POST /api/v1/merchants/me`. Run `make contracts`.
 5. **Tooling:** `Makefile`, `docker-compose.yml` skeleton, `contracts.yml` and `codeql.yml` workflows.
-6. **Infra skeleton** (plan only): `infra/terraform` with remote-state bootstrap instructions and the modules from §7.2 (`network`, `ecs-ec2-host`, `ecr`, `scheduler`, `github-oidc` first), ADR-0007 for the single-host decision, `aws-wake`/`aws-sleep`/`aws-status` scripts, and the `deploy-staging.yml` workflow behind the `staging` environment approval. Add the AWS Budgets alerts in the very first apply. **Stop and ask before any apply.**
+6. **Infra skeleton** (plan only): `infra/terraform` with remote-state bootstrap instructions and the modules from `DESIGN.md` §19.2 (`network`, `ecs-ec2-host`, `ecr`, `scheduler`, `github-oidc` first), ADR-0007 for the single-host decision, `aws-wake`/`aws-sleep`/`aws-status` scripts, and the `deploy-staging.yml` workflow behind the `staging` environment approval. Add the AWS Budgets alerts in the very first apply. **Stop and ask before any apply.**
 7. **Component `CLAUDE.md` files** for `backend/`, `payment-gateway/`, `ml-scorer/`, `llm-insights/`, `frontend/`, `infra/`, holding stack-specific commands and conventions.
 8. Summarise what was created, list open questions as draft GitHub issues, and suggest the next backlog issues.
 
@@ -512,8 +482,10 @@ from the AWS Agent Toolkit, adopted in RISK-115 (23 Nov 2026). The team's AWS ac
 - Golden rule 11 still applies: ask before `terraform apply`, creating or deleting AWS resources, or anything that costs money.
 - Never put the AWS account ID, credentials or tokens in the repository, issues or PRs (golden rule 3).
 
-Only the tech lead has AWS access today (profile `sentinel-pay`). Teammates can ignore the AWS steps until they are invited
-to the project as team members.
+Each host lives in its owner's own AWS account (ADR-0017): Jiawei's (profile `sentinel-pay`) runs host B and the shared
+services, Jiajun's runs host A (gateway) and Zheng's runs host C (ml). Each person works only in their own account and
+never shares credentials. The rules above apply in every account; before creating anything, a teammate confirms their
+account's Region is eu-north-1 and records the plan (RISK-168, RISK-169).
 
 ## AWS Guidance for the new AWS experience
 
