@@ -5,12 +5,16 @@ on:
     paths:
       - "frontend/**"
       - "contracts/**"
+      # api-proxy.test.ts checks the dev proxy against the staging nginx routes.
+      - "infra/nginx/default.conf.template"
       - ".github/workflows/ci-frontend.yml"
   push:
     branches: [main]
     paths:
       - "frontend/**"
       - "contracts/**"
+      # api-proxy.test.ts checks the dev proxy against the staging nginx routes.
+      - "infra/nginx/default.conf.template"
       - ".github/workflows/ci-frontend.yml"
 
 permissions:
