@@ -54,8 +54,7 @@ otherwise (unset or empty means "create it"). GitHub forbids variable names that
 start with GITHUB_. Set STAGING_WEBSITE_BUCKET too when planning the CDN; create the
 origin SecureString privately first. The plan role cannot apply.
 
-Dependabot PRs never run the credentialed plan (they cannot request an OIDC token);
-plan their Terraform bumps manually. Modules declare minimum versions only; the
+Provider and Terraform upgrades are manual (no Dependabot, `TECH_DECISIONS.md` D20). Modules declare minimum versions only; the
 roots and their lock files pin exact versions. The plan job does not cancel when a
 newer commit arrives, so it never leaves the S3 state lock behind, and it keeps
 one summary comment per PR up to date instead of adding a new one each push.

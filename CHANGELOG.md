@@ -43,4 +43,5 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Removed
 
+- Automatic dependency updates: `.github/dependabot.yml` is deleted and dependencies are upgraded by hand by the component owner (`TECH_DECISIONS.md` D20).
 - RISK-109: obsolete contract compatibility exceptions (`contracts/compatibility/`) and the unused `OASDIFF` Makefile variable.

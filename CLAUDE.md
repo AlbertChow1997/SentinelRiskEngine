@@ -77,7 +77,6 @@ sentinel-pay/
     ├── CODEOWNERS
     ├── pull_request_template.md
     ├── ISSUE_TEMPLATE/           # bug.yml, question.yml, decision.yml, task.yml
-    ├── dependabot.yml
     └── workflows/                # ci-*.yml per component, codeql.yml, deploy-staging.yml, terraform.yml
 ```
 
@@ -264,7 +263,7 @@ host B 10.42.1.10 ◀──peering──▶ host A 10.43.1.10 ◀──peering�
 
 Also:
 
-- **Dependabot** for Maven, pip/uv, npm, GitHub Actions and Docker.
+- **No automatic dependency updates** (D20, 26 Nov 2026). Dependabot version and security-update PRs are off and there is no `dependabot.yml`. The component owner upgrades a dependency by hand, in its own PR (one issue → one PR): read the release notes, run the component's checks, and record major versions in `TECH_DECISIONS.md`. Owners review their dependencies once per milestone (`npm outdated`, `./mvnw versions:display-dependency-updates`, `uv pip list --outdated`, `terraform init -upgrade` in a branch). Vulnerabilities are still caught by Trivy (images, Terraform) and CodeQL; a HIGH/CRITICAL finding is fixed by a manual upgrade PR.
 - **Releases:** semantic version tags `vX.Y.Z`, generated release notes, and `CHANGELOG.md`.
 - **Branch ruleset on `main`:** PR required, 1 approval, CODEOWNERS review, all required checks green, linear history (squash merge), no force-push.
 
@@ -439,7 +438,7 @@ Local ports: gateway 8080 · risk-engine 8081 · ml-scorer 8000 · llm-insights 
 
 Work through these in order. Each item is its own branch and PR unless noted. Before starting, confirm with the user which items to do in this session.
 
-1. **Repo hygiene:** `.gitignore` (Java, Python, Node, Terraform, IDE), `.editorconfig`, `README.md` skeleton (what it is, architecture image placeholder, quick start, disclaimer), `LICENSE` (ask the user which licence), `CODEOWNERS`, PR template, issue templates (§9.4), `dependabot.yml`.
+1. **Repo hygiene:** `.gitignore` (Java, Python, Node, Terraform, IDE), `.editorconfig`, `README.md` skeleton (what it is, architecture image placeholder, quick start, disclaimer), `LICENSE` (ask the user which licence), `CODEOWNERS`, PR template, issue templates (§9.4).
 2. **Docs:** create `docs/DESIGN.md` from `Sentinel_Pay_Design_v2.md` (the user will provide it) **plus** the new requirements in §4–§7 of this file. Then create `docs/ROADMAP.md` and `docs/TECH_DECISIONS.md` (with the seed decisions in §10) and `docs/adr/0001-record-architecture-decisions.md`. Mark anything not yet agreed as **Proposed**.
 3. **Re-plan the schedule** in `ROADMAP.md`. Scope has grown (website, auth, LLM, AWS), so the old dates (v1.0 on 29 Nov, v2.0 on 13 Dec) no longer hold. Propose milestones for the team to confirm:
    - **M0 Walking skeleton:** one hello-world service and the frontend shell deployed to AWS through the full CI/CD pipeline. Ship the pipeline first; this is standard enterprise practice.

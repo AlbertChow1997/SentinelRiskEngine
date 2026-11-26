@@ -74,7 +74,7 @@ they are pinned in the scaffold PR (RISK-30) after checking the current official
 - We build the data-table wrapper (paging, sorting, filter bar, column visibility) ourselves on TanStack Table instead of getting it
   from DataGrid. This costs a few hours in RISK-33 and is accepted.
 - We own the copied shadcn/ui code. Updates from upstream are pulled deliberately, not by a dependency bump.
-- Storybook and axe add two dev dependencies and one CI step; Dependabot's npm block covers them.
+- Storybook and axe add two dev dependencies and one CI step; they are upgraded by hand with the other frontend dependencies (no automatic updates, D20).
 - MUI and MUI X are not used. References to "DataGrid" in `DESIGN.md` §8.2 and §8.7 mean "a server-side paged table" built
   on TanStack Table.
 - RISK-30 sets up Tailwind, the token file, the first shadcn/ui components and the app shell; Storybook can follow in its own PR.
