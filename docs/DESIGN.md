@@ -398,7 +398,6 @@ sentinel-pay/                     # repository name today: SentinelRiskEngine (Q
     ├── CODEOWNERS
     ├── pull_request_template.md
     ├── ISSUE_TEMPLATE/           # bug, question, decision, task
-    ├── dependabot.yml
     └── workflows/                # ci-*.yml per component, contracts.yml, codeql.yml, terraform.yml, deploy-staging.yml
 ```
 
@@ -450,7 +449,7 @@ an always-reporting gate exists, or unrelated PRs will wait indefinitely for a c
 | `deploy-staging.yml` | Manual on main, explicit DEPLOY_STAGING, enabled only after real reviewer/main-only gate exists | Build/test **ARM64** images and frontend → Trivy scan → **approval gate** (GitHub Environment `staging`, required non-self reviewer) → AWS credentials through **GitHub OIDC** → ECR publication (immutable git SHA; tasks use digest) → start the EC2 host if stopped and wait for ECS → register task definitions and update services (circuit-breaker rollback) → frontend build → S3 sync → CloudFront invalidation → smoke test through the CloudFront URL | M0 |
 
 - **CI never calls paid external APIs.** LLM tests use `StubProvider`; AWS calls are stubbed (moto or a stubbed boto3 client).
-- **Dependabot** covers GitHub Actions and docker-compose now; Maven, uv, npm, Docker and Terraform are enabled as each manifest appears.
+- **No automatic dependency updates** (D20, 26 Nov 2026). Dependabot version and security-update PRs are off and there is no `dependabot.yml`. The component owner upgrades a dependency by hand, in its own PR (one issue → one PR): read the release notes, run the component's checks, and record major versions in `TECH_DECISIONS.md`. Owners review their dependencies once per milestone (`npm outdated`, `./mvnw versions:display-dependency-updates`, `uv pip list --outdated`, `terraform init -upgrade` in a branch). Vulnerabilities are still caught by Trivy (images, Terraform) and CodeQL; a HIGH/CRITICAL finding is fixed by a manual upgrade PR.
 - **Branch ruleset on `main`:** PR required, 1 approval, code-owner review, all required checks green, linear history (squash merge), no force-push. Path-filtered workflows that do not run must not block merging — verify this when the ruleset is created. The repository is private: check that the GitHub plan in use supports rulesets, required code-owner review and environment reviewers on private repositories before relying on them (Q21).
 
 ### 5.6 Definition of Done (team-wide)
@@ -1859,7 +1858,7 @@ On a merchant's first login the frontend calls `POST /api/v1/merchants/me`. The 
 | Consistency | No lost events (outbox); duplicates harmless (inbox); per-payment ordering (keying) | Testcontainers Kafka tests, P11 |
 | Event latency | Review decision → payment captured < 3 s (p95, local) | P5 |
 | Auditability | Append-only audit events (risk), status history + ledger (gateway); every log line has `X-Request-Id` | E5, P1 |
-| Security | API keys hashed; tenant scoping (404 for other merchants); no PAN; input validation; secrets in SSM Parameter Store (never in Git, images or task definitions); Dependabot, CodeQL, Trivy | Tests, review, CI |
+| Security | API keys hashed; tenant scoping (404 for other merchants); no PAN; input validation; secrets in SSM Parameter Store (never in Git, images or task definitions); manual dependency reviews per milestone (D20), CodeQL, Trivy | Tests, review, CI |
 | Explainability | Reason codes + ML factors on every assessment | E2, E3 |
 | Honesty | Synthetic data, simulated acquirer and illustrative fees labelled in README and demo | Review |
 | LLM isolation | Payment and risk behaviour is identical with the LLM step down; no insight within the decision path | L3 |

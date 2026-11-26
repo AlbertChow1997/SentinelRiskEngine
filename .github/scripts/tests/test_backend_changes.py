@@ -51,9 +51,8 @@ class BackendChangesTests(unittest.TestCase):
         self.commit()
         self.assertEqual(self.detect(), "true")
 
-    def test_workflow_and_dependabot_changes_run_verification(self):
+    def test_workflow_changes_run_verification(self):
         self.write(".github/workflows/ci-backend.yml", "synthetic")
-        self.write(".github/dependabot.yml", "synthetic")
         self.commit()
         self.assertEqual(self.detect(), "true")
 

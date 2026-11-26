@@ -10,7 +10,7 @@ It starts without PostgreSQL, Kafka or AWS. Persistence and business APIs arrive
 RISK-116 (#56) adds the contract-shaped `POST /api/v1/risk-assessments` stub (fixed APPROVE, degraded, nothing stored),
 Bean Validation and `GlobalExceptionHandler` (RFC 9457 with `code` and field `errors`). It is unauthenticated until RISK-111
 (threat model T18); add JWT validation before the endpoint stores or reads data.
-RISK-12 (#7) adds `ci-backend.yml`: Java 21 verification, coverage/test artifacts and backend Maven Dependabot updates.
+RISK-12 (#7) adds `ci-backend.yml`: Java 21 verification, coverage/test artifacts (its Maven Dependabot updates were removed on 26 Nov 2026; upgrades are manual, D20).
 Its stable check always reports; internal path detection skips Maven for unrelated changes.
 Main runs are never replaced by a newer run; dependency and Wrapper caches are separate.
 

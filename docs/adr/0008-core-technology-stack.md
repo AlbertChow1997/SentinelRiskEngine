@@ -37,7 +37,7 @@ Dependency versions are pinned in `backend/pom.xml` and `.mvn/wrapper/maven-wrap
   [official image documentation](https://hub.docker.com/_/postgres). Compose and the target design use that layout.
 - Existing PostgreSQL 17 data requires an explicit dump/restore or `pg_upgrade`; changing an image tag is not a migration.
   Do not delete existing volumes. Inspect and back up existing data before changing an established local stack.
-- Dependabot may update PostgreSQL within 18; major database upgrades require a new explicit decision.
+- PostgreSQL minor updates within 18 are applied by hand (no automatic updates, D20); major database upgrades require a new explicit decision.
 - Revisit framework/library compatibility as persistence, OpenAPI tooling and security are added. This scaffold does not
   choose versions for libraries it does not yet use.
 

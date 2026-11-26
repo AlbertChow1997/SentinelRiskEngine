@@ -55,7 +55,7 @@ Internal change detection runs Temurin 21 and `./mvnw -B -ntp verify` for backen
 unrelated changes report success without Maven. Manual runs always verify. Missing git history runs verification safely.
 Maven dependencies and Wrapper distributions are cached separately. Coverage/test artifacts are retained for 14 days.
 Only superseded PR runs are cancelled; every main run has its own concurrency group.
-Maven Dependabot checks `backend/` weekly and ignores major updates pending a team decision;
-add a separate gateway entry only when its POM exists, without overlapping `/backend`.
+Dependencies are upgraded by hand (no Dependabot; `TECH_DECISIONS.md` D20). Check for updates once per milestone with
+`./mvnw versions:display-dependency-updates`; major upgrades need a recorded decision.
 Container-build CI and core-package JaCoCo thresholds remain explicit follow-ups; the M0 scaffold has no rules/domain service yet.
 See [`CLAUDE.md`](CLAUDE.md) for conventions.

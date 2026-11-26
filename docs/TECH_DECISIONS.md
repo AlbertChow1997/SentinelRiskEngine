@@ -36,6 +36,7 @@ Costs are indicative for eu-north-1 (re-checked against the AWS Price List API o
 | D17 | Work tracking | GitHub Issues + GitHub Projects | Accepted | — (process tooling; recorded here) |
 | D18 | AWS Region | eu-north-1 (project-locked) | Accepted | [0015](adr/0015-staging-region-eu-north-1.md) |
 | D19 | Network between the staging accounts | Cross-account VPC peering (verify first); public + TLS fallback | Accepted, pending spike RISK-166 | [0017](adr/0017-three-account-staging-hosts.md) |
+| D20 | Dependency updates | Manual upgrades by the component owner; no Dependabot | Accepted (26 Nov 2026) | — (process; recorded here) |
 
 ## ADR index
 
@@ -94,7 +95,7 @@ Design v2.0 numbered the tech-stack ADR 0001. ADR-0001 is now "Record architectu
 | MySQL | Would work; weaker JSON and constraint story for this design | Low | Free | Strong | Similar |
 | DynamoDB | Poor fit: the ledger, the state machine and the outbox rely on multi-row relational transactions and ad-hoc queries | High — data modelling by access pattern | Pay per request; cheap at demo volume | Strong on AWS | Lowest (managed) |
 
-**Chosen:** PostgreSQL 18, one database per service (`sentinel`, `gateway`, `llm`), explicitly confirmed by the owner on 16 Nov 2026 (ADR-0008). Local, integration-test and staging database versions follow this baseline. The official image volume mounts at `/var/lib/postgresql`. Major upgrades require an explicit decision; Dependabot remains within 18. **Review:** before any major upgrade.
+**Chosen:** PostgreSQL 18, one database per service (`sentinel`, `gateway`, `llm`), explicitly confirmed by the owner on 16 Nov 2026 (ADR-0008). Local, integration-test and staging database versions follow this baseline. The official image volume mounts at `/var/lib/postgresql`. Major upgrades require an explicit decision; minor updates within 18 are applied by hand (D20). **Review:** before any major upgrade.
 
 ## D04 — Messaging
 
@@ -291,3 +292,14 @@ both ways is overhead with no benefit. The `RISK-<n>` keys stay as backlog IDs i
 
 **Chosen:** cross-account VPC peering with fixed host IPs (ADR-0017), verified in RISK-166 before anything depends on it. The public + TLS option is the fallback.
 **Review:** after the RISK-166 spike.
+
+## D20 — Dependency updates
+
+| Option | Fit | Learning curve | Cost | Ecosystem / hiring signal | Operational burden |
+|---|---|---|---|---|---|
+| **Manual upgrades by the component owner** | Good for a three-person project: every upgrade is a deliberate, reviewed change with release notes read | Low | Free | Shows dependency ownership and judgement | A review per milestone; vulnerable versions can linger between reviews |
+| Dependabot version updates (used until 26 Nov 2026) | Keeps everything current automatically | Low | Free | Common | A batch of PRs every week (six in one week), each needing a review; noisy for a small team |
+| Renovate | Like Dependabot, with richer grouping and schedules | Medium | Free | Common | Still automated PRs to review; another app to configure |
+
+**Chosen:** manual upgrades (decided by the tech lead on 26 Nov 2026). `.github/dependabot.yml` was removed. Automated security-update PRs stay off, and the open Dependabot PRs (#106–#111) were closed. Each owner reviews their component's dependencies once per milestone and upgrades in a normal PR with tests. Trivy (images and Terraform) and CodeQL still report vulnerabilities; a HIGH/CRITICAL finding gets a manual upgrade PR.
+**Review:** at M5, or if a known vulnerability stays unfixed for more than a sprint.
